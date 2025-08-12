@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { env } from '@/config/env'
+import { env } from '@/src/config/env'
 
 if (!env.isServer) {
   throw new Error('supabaseServer should only be used on the server side')

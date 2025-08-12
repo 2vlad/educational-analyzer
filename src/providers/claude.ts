@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { env } from '@/config/env'
-import { modelsManager } from '@/config/models'
+import { env } from '@/src/config/env'
+import { modelsManager } from '@/src/config/models'
 import { LLMProvider, GenerateOptions, GenerateResult, ProviderError, ERROR_CODES } from './types'
-import { parseLLMOutput } from '@/utils/parseLLMOutput'
+import { parseLLMOutput } from '@/src/utils/parseLLMOutput'
 
 export class ClaudeProvider implements LLMProvider {
   private client: Anthropic | null = null

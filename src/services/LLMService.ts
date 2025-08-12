@@ -1,11 +1,11 @@
-import { env } from '@/config/env'
-import { modelsManager } from '@/config/models'
-import { logger } from '@/utils/logger'
-import { getPrompt, getProviderFamily, fillPromptTemplate, getPromptSnippet, type Metric } from '@/utils/prompts'
-import { ClaudeProvider } from '@/providers/claude'
-import { OpenAIProvider } from '@/providers/openai'
-import { GeminiProvider } from '@/providers/gemini'
-import { LLMProvider, GenerateResult, ProviderError, ERROR_CODES } from '@/providers/types'
+import { env } from '@/src/config/env'
+import { modelsManager } from '@/src/config/models'
+import { logger } from '@/src/utils/logger'
+import { getPrompt, getProviderFamily, fillPromptTemplate, getPromptSnippet, type Metric } from '@/src/utils/prompts'
+import { ClaudeProvider } from '@/src/providers/claude'
+import { OpenAIProvider } from '@/src/providers/openai'
+import { GeminiProvider } from '@/src/providers/gemini'
+import { LLMProvider, GenerateResult, ProviderError, ERROR_CODES } from '@/src/providers/types'
 
 export class LLMService {
   private providers: Map<string, LLMProvider> = new Map()

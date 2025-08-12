@@ -1,4 +1,4 @@
-import { ProviderError, ERROR_CODES } from '@/providers/types'
+import { ProviderError, ERROR_CODES } from '@/src/providers/types'
 
 export interface ParsedOutput {
   score: number

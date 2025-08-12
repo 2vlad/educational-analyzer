@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '@/lib/supabaseServer'
-import { InsertSystemLog, LogLevel } from '@/types/database'
+import { supabaseAdmin } from '@/src/lib/supabaseServer'
+import { InsertSystemLog, LogLevel } from '@/src/types/database'
 
 interface LogMetadata {
   [key: string]: any

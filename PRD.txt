@@ -1,0 +1,103 @@
+EDUCATIONAL CONTENT ANALYZER - PRODUCT REQUIREMENTS DOCUMENT
+
+## OVERVIEW
+Transform the existing mock UI into a functional educational content analyzer that uses AI to evaluate teaching materials on 5 key metrics.
+
+## CORE FUNCTIONALITY
+
+### 1. Content Input
+- Accept text via file upload (txt, md, doc, docx)
+- Accept pasted text directly
+- Store submissions in Supabase
+
+### 2. AI Analysis Engine
+- Use Claude/OpenAI API to analyze content
+- Evaluate 5 metrics (scale -2 to +2):
+  * Логика (Logic) - Content structure and flow
+  * Польза (Usefulness) - Practical applicability
+  * Уровень (Level) - Difficulty appropriateness
+  * Цепляет (Engagement) - How captivating it is
+  * С душой (Passion) - Personal touch and care
+- Generate comment and detailed feedback for each metric
+- Provide actionable improvement examples
+
+### 3. Data Architecture (Supabase)
+
+Tables:
+- analyses
+  * id (uuid, primary key)
+  * content (text)
+  * created_at (timestamp)
+  * user_id (text, nullable for MVP)
+  * status (pending/completed/failed)
+
+- analysis_results
+  * id (uuid, primary key)
+  * analysis_id (foreign key)
+  * metric (text)
+  * score (integer, -2 to 2)
+  * comment (text)
+  * details (text)
+  * examples (jsonb)
+
+- logs
+  * id (uuid, primary key)
+  * timestamp (timestamp)
+  * level (info/warn/error)
+  * message (text)
+  * metadata (jsonb)
+  * request_id (text)
+
+### 4. API Design
+
+POST /api/analyze
+- Accept content
+- Create analysis record
+- Queue for AI processing
+- Return analysis_id
+
+GET /api/analysis/{id}
+- Return analysis status and results
+
+GET /api/logs
+- Return logs (for Claude Code access)
+- Support filtering by level, timerange
+
+### 5. Logging Requirements
+- Log every API request/response
+- Log LLM API calls with prompts and responses
+- Log errors with full context
+- Log user actions (uploads, views)
+- Make logs accessible via API for Claude Code
+
+## MVP REQUIREMENTS
+
+### Must Have
+1. Working file upload and text input
+2. Real AI analysis (not mock data)
+3. Results display with speedometer visualization
+4. Supabase integration for data persistence
+5. Comprehensive logging system
+6. Environment variables for all configs
+7. Basic error handling
+
+### Nice to Have (Post-MVP)
+- User authentication
+- Analysis history
+- Export results as PDF
+- Batch analysis
+- Custom rubrics
+
+## TECHNICAL CONSTRAINTS
+- Use existing Next.js/React setup
+- Use existing shadcn/ui components
+- TDD approach - tests before implementation
+- Commit after each component completion
+- No hardcoded values (use env vars)
+
+## SUCCESS CRITERIA
+- Can analyze real educational content
+- Provides consistent, meaningful scores
+- All data persisted in Supabase
+- Claude Code can read logs via API
+- Zero runtime errors in happy path

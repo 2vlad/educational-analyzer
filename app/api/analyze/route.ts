@@ -3,13 +3,13 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/src/lib/supabaseServer'
 import { llmService } from '@/src/services/LLMService'
 import { logger } from '@/src/utils/logger'
-import { METRICS, type Metric } from '@/src/utils/prompts'
+import { METRICS } from '@/src/utils/prompts'
 import { InsertAnalysis, InsertLLMRequest } from '@/src/types/database'
 
 // Request schema
 const analyzeRequestSchema = z.object({
   content: z.string().min(1).max(2000),
-  modelId: z.string().optional()
+  modelId: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -17,22 +17,22 @@ export async function POST(request: NextRequest) {
     // Parse and validate request body
     const body = await request.json()
     const validation = analyzeRequestSchema.safeParse(body)
-    
+
     if (!validation.success) {
       return NextResponse.json(
         { error: 'Invalid request', details: validation.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     const { content, modelId } = validation.data
 
     // Create analysis record
-    const analysisId = crypto.randomUUID()
+    const analysisId = globalThis.crypto.randomUUID()
     const analysis: InsertAnalysis = {
       content,
       status: 'running',
-      model_used: modelId || llmService.getCurrentModel()
+      model_used: modelId || llmService.getCurrentModel(),
     }
 
     const { error: insertError } = await supabaseAdmin
@@ -41,10 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       logger.error('Failed to create analysis', { error: insertError })
-      return NextResponse.json(
-        { error: 'Failed to create analysis' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to create analysis' }, { status: 500 })
     }
 
     // Log analysis start
@@ -52,7 +49,7 @@ export async function POST(request: NextRequest) {
       analysisId,
       contentLength: content.length,
       model: analysis.model_used!,
-      metricsCount: METRICS.length
+      metricsCount: METRICS.length,
     })
 
     // Run all metrics in parallel
@@ -60,7 +57,7 @@ export async function POST(request: NextRequest) {
     const metricPromises = METRICS.map(async (metric) => {
       try {
         // Analyze with retry
-        const result = modelId 
+        const result = modelId
           ? await llmService.analyzeWithModel(content, metric, modelId)
           : await llmService.analyzeWithRetry(content, metric)
 
@@ -71,34 +68,30 @@ export async function POST(request: NextRequest) {
           prompt: `[${metric} analysis]`, // Don't store full prompt
           response: result,
           model: result.model,
-          duration: result.durationMs
+          duration: result.durationMs,
         }
 
-        await supabaseAdmin
-          .from('llm_requests')
-          .insert(llmRequest)
+        await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
         return {
           metric,
           success: true,
-          result
+          result,
         }
       } catch (error) {
         // Store failed LLM request
         const llmRequest: InsertLLMRequest = {
           analysis_id: analysisId,
           metric,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         }
 
-        await supabaseAdmin
-          .from('llm_requests')
-          .insert(llmRequest)
+        await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
         return {
           metric,
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         }
       }
     })
@@ -108,7 +101,7 @@ export async function POST(request: NextRequest) {
     const totalDuration = Date.now() - startTime
 
     // Process results
-    const results: any = {}
+    const results: Record<string, unknown> = {}
     let successCount = 0
     let failCount = 0
 
@@ -120,8 +113,9 @@ export async function POST(request: NextRequest) {
             score: result.score,
             comment: result.comment,
             examples: result.examples,
+            detailed_analysis: result.detailed_analysis,
             durationMs: result.durationMs,
-            model: result.model
+            model: result.model,
           }
           successCount++
         } else {
@@ -134,11 +128,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine final status
-    const finalStatus = successCount === METRICS.length 
-      ? 'completed' 
-      : successCount > 0 
-        ? 'partial' 
-        : 'failed'
+    const finalStatus =
+      successCount === METRICS.length ? 'completed' : successCount > 0 ? 'partial' : 'failed'
 
     // Update analysis with results
     const { error: updateError } = await supabaseAdmin
@@ -146,7 +137,7 @@ export async function POST(request: NextRequest) {
       .update({
         status: finalStatus,
         results,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', analysisId)
 
@@ -159,23 +150,19 @@ export async function POST(request: NextRequest) {
       analysisId,
       totalDuration,
       successfulMetrics: successCount,
-      failedMetrics: failCount
+      failedMetrics: failCount,
     })
 
     // Return analysis ID for polling
     return NextResponse.json({
       analysisId,
-      status: finalStatus
+      status: finalStatus,
+    })
+  } catch (error) {
+    logger.error('Analyze endpoint error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
     })
 
-  } catch (error) {
-    logger.error('Analyze endpoint error', { 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    })
-    
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

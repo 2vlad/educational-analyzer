@@ -73,33 +73,33 @@ const Speedometer = ({ score }: { score: number }) => {
 
   const color = getColor(normalizedScore)
 
-  // Calculate needle end position
-  const needleLength = 30
+  // Calculate needle end position - fixed for semicircle orientation
+  const needleLength = 35
   const angleRad = (angle * Math.PI) / 180
   const needleX = 50 + needleLength * Math.cos(angleRad)
-  const needleY = 50 - needleLength * Math.sin(angleRad)
+  const needleY = 50 + needleLength * Math.sin(angleRad) // Changed from minus to plus for correct orientation
 
-  // Create gradient sections for the arc
+  // Create gradient sections for the arc - fixed for correct semicircle
   const createArcPath = (startAngle: number, endAngle: number) => {
     const startRad = (startAngle * Math.PI) / 180
     const endRad = (endAngle * Math.PI) / 180
-    const radius = 40
+    const radius = 35
     const centerX = 50
     const centerY = 50
 
     const x1 = centerX + radius * Math.cos(startRad)
-    const y1 = centerY - radius * Math.sin(startRad)
+    const y1 = centerY + radius * Math.sin(startRad) // Fixed: changed from minus to plus
     const x2 = centerX + radius * Math.cos(endRad)
-    const y2 = centerY - radius * Math.sin(endRad)
+    const y2 = centerY + radius * Math.sin(endRad) // Fixed: changed from minus to plus
 
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0
+    const largeArc = Math.abs(endAngle - startAngle) > 180 ? 1 : 0
 
     return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`
   }
 
   return (
-    <div className="w-20 h-12">
-      <svg viewBox="0 0 100 60" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+    <div className="w-24 h-14">
+      <svg viewBox="0 0 100 65" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
         {/* Background arc - full semicircle */}
         <path
           d={createArcPath(180, 0)}
@@ -167,19 +167,19 @@ const Speedometer = ({ score }: { score: number }) => {
         <circle cx={needleX} cy={needleY} r="2" fill={color} />
 
         {/* Scale labels */}
-        <text x="10" y="58" fontSize="8" fill="#9ca3af" textAnchor="middle">
+        <text x="10" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
           -2
         </text>
-        <text x="30" y="58" fontSize="8" fill="#9ca3af" textAnchor="middle">
+        <text x="27.5" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
           -1
         </text>
-        <text x="50" y="58" fontSize="8" fill="#9ca3af" textAnchor="middle">
+        <text x="50" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
           0
         </text>
-        <text x="70" y="58" fontSize="8" fill="#9ca3af" textAnchor="middle">
+        <text x="72.5" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
           1
         </text>
-        <text x="90" y="58" fontSize="8" fill="#9ca3af" textAnchor="middle">
+        <text x="90" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
           2
         </text>
       </svg>
@@ -397,6 +397,16 @@ export default function EducationalAnalyzer() {
                         </h3>
                         <Speedometer score={data.score} />
                       </div>
+
+                      {/* Show detailed analysis if available */}
+                      {data.detailed_analysis && (
+                        <div className="mb-3">
+                          <h4 className="font-semibold text-sm text-black mb-2">Анализ:</h4>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {data.detailed_analysis}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Show examples from LLM if available */}
                       {data.examples && data.examples.length > 0 && (

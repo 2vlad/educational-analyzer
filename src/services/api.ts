@@ -21,6 +21,7 @@ export interface AnalysisResult {
       score: number
       comment: string
       examples: string[]
+      detailed_analysis?: string
       durationMs: number
       model: string
     }
@@ -94,25 +95,29 @@ class ApiService {
   }
 
   async pollAnalysis(
-    id: string, 
+    id: string,
     onProgress?: (result: AnalysisResult) => void,
-    maxAttempts = 60
+    maxAttempts = 60,
   ): Promise<AnalysisResult> {
     let attempts = 0
-    
+
     while (attempts < maxAttempts) {
       const result = await this.getAnalysis(id)
-      
+
       if (onProgress) {
         onProgress(result)
       }
 
-      if (result.status === 'completed' || result.status === 'failed' || result.status === 'partial') {
+      if (
+        result.status === 'completed' ||
+        result.status === 'failed' ||
+        result.status === 'partial'
+      ) {
         return result
       }
 
       // Wait 1 second before next poll
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 1000))
       attempts++
     }
 

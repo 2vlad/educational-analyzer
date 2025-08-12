@@ -3,14 +3,15 @@ export interface GenerateOptions {
   temperature?: number
   maxTokens?: number
   timeoutMs?: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export interface GenerateResult {
   score: number
   comment: string
   examples: string[]
-  raw: any
+  detailed_analysis?: string
+  raw: unknown
   tokensUsed?: number
   durationMs: number
   provider: string
@@ -26,7 +27,7 @@ export class ProviderError extends Error {
     message: string,
     public code: string,
     public retryable: boolean = false,
-    public provider?: string
+    public provider?: string,
   ) {
     super(message)
     this.name = 'ProviderError'
@@ -39,5 +40,5 @@ export const ERROR_CODES = {
   BAD_OUTPUT: 'BAD_OUTPUT',
   AUTH_ERROR: 'AUTH_ERROR',
   RATE_LIMIT: 'RATE_LIMIT',
-  INVALID_REQUEST: 'INVALID_REQUEST'
+  INVALID_REQUEST: 'INVALID_REQUEST',
 } as const

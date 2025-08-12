@@ -55,6 +55,13 @@ export class LLMService {
     const providerFamily = getProviderFamily(this.currentProviderId)
     const prompt = getPrompt(providerFamily, metric)
     const filledPrompt = fillPromptTemplate(prompt, content)
+    
+    console.log('\n📝 LLMService.analyze()')
+    console.log('Metric:', metric)
+    console.log('Model:', this.currentProviderId)
+    console.log('Provider:', providerFamily)
+    console.log('Content length:', content.length)
+    console.log('Prompt length:', filledPrompt.length)
 
     // Log request start
     const analysisId = crypto.randomUUID()

@@ -161,6 +161,22 @@ export async function POST(request: NextRequest) {
       successfulMetrics: successCount,
       failedMetrics: failCount,
     })
+    
+    console.log('\n🎯 ANALYSIS COMPLETE')
+    console.log('Analysis ID:', analysisId)
+    console.log('Status:', finalStatus)
+    console.log('Success count:', successCount)
+    console.log('Fail count:', failCount)
+    console.log('Total duration:', totalDuration, 'ms')
+    console.log('\nResults summary:')
+    Object.entries(results).forEach(([metric, data]: [string, any]) => {
+      if (data.error) {
+        console.log(`  ❌ ${metric}: Error - ${data.error}`)
+      } else {
+        console.log(`  ✅ ${metric}: Score ${data.score}, "${data.comment}"`)
+      }
+    })
+    console.log('=================\n')
 
     // Return analysis ID for polling
     return NextResponse.json({

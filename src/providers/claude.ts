@@ -69,11 +69,14 @@ export class ClaudeProvider implements LLMProvider {
       console.log('\n=== CLAUDE RESPONSE ===')
       console.log('Model:', response.model)
       console.log('Usage:', response.usage)
-      console.log(
-        'Raw text:',
-        responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
-      )
-      console.log('Full response:', JSON.stringify(JSON.parse(responseText), null, 2))
+      console.log('Raw text length:', responseText.length)
+      
+      try {
+        const jsonResponse = JSON.parse(responseText)
+        console.log('Parsed JSON response:', JSON.stringify(jsonResponse, null, 2))
+      } catch (e) {
+        console.log('Raw text (not valid JSON):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''))
+      }
       console.log('====================\n')
 
       // Parse the response

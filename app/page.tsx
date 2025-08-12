@@ -60,129 +60,66 @@ const METRIC_EXAMPLES: Record<string, string[]> = {
 }
 
 const Speedometer = ({ score }: { score: number }) => {
-  // Convert score (-2 to 2) to angle (180 to 0 degrees, left to right)
-  const normalizedScore = Math.max(-2, Math.min(2, score)) // Clamp between -2 and 2
-  const angle = 180 - ((normalizedScore + 2) / 4) * 180
+  // Clamp score between -2 and 2
+  const normalizedScore = Math.max(-2, Math.min(2, score))
+
+  // Convert score to percentage (0 to 100)
+  const percentage = ((normalizedScore + 2) / 4) * 100
 
   // Get color based on score
   const getColor = (score: number) => {
-    if (score >= 1) return '#22c55e' // green
-    if (score >= -0.5 && score < 1) return '#eab308' // yellow
+    if (score >= 1) return '#10b981' // green
+    if (score >= 0) return '#eab308' // yellow
+    if (score >= -1) return '#f97316' // orange
     return '#ef4444' // red
   }
 
   const color = getColor(normalizedScore)
 
-  // Calculate needle end position - fixed for semicircle orientation
-  const needleLength = 35
-  const angleRad = (angle * Math.PI) / 180
-  const needleX = 50 + needleLength * Math.cos(angleRad)
-  const needleY = 50 + needleLength * Math.sin(angleRad) // Changed from minus to plus for correct orientation
-
-  // Create gradient sections for the arc - fixed for correct semicircle
-  const createArcPath = (startAngle: number, endAngle: number) => {
-    const startRad = (startAngle * Math.PI) / 180
-    const endRad = (endAngle * Math.PI) / 180
-    const radius = 35
-    const centerX = 50
-    const centerY = 50
-
-    const x1 = centerX + radius * Math.cos(startRad)
-    const y1 = centerY + radius * Math.sin(startRad) // Fixed: changed from minus to plus
-    const x2 = centerX + radius * Math.cos(endRad)
-    const y2 = centerY + radius * Math.sin(endRad) // Fixed: changed from minus to plus
-
-    const largeArc = Math.abs(endAngle - startAngle) > 180 ? 1 : 0
-
-    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 0 ${x2} ${y2}`
-  }
+  // Circle parameters
+  const size = 80
+  const strokeWidth = 6
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
-    <div className="w-24 h-14">
-      <svg viewBox="0 0 100 65" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-        {/* Background arc - full semicircle */}
-        <path
-          d={createArcPath(180, 0)}
-          fill="none"
+    <div className="w-20 h-20">
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           stroke="#e5e7eb"
-          strokeWidth="8"
-          strokeLinecap="round"
+          strokeWidth={strokeWidth}
+          fill="none"
         />
 
-        {/* Colored sections */}
-        {/* Red section: -2 to -1 (180° to 135°) */}
-        <path
-          d={createArcPath(180, 135)}
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="6"
-          strokeLinecap="round"
-          opacity="0.3"
-        />
-
-        {/* Yellow section: -1 to 1 (135° to 45°) */}
-        <path
-          d={createArcPath(135, 45)}
-          fill="none"
-          stroke="#eab308"
-          strokeWidth="6"
-          strokeLinecap="round"
-          opacity="0.3"
-        />
-
-        {/* Green section: 1 to 2 (45° to 0°) */}
-        <path
-          d={createArcPath(45, 0)}
-          fill="none"
-          stroke="#22c55e"
-          strokeWidth="6"
-          strokeLinecap="round"
-          opacity="0.3"
-        />
-
-        {/* Active arc up to current value */}
-        <path
-          d={createArcPath(180, angle)}
-          fill="none"
+        {/* Progress circle */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           stroke={color}
-          strokeWidth="6"
+          strokeWidth={strokeWidth}
+          fill="none"
           strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{
+            transition: 'stroke-dashoffset 0.5s ease-in-out',
+          }}
         />
-
-        {/* Center pivot point */}
-        <circle cx="50" cy="50" r="4" fill="#374151" />
-
-        {/* Needle */}
-        <line
-          x1="50"
-          y1="50"
-          x2={needleX}
-          y2={needleY}
-          stroke="#374151"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-
-        {/* Needle tip */}
-        <circle cx={needleX} cy={needleY} r="2" fill={color} />
-
-        {/* Scale labels */}
-        <text x="10" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
-          -2
-        </text>
-        <text x="27.5" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
-          -1
-        </text>
-        <text x="50" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
-          0
-        </text>
-        <text x="72.5" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
-          1
-        </text>
-        <text x="90" y="60" fontSize="7" fill="#6b7280" textAnchor="middle">
-          2
-        </text>
       </svg>
+
+      {/* Score number in center */}
+      <div className="relative -mt-16 h-16 flex items-center justify-center">
+        <span className="text-2xl font-bold" style={{ color }}>
+          {normalizedScore > 0 ? '+' : ''}
+          {normalizedScore}
+        </span>
+      </div>
     </div>
   )
 }

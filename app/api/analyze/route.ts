@@ -57,9 +57,18 @@ export async function POST(request: NextRequest) {
     const metricPromises = METRICS.map(async (metric) => {
       try {
         // Analyze with retry
+        console.log(`\n📊 Analyzing metric: ${metric}`)
         const result = modelId
           ? await llmService.analyzeWithModel(content, metric, modelId)
           : await llmService.analyzeWithRetry(content, metric)
+
+        console.log(`✅ Metric ${metric} complete:`, {
+          score: result.score,
+          comment: result.comment,
+          examplesCount: result.examples?.length,
+          hasDetailedAnalysis: !!result.detailed_analysis,
+          duration: result.durationMs,
+        })
 
         // Store LLM request record
         const llmRequest: InsertLLMRequest = {

@@ -11,14 +11,25 @@ export interface ParsedOutput {
  * Parse LLM output to extract score, comment, and examples
  */
 export function parseLLMOutput(text: string): ParsedOutput {
+  console.log('\n=== PARSING LLM OUTPUT ===')
+  console.log('Input text length:', text.length)
+  console.log('First 200 chars:', text.substring(0, 200))
+
   // Try to parse as JSON first
   const jsonResult = tryParseJSON(text)
   if (jsonResult) {
+    console.log('✅ Successfully parsed as JSON')
+    console.log('Parsed result:', JSON.stringify(jsonResult, null, 2))
+    console.log('========================\n')
     return jsonResult
   }
 
+  console.log('⚠️ JSON parsing failed, trying regex...')
   // Fallback to regex parsing
-  return parseWithRegex(text)
+  const regexResult = parseWithRegex(text)
+  console.log('Regex parsed result:', JSON.stringify(regexResult, null, 2))
+  console.log('========================\n')
+  return regexResult
 }
 
 /**

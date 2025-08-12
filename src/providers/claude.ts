@@ -16,13 +16,17 @@ export class ClaudeProvider implements LLMProvider {
     }
   }
 
-  async generate(prompt: string, content: string, options: GenerateOptions = {}): Promise<GenerateResult> {
+  async generate(
+    prompt: string,
+    content: string,
+    options: GenerateOptions = {},
+  ): Promise<GenerateResult> {
     if (!this.client) {
       throw new ProviderError(
         'Anthropic API key not configured',
         ERROR_CODES.AUTH_ERROR,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -32,7 +36,7 @@ export class ClaudeProvider implements LLMProvider {
         'Claude model configuration not found',
         ERROR_CODES.INVALID_REQUEST,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -47,21 +51,30 @@ export class ClaudeProvider implements LLMProvider {
         messages: [
           {
             role: 'user',
-            content: finalPrompt
-          }
+            content: finalPrompt,
+          },
         ],
         // Add timeout using AbortController if needed
         ...(options.timeoutMs && {
-          signal: AbortSignal.timeout(options.timeoutMs)
-        })
-      } as any)
+          signal: globalThis.AbortSignal.timeout(options.timeoutMs),
+        }),
+      } as Anthropic.MessageCreateParams)
 
       const durationMs = Date.now() - startTime
-      
+
       // Extract text from response
-      const responseText = response.content[0].type === 'text' 
-        ? response.content[0].text 
-        : ''
+      const responseText = response.content[0].type === 'text' ? response.content[0].text : ''
+
+      // Log raw LLM response for debugging
+      console.log('\n=== CLAUDE RESPONSE ===')
+      console.log('Model:', response.model)
+      console.log('Usage:', response.usage)
+      console.log(
+        'Raw text:',
+        responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+      )
+      console.log('Full response:', JSON.stringify(JSON.parse(responseText), null, 2))
+      console.log('====================\n')
 
       // Parse the response
       const parsed = parseLLMOutput(responseText)
@@ -72,42 +85,38 @@ export class ClaudeProvider implements LLMProvider {
         tokensUsed: response.usage?.output_tokens,
         durationMs,
         provider: this.providerName,
-        model: response.model
+        model: response.model,
       }
-    } catch (error: any) {
+    } catch (error) {
       // Handle different error types
-      if (error.name === 'AbortError') {
-        throw new ProviderError(
-          'Request timeout',
-          ERROR_CODES.TIMEOUT,
-          true,
-          this.providerName
-        )
+      const err = error as Error & { status?: number; name?: string }
+      if (err.name === 'AbortError') {
+        throw new ProviderError('Request timeout', ERROR_CODES.TIMEOUT, true, this.providerName)
       }
-      
-      if (error.status === 429) {
+
+      if (err.status === 429) {
         throw new ProviderError(
           'Rate limit exceeded',
           ERROR_CODES.RATE_LIMIT,
           true,
-          this.providerName
+          this.providerName,
         )
       }
-      
-      if (error.status === 401) {
+
+      if (err.status === 401) {
         throw new ProviderError(
           'Authentication failed',
           ERROR_CODES.AUTH_ERROR,
           false,
-          this.providerName
+          this.providerName,
         )
       }
 
       throw new ProviderError(
-        error.message || 'Provider error',
+        err.message || 'Provider error',
         ERROR_CODES.PROVIDER_ERROR,
-        error.status >= 500,
-        this.providerName
+        err.status ? err.status >= 500 : false,
+        this.providerName,
       )
     }
   }

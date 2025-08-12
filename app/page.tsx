@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { apiService, type AnalysisResult as ApiAnalysisResult, type Model } from "@/services/api"
+import { apiService, type AnalysisResult as ApiAnalysisResult, type Model } from "@/src/services/api"
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {

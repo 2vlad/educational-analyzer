@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseServer'
+import { supabaseAdmin } from '@/src/lib/supabaseServer'
 import { z } from 'zod'
 
 // Validate UUID format

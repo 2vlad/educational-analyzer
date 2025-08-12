@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { modelsManager } from '@/config/models'
+import { modelsManager } from '@/src/config/models'
 
 export async function GET() {
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseServer'
-import { env } from '@/config/env'
+import { supabaseAdmin } from '@/src/lib/supabaseServer'
+import { env } from '@/src/config/env'
 
 export async function GET(request: NextRequest) {
   try {

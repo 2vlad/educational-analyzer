@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabaseServer'
-import { llmService } from '@/services/LLMService'
-import { logger } from '@/utils/logger'
-import { METRICS, type Metric } from '@/utils/prompts'
-import { InsertAnalysis, InsertLLMRequest } from '@/types/database'
+import { supabaseAdmin } from '@/src/lib/supabaseServer'
+import { llmService } from '@/src/services/LLMService'
+import { logger } from '@/src/utils/logger'
+import { METRICS, type Metric } from '@/src/utils/prompts'
+import { InsertAnalysis, InsertLLMRequest } from '@/src/types/database'
 
 // Request schema
 const analyzeRequestSchema = z.object({

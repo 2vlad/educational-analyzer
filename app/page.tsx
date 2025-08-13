@@ -37,8 +37,8 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
   if (score === undefined || score === null || isNaN(score)) {
     // Return a placeholder/loading state
     return (
-      <div className="w-24 h-20 flex items-center justify-center">
-        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <div className="w-12 h-10 flex items-center justify-center">
+        <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           {/* Background arc only */}
           <path
             d="M 15 73 A 40 40 0 1 1 85 73"
@@ -88,8 +88,8 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
   const { color, offset } = getColorAndOffset(normalizedScore)
 
   return (
-    <div className="w-24 h-20 flex items-center justify-center">
-      <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <div className="w-12 h-10 flex items-center justify-center">
+      <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         {/* Background arc */}
         <path
           d="M 15 73 A 40 40 0 1 1 85 73"
@@ -382,7 +382,7 @@ export default function EducationalAnalyzer() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {analysisResult.results &&
               Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => (
-                <Card key={metric} className="border-black border-2 p-4">
+                <Card key={metric} className="border-gray-300 border p-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <h3 className="font-bold text-lg text-black">
@@ -411,7 +411,7 @@ export default function EducationalAnalyzer() {
 
           {/* Detailed Analysis Section */}
           <div className="mb-8">
-            <Card className="border-black border-2 p-6">
+            <Card className="border-gray-300 border p-6">
               <h2 className="text-2xl font-bold text-black mb-6 text-center">Detailed Analysis</h2>
               <div className="space-y-6">
                 {analysisResult.results &&
@@ -472,7 +472,7 @@ export default function EducationalAnalyzer() {
                 setAnalysisResult(null)
                 setError(null)
               }}
-              className="px-8 py-3 border border-black text-black bg-white hover:bg-black hover:text-white transition-colors"
+              className="px-8 py-3 border border-gray-400 text-gray-700 bg-white hover:bg-gray-700 hover:text-white transition-colors"
             >
               Analyze New Content
             </Button>
@@ -512,7 +512,7 @@ export default function EducationalAnalyzer() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-full border-black">
+                <SelectTrigger className="w-full border-gray-300">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
                 <SelectContent>
@@ -528,14 +528,14 @@ export default function EducationalAnalyzer() {
 
           {/* File Upload Area */}
           <div
-            className={`border-2 border-dashed border-black rounded-lg p-12 text-center transition-colors ${
+            className={`border-2 border-dashed border-gray-300 rounded-lg p-12 text-center transition-colors ${
               isDragOver ? 'bg-gray-50' : 'bg-white'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <Upload className="mx-auto mb-4 h-12 w-12 text-black" />
+            <Upload className="mx-auto mb-4 h-12 w-12 text-gray-600" />
             <p className="text-lg text-black mb-4">Drag & drop your file here</p>
             <p className="text-sm text-gray-600 mb-4">Supported: .txt, .md (max 10MB)</p>
             <input
@@ -547,7 +547,7 @@ export default function EducationalAnalyzer() {
             />
             <label
               htmlFor="file-upload"
-              className="inline-block px-6 py-2 border border-black text-black hover:bg-black hover:text-white transition-colors cursor-pointer rounded-lg"
+              className="inline-block px-6 py-2 border border-gray-400 text-gray-700 hover:bg-gray-700 hover:text-white transition-colors cursor-pointer rounded-lg"
             >
               Choose File
             </label>
@@ -573,7 +573,7 @@ export default function EducationalAnalyzer() {
                   setError('Content must be less than 2000 characters')
                 }
               }}
-              className="min-h-[200px] font-mono text-sm border-2 border-black focus:ring-black focus:border-black"
+              className="min-h-[200px] font-mono text-sm border border-gray-300 focus:ring-gray-400 focus:border-gray-400"
               maxLength={2000}
             />
           </div>
@@ -583,7 +583,7 @@ export default function EducationalAnalyzer() {
             <Button
               onClick={handleAnalyze}
               disabled={!content.trim() || isAnalyzing}
-              className="px-12 py-3 bg-black text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
+              className="px-12 py-3 bg-gray-700 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
             >
               {isAnalyzing ? (
                 <>

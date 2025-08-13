@@ -1,6 +1,12 @@
 {
-  "default": "claude-sonnet-4",
+  "default": "claude-haiku",
   "models": {
+    "claude-haiku": {
+      "provider": "anthropic",
+      "model": "claude-3-haiku-20240307",
+      "maxTokens": 1000,
+      "temperature": 0.3
+    },
     "claude-sonnet-4": {
       "provider": "anthropic",
       "model": "claude-3-5-sonnet-20241022",

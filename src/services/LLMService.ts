@@ -11,6 +11,7 @@ import {
 import { ClaudeProvider } from '@/src/providers/claude'
 import { OpenAIProvider } from '@/src/providers/openai'
 import { GeminiProvider } from '@/src/providers/gemini'
+import { YandexProvider } from '@/src/providers/yandex'
 import { LLMProvider, GenerateResult, ProviderError } from '@/src/providers/types'
 
 export class LLMService {
@@ -33,6 +34,9 @@ export class LLMService {
       }
       if (env.server.GOOGLE_API_KEY) {
         this.providers.set('google', new GeminiProvider())
+      }
+      if (env.server.YANDEX_API_KEY && env.server.YANDEX_FOLDER_ID) {
+        this.providers.set('yandex', new YandexProvider())
       }
     }
   }

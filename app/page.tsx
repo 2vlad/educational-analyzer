@@ -250,7 +250,13 @@ export default function EducationalAnalyzer() {
     }
 
     // Validate model ID - prevent invalid IDs from being sent
-    const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    const validModelIds = [
+      'claude-haiku',
+      'claude-sonnet-4',
+      'gpt-4o',
+      'gemini-pro',
+      'yandex-gpt-pro',
+    ]
     let modelToUse = selectedModel
 
     if (selectedModel && !validModelIds.includes(selectedModel)) {

@@ -9,6 +9,8 @@ const serverEnvSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
+  YANDEX_API_KEY: z.string().optional(),
+  YANDEX_FOLDER_ID: z.string().optional(),
 
   // LLM Config
   DEFAULT_MODEL: z.string().default('claude-sonnet-4'),
@@ -39,7 +41,7 @@ const clientEnvSchema = z.object({
 
 // Validate that at least one LLM provider is configured
 const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
-  if (!env.ANTHROPIC_API_KEY && !env.OPENAI_API_KEY && !env.GOOGLE_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY && !env.OPENAI_API_KEY && !env.GOOGLE_API_KEY && !env.YANDEX_API_KEY) {
     throw new Error('At least one LLM provider API key must be configured')
   }
 }

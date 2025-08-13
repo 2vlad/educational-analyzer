@@ -15,6 +15,7 @@ export async function GET() {
       else if (id === 'claude-sonnet-4') name = 'Claude 3.5 Sonnet (Best)'
       else if (id === 'gpt-4o') name = 'GPT-4o (OpenAI)'
       else if (id === 'gemini-pro') name = 'Gemini 1.5 Pro (Google)'
+      else if (id === 'yandex-gpt-pro') name = 'YandexGPT Pro (Russian)'
       else name = id.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
       return {

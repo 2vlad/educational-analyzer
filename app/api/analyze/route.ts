@@ -105,7 +105,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and sanitize model ID
-    const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    const validModelIds = [
+      'claude-haiku',
+      'claude-sonnet-4',
+      'gpt-4o',
+      'gemini-pro',
+      'yandex-gpt-pro',
+    ]
     let finalModelId = modelId
 
     if (modelId && !validModelIds.includes(modelId)) {

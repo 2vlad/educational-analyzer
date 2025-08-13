@@ -24,6 +24,8 @@ export interface AnalysisResult {
       detailed_analysis?: string
       durationMs: number
       model: string
+    } | {
+      error: string
     }
   }
   metrics: Array<{

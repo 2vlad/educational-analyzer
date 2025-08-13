@@ -59,67 +59,98 @@ const METRIC_EXAMPLES: Record<string, string[]> = {
   ],
 }
 
-const Speedometer = ({ score }: { score: number }) => {
-  // Clamp score between -2 and 2
-  const normalizedScore = Math.max(-2, Math.min(2, score))
-
-  // Convert score to percentage (0 to 100)
-  const percentage = ((normalizedScore + 2) / 4) * 100
-
-  // Get color based on score
-  const getColor = (score: number) => {
-    if (score >= 1) return '#10b981' // green
-    if (score >= 0) return '#eab308' // yellow
-    if (score >= -1) return '#f97316' // orange
-    return '#ef4444' // red
+const Speedometer = ({ score }: { score: number | undefined | null }) => {
+  // Handle undefined/null/NaN cases
+  if (score === undefined || score === null || isNaN(score)) {
+    // Return a placeholder/loading state
+    return (
+      <div className="w-24 h-20 flex items-center justify-center">
+        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          {/* Background arc only */}
+          <path 
+            d="M 15 73 A 40 40 0 1 1 85 73" 
+            fill="none" 
+            stroke="#e5e7eb" 
+            strokeWidth="8" 
+            strokeLinecap="round"
+          />
+          {/* Loading text */}
+          <text 
+            x="50" 
+            y="55" 
+            fontFamily="Helvetica, Arial, sans-serif" 
+            fontSize="16" 
+            fill="#9ca3af" 
+            textAnchor="middle" 
+            dominantBaseline="middle"
+          >
+            ...
+          </text>
+        </svg>
+      </div>
+    )
   }
-
-  const color = getColor(normalizedScore)
-
-  // Circle parameters
-  const size = 80
-  const strokeWidth = 6
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
+  
+  // Clamp score between -2 and 2
+  const normalizedScore = Math.round(Math.max(-2, Math.min(2, score)))
+  
+  // Get color and dash offset based on score
+  const getColorAndOffset = (score: number) => {
+    switch(score) {
+      case -2:
+        return { color: '#ef4444', offset: 188.5 } // red, no progress
+      case -1:
+        return { color: '#FF9F0A', offset: 141.4 } // orange-yellow
+      case 0:
+        return { color: '#FFD60A', offset: 94.25 } // yellow
+      case 1:
+        return { color: '#A2D729', offset: 47.1 } // lime green
+      case 2:
+        return { color: '#30D158', offset: 11.8 } // green
+      default:
+        return { color: '#cccccc', offset: 188.5 }
+    }
+  }
+  
+  const { color, offset } = getColorAndOffset(normalizedScore)
 
   return (
-    <div className="w-20 h-20">
-      <svg width={size} height={size} className="transform -rotate-90">
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#e5e7eb"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
+    <div className="w-24 h-20 flex items-center justify-center">
+      <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        {/* Background arc */}
+        <path 
+          d="M 15 73 A 40 40 0 1 1 85 73" 
+          fill="none" 
+          stroke="#cccccc" 
+          strokeWidth="8" 
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          style={{
-            transition: 'stroke-dashoffset 0.5s ease-in-out',
-          }}
         />
+        
+        {/* Progress arc */}
+        <path 
+          d="M 15 73 A 40 40 0 1 1 85 73" 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="8" 
+          strokeLinecap="round" 
+          strokeDasharray="188.5" 
+          strokeDashoffset={offset}
+        />
+        
+        {/* Score text */}
+        <text 
+          x="50" 
+          y="55" 
+          fontFamily="Helvetica, Arial, sans-serif" 
+          fontSize="28" 
+          fontWeight="bold" 
+          fill={color} 
+          textAnchor="middle" 
+          dominantBaseline="middle"
+        >
+          {normalizedScore > 0 ? '+' : ''}{normalizedScore}
+        </text>
       </svg>
-
-      {/* Score number in center */}
-      <div className="relative -mt-16 h-16 flex items-center justify-center">
-        <span className="text-2xl font-bold" style={{ color }}>
-          {normalizedScore > 0 ? '+' : ''}
-          {normalizedScore}
-        </span>
-      </div>
     </div>
   )
 }
@@ -245,6 +276,14 @@ export default function EducationalAnalyzer() {
         60, // Max 60 seconds
       )
 
+      console.log('Analysis Result Received:', result)
+      console.log('Results object:', result.results)
+      if (result.results) {
+        Object.entries(result.results).forEach(([metric, data]: [string, any]) => {
+          console.log(`Metric ${metric}:`, data)
+          console.log(`  Score:`, data?.score, `Type:`, typeof data?.score)
+        })
+      }
       setAnalysisResult(result)
       setCurrentScreen('results')
     } catch (error) {
@@ -297,20 +336,28 @@ export default function EducationalAnalyzer() {
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {analysisResult.results &&
-              Object.entries(analysisResult.results).map(([metric, data]) => (
+              Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => (
                 <Card key={metric} className="border-black border-2 p-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <h3 className="font-bold text-lg text-black">
                         {METRIC_NAMES[metric] || metric}
                       </h3>
-                      <Speedometer score={data.score} />
+                      <Speedometer score={data?.score} />
                     </div>
-                    <p className="text-sm text-gray-700 italic">"{data.comment}"</p>
-                    {data.durationMs && (
-                      <p className="text-xs text-gray-500">
-                        {(data.durationMs / 1000).toFixed(1)}s
-                      </p>
+                    {data?.error ? (
+                      <p className="text-sm text-red-600">Error: {data.error}</p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-700 italic">
+                          {data?.comment ? `"${data.comment}"` : '...'}
+                        </p>
+                        {data?.durationMs && (
+                          <p className="text-xs text-gray-500">
+                            {(data.durationMs / 1000).toFixed(1)}s
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </Card>
@@ -323,7 +370,7 @@ export default function EducationalAnalyzer() {
               <h2 className="text-2xl font-bold text-black mb-6 text-center">Detailed Analysis</h2>
               <div className="space-y-6">
                 {analysisResult.results &&
-                  Object.entries(analysisResult.results).map(([metric, data]) => (
+                  Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => (
                     <div
                       key={metric}
                       className="border-b border-gray-200 last:border-b-0 pb-4 last:pb-0"
@@ -332,8 +379,12 @@ export default function EducationalAnalyzer() {
                         <h3 className="font-bold text-lg text-black">
                           {METRIC_NAMES[metric] || metric}
                         </h3>
-                        <Speedometer score={data.score} />
+                        <Speedometer score={data?.score} />
                       </div>
+                      
+                      {data?.error && (
+                        <p className="text-sm text-red-600 mb-3">Error: {data.error}</p>
+                      )}
 
                       {/* Show detailed analysis if available */}
                       {data.detailed_analysis && (

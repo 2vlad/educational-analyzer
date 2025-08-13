@@ -83,6 +83,8 @@ class ModelsManager {
         return !!env.server.OPENAI_API_KEY
       case 'google':
         return !!env.server.GOOGLE_API_KEY
+      case 'yandex':
+        return !!env.server.YANDEX_API_KEY && !!env.server.YANDEX_FOLDER_ID
       default:
         return false
     }

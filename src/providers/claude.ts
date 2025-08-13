@@ -39,10 +39,19 @@ export class ClaudeProvider implements LLMProvider {
       )
     }
 
-    const modelConfig = modelsManager.getModelConfig('claude-sonnet-4')
+    // Use the default model ID or the one specified in options
+    const modelId = options.model
+      ? options.model === 'claude-3-haiku-20240307'
+        ? 'claude-haiku'
+        : options.model === 'claude-3-5-sonnet-20241022'
+          ? 'claude-sonnet-4'
+          : 'claude-haiku'
+      : 'claude-haiku'
+
+    const modelConfig = modelsManager.getModelConfig(modelId)
     if (!modelConfig) {
       throw new ProviderError(
-        'Claude model configuration not found',
+        `Claude model configuration not found: ${modelId}`,
         ERROR_CODES.INVALID_REQUEST,
         false,
         this.providerName,

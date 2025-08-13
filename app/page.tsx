@@ -161,7 +161,7 @@ export default function EducationalAnalyzer() {
       console.error('Failed to load models:', error)
       // Continue with default model
       // Set a fallback model if API fails
-      setSelectedModel('claude-sonnet-4')
+      setSelectedModel('claude-haiku')
     }
   }
 
@@ -230,13 +230,13 @@ export default function EducationalAnalyzer() {
     if (!content.trim()) return
 
     // Validate model ID - prevent invalid IDs from being sent
-    const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']
     let modelToUse = selectedModel
 
     if (selectedModel && !validModelIds.includes(selectedModel)) {
       console.warn('Invalid model ID detected:', selectedModel)
       console.log('Falling back to default model')
-      modelToUse = 'claude-sonnet-4'
+      modelToUse = 'claude-haiku'
     }
 
     setIsAnalyzing(true)

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     console.log('Content length:', content.length)
 
     // Validate and sanitize model ID
-    const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']
     let finalModelId = modelId
 
     if (modelId && !validModelIds.includes(modelId)) {

@@ -262,7 +262,7 @@ export default function EducationalAnalyzer() {
     setIsAnalyzing(true)
     setError(null)
     setCurrentScreen('loading')
-    setAnalysisProgress(0)
+    setAnalysisProgress(5) // Start with 5% for sending
     setProgressMessage('Отправка на анализ...')
 
     try {
@@ -270,27 +270,43 @@ export default function EducationalAnalyzer() {
       console.log('Starting analysis with model:', modelToUse)
       console.log('Original selected model was:', selectedModel)
       console.log('Content length:', content.length)
+
+      // Update progress to 10% when sending
+      setAnalysisProgress(10)
+
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: modelToUse || undefined,
       })
       console.log('Analysis started with ID:', analysisId)
 
+      setAnalysisProgress(15) // 15% after successful send
       setProgressMessage('Анализирую метрику 1 из 5...')
 
-      // Poll for results
+      // Poll for results with better progress tracking
       const result = await apiService.pollAnalysis(
         analysisId,
         (progress) => {
           // Calculate progress based on completed metrics
           if (progress.metrics) {
             const completed = progress.metrics.filter((m) => m.duration > 0).length
-            setAnalysisProgress((completed / 5) * 100)
-            setProgressMessage(`Анализирую метрику ${completed + 1} из 5...`)
+            // Progress: 15% base + up to 80% for metrics (16% per metric)
+            const newProgress = 15 + completed * 16
+            setAnalysisProgress(newProgress)
+
+            if (completed < 5) {
+              setProgressMessage(`Анализирую метрику ${completed + 1} из 5...`)
+            } else {
+              setProgressMessage('Завершаю анализ...')
+            }
           }
         },
         60, // Max 60 seconds
       )
+
+      // Final progress
+      setAnalysisProgress(100)
+      setProgressMessage('Анализ завершен!')
 
       console.log('Analysis Result Received:', result)
       console.log('Results object:', result.results)
@@ -321,11 +337,24 @@ export default function EducationalAnalyzer() {
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif',
         }}
       >
-        <div className="text-center space-y-6">
+        <div className="text-center space-y-6 max-w-md mx-auto">
           <Loader2 className="h-16 w-16 animate-spin mx-auto text-black" />
-          <div className="space-y-2">
+          <div className="space-y-4">
             <p className="text-xl font-semibold text-black">{progressMessage}</p>
-            <Progress value={analysisProgress} className="w-64 mx-auto" />
+            <div className="space-y-2">
+              <Progress value={analysisProgress} className="w-full h-2" />
+              <p className="text-sm text-gray-600">{Math.round(analysisProgress)}%</p>
+            </div>
+            <div className="text-xs text-gray-500 mt-4">
+              {analysisProgress < 20 && 'Подключаюсь к AI...'}
+              {analysisProgress >= 20 && analysisProgress < 40 && 'Анализирую логику материала...'}
+              {analysisProgress >= 40 &&
+                analysisProgress < 60 &&
+                'Оцениваю практическую ценность...'}
+              {analysisProgress >= 60 && analysisProgress < 80 && 'Проверяю уровень сложности...'}
+              {analysisProgress >= 80 && analysisProgress < 95 && 'Финальная оценка...'}
+              {analysisProgress >= 95 && 'Готово!'}
+            </div>
           </div>
         </div>
       </div>

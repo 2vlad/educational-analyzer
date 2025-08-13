@@ -55,11 +55,7 @@ export class ClaudeProvider implements LLMProvider {
             content: finalPrompt,
           },
         ],
-        // Add timeout using AbortController if needed
-        ...(options.timeoutMs && {
-          signal: globalThis.AbortSignal.timeout(options.timeoutMs),
-        }),
-      } as Anthropic.MessageCreateParams)
+      })
 
       const durationMs = Date.now() - startTime
 
@@ -71,12 +67,15 @@ export class ClaudeProvider implements LLMProvider {
       console.log('Model:', response.model)
       console.log('Usage:', response.usage)
       console.log('Raw text length:', responseText.length)
-      
+
       try {
         const jsonResponse = JSON.parse(responseText)
         console.log('Parsed JSON response:', JSON.stringify(jsonResponse, null, 2))
-      } catch (e) {
-        console.log('Raw text (not valid JSON):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''))
+      } catch {
+        console.log(
+          'Raw text (not valid JSON):',
+          responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
+        )
       }
       console.log('====================\n')
 

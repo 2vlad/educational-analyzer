@@ -175,11 +175,16 @@ export default function EducationalAnalyzer() {
   const loadModels = async () => {
     try {
       const response = await apiService.getModels()
+      console.log('Models response:', response)
+      console.log('Available models:', response.models.filter((m) => m.available))
+      console.log('Default model:', response.defaultModel)
       setModels(response.models.filter((m) => m.available))
       setSelectedModel(response.defaultModel)
     } catch (error) {
       console.error('Failed to load models:', error)
       // Continue with default model
+      // Set a fallback model if API fails
+      setSelectedModel('claude-sonnet-4')
     }
   }
 
@@ -247,6 +252,16 @@ export default function EducationalAnalyzer() {
   const handleAnalyze = async () => {
     if (!content.trim()) return
 
+    // Validate model ID - prevent invalid IDs from being sent
+    const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    let modelToUse = selectedModel
+    
+    if (selectedModel && !validModelIds.includes(selectedModel)) {
+      console.warn('Invalid model ID detected:', selectedModel)
+      console.log('Falling back to default model')
+      modelToUse = 'claude-sonnet-4'
+    }
+
     setIsAnalyzing(true)
     setError(null)
     setCurrentScreen('loading')
@@ -255,10 +270,14 @@ export default function EducationalAnalyzer() {
 
     try {
       // Start analysis
+      console.log('Starting analysis with model:', modelToUse)
+      console.log('Original selected model was:', selectedModel)
+      console.log('Content length:', content.length)
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
-        modelId: selectedModel || undefined,
+        modelId: modelToUse || undefined,
       })
+      console.log('Analysis started with ID:', analysisId)
 
       setProgressMessage('Анализирую метрику 1 из 5...')
 

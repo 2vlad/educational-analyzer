@@ -22,6 +22,7 @@ export class ClaudeProvider implements LLMProvider {
     options: GenerateOptions = {},
   ): Promise<GenerateResult> {
     if (!this.client) {
+      console.error('Anthropic client not initialized - API key missing or invalid')
       throw new ProviderError(
         'Anthropic API key not configured',
         ERROR_CODES.AUTH_ERROR,

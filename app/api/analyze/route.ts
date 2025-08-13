@@ -26,13 +26,30 @@ export async function POST(request: NextRequest) {
     }
 
     const { content, modelId } = validation.data
+    
+    console.log('=== ANALYZE REQUEST ===')
+    console.log('Model ID received:', modelId)
+    console.log('Content length:', content.length)
+    
+    // Validate and sanitize model ID
+    const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
+    let finalModelId = modelId
+    
+    if (modelId && !validModelIds.includes(modelId)) {
+      console.warn('Invalid model ID received:', modelId)
+      console.log('Using default model instead')
+      finalModelId = undefined // Will use default
+    }
+    
+    console.log('Final model to use:', finalModelId || llmService.getCurrentModel())
+    console.log('====================')
 
     // Create analysis record
     const analysisId = globalThis.crypto.randomUUID()
     const analysis: InsertAnalysis = {
       content,
       status: 'running',
-      model_used: modelId || llmService.getCurrentModel(),
+      model_used: finalModelId || llmService.getCurrentModel(),
     }
 
     const { error: insertError } = await supabaseAdmin
@@ -58,8 +75,8 @@ export async function POST(request: NextRequest) {
       try {
         // Analyze with retry
         console.log(`\n📊 Analyzing metric: ${metric}`)
-        const result = modelId
-          ? await llmService.analyzeWithModel(content, metric, modelId)
+        const result = finalModelId
+          ? await llmService.analyzeWithModel(content, metric, finalModelId)
           : await llmService.analyzeWithRetry(content, metric)
 
         console.log(`✅ Metric ${metric} complete:`, {

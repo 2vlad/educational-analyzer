@@ -4,15 +4,15 @@ import modelsConfig from '../../config/models.json'
 
 // Model configuration schema
 const modelSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'google']),
+  provider: z.enum(['anthropic', 'openai', 'google', 'yandex']),
   model: z.string(),
   maxTokens: z.number(),
-  temperature: z.number()
+  temperature: z.number(),
 })
 
 const modelsConfigSchema = z.object({
   default: z.string(),
-  models: z.record(modelSchema)
+  models: z.record(modelSchema),
 })
 
 // Type definitions
@@ -62,20 +62,20 @@ class ModelsManager {
     }
 
     const available: string[] = []
-    
+
     for (const [modelId, config] of Object.entries(this.config.models)) {
       const hasKey = this.hasApiKeyForProvider(config.provider)
       if (hasKey) {
         available.push(modelId)
       }
     }
-    
+
     return available
   }
 
   private hasApiKeyForProvider(provider: string): boolean {
     if (!env.isServer || !env.server) return false
-    
+
     switch (provider) {
       case 'anthropic':
         return !!env.server.ANTHROPIC_API_KEY
@@ -91,11 +91,11 @@ class ModelsManager {
   getNextFallbackModel(currentModelId: string): string | null {
     const available = this.getAvailableModels()
     const currentIndex = available.indexOf(currentModelId)
-    
+
     if (currentIndex === -1 || available.length <= 1) {
       return null
     }
-    
+
     // Return next model in circular fashion
     const nextIndex = (currentIndex + 1) % available.length
     return available[nextIndex]

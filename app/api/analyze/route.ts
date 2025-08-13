@@ -12,6 +12,66 @@ const analyzeRequestSchema = z.object({
   modelId: z.string().optional(),
 })
 
+// Check if content looks like educational material
+function isEducationalContent(content: string): boolean {
+  // Must have at least 100 characters of meaningful content
+  if (content.length < 100) return false
+
+  // Count words (rough estimate)
+  const words = content.split(/\s+/).filter((word) => word.length > 2)
+  if (words.length < 20) return false
+
+  // Check for sentence structure (should have periods, question marks, etc.)
+  const sentences = content.split(/[.!?]+/)
+  if (sentences.length < 2) return false
+
+  // Check if it's just a URL or company name
+  const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
+  if (urlPattern.test(content.trim())) return false
+
+  // Check for educational keywords (at least one should be present)
+  const educationalKeywords = [
+    'learn',
+    'teach',
+    'understand',
+    'explain',
+    'example',
+    'concept',
+    'tutorial',
+    'lesson',
+    'exercise',
+    'practice',
+    'study',
+    'knowledge',
+    'изуч',
+    'урок',
+    'пример',
+    'задач',
+    'объясн',
+    'понима',
+    'практик',
+    'function',
+    'variable',
+    'method',
+    'class',
+    'algorithm',
+    'data',
+    'переменн',
+    'функци',
+    'метод',
+    'класс',
+    'алгоритм',
+    'данн',
+  ]
+
+  const lowerContent = content.toLowerCase()
+  const hasEducationalContent = educationalKeywords.some((keyword) =>
+    lowerContent.includes(keyword),
+  )
+
+  return hasEducationalContent
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate request body
@@ -30,6 +90,19 @@ export async function POST(request: NextRequest) {
     console.log('=== ANALYZE REQUEST ===')
     console.log('Model ID received:', modelId)
     console.log('Content length:', content.length)
+
+    // Check if content is educational
+    if (!isEducationalContent(content)) {
+      console.log('❌ Content rejected: Not educational material')
+      return NextResponse.json(
+        {
+          error: 'Invalid content',
+          details:
+            'Please provide educational content such as a lesson, tutorial, or learning material. Random text or company names cannot be analyzed.',
+        },
+        { status: 400 },
+      )
+    }
 
     // Validate and sanitize model ID
     const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']

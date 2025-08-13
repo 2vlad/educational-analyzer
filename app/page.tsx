@@ -229,6 +229,26 @@ export default function EducationalAnalyzer() {
   const handleAnalyze = async () => {
     if (!content.trim()) return
 
+    // Check if content is too short
+    if (content.trim().length < 100) {
+      setError('Content must be at least 100 characters of educational material')
+      return
+    }
+
+    // Check if content has enough words
+    const words = content.split(/\s+/).filter((word) => word.length > 2)
+    if (words.length < 20) {
+      setError('Please provide substantial educational content (at least 20 words)')
+      return
+    }
+
+    // Check if it's just a URL or random text
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
+    if (urlPattern.test(content.trim())) {
+      setError('URLs cannot be analyzed. Please provide educational content.')
+      return
+    }
+
     // Validate model ID - prevent invalid IDs from being sent
     const validModelIds = ['claude-haiku', 'claude-sonnet-4', 'gpt-4o', 'gemini-pro']
     let modelToUse = selectedModel

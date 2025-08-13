@@ -30,34 +30,7 @@ const METRIC_NAMES: Record<string, string> = {
   care: 'С душой',
 }
 
-// Example recommendations for each metric
-const METRIC_EXAMPLES: Record<string, string[]> = {
-  logic: [
-    'Добавить переходные фразы между разделами',
-    'Использовать нумерованные списки для последовательности',
-    'Создать схему или диаграмму основных понятий',
-  ],
-  practical: [
-    'Добавить чек-лист для практического применения',
-    'Включить реальные кейсы из практики',
-    'Создать шаблоны для самостоятельной работы',
-  ],
-  complexity: [
-    'Добавить глоссарий сложных терминов',
-    'Включить дополнительные материалы для продвинутых',
-    'Создать систему самопроверки знаний',
-  ],
-  interest: [
-    'Начать с интригующего вопроса или факта',
-    'Добавить интерактивные элементы или опросы',
-    'Использовать storytelling и личные истории',
-  ],
-  care: [
-    'Добавить личные примеры из опыта автора',
-    'Включить мотивирующие цитаты или истории успеха',
-    'Создать персональные обращения к студентам',
-  ],
-}
+// Removed hardcoded examples - all content comes from LLM
 
 const Speedometer = ({ score }: { score: number | undefined | null }) => {
   // Handle undefined/null/NaN cases
@@ -67,21 +40,21 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
       <div className="w-24 h-20 flex items-center justify-center">
         <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           {/* Background arc only */}
-          <path 
-            d="M 15 73 A 40 40 0 1 1 85 73" 
-            fill="none" 
-            stroke="#e5e7eb" 
-            strokeWidth="8" 
+          <path
+            d="M 15 73 A 40 40 0 1 1 85 73"
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="8"
             strokeLinecap="round"
           />
           {/* Loading text */}
-          <text 
-            x="50" 
-            y="55" 
-            fontFamily="Helvetica, Arial, sans-serif" 
-            fontSize="16" 
-            fill="#9ca3af" 
-            textAnchor="middle" 
+          <text
+            x="50"
+            y="55"
+            fontFamily="Helvetica, Arial, sans-serif"
+            fontSize="16"
+            fill="#9ca3af"
+            textAnchor="middle"
             dominantBaseline="middle"
           >
             ...
@@ -90,13 +63,13 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
       </div>
     )
   }
-  
+
   // Clamp score between -2 and 2
   const normalizedScore = Math.round(Math.max(-2, Math.min(2, score)))
-  
+
   // Get color and dash offset based on score
   const getColorAndOffset = (score: number) => {
-    switch(score) {
+    switch (score) {
       case -2:
         return { color: '#ef4444', offset: 188.5 } // red, no progress
       case -1:
@@ -111,44 +84,45 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
         return { color: '#cccccc', offset: 188.5 }
     }
   }
-  
+
   const { color, offset } = getColorAndOffset(normalizedScore)
 
   return (
     <div className="w-24 h-20 flex items-center justify-center">
       <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         {/* Background arc */}
-        <path 
-          d="M 15 73 A 40 40 0 1 1 85 73" 
-          fill="none" 
-          stroke="#cccccc" 
-          strokeWidth="8" 
+        <path
+          d="M 15 73 A 40 40 0 1 1 85 73"
+          fill="none"
+          stroke="#cccccc"
+          strokeWidth="8"
           strokeLinecap="round"
         />
-        
+
         {/* Progress arc */}
-        <path 
-          d="M 15 73 A 40 40 0 1 1 85 73" 
-          fill="none" 
-          stroke={color} 
-          strokeWidth="8" 
-          strokeLinecap="round" 
-          strokeDasharray="188.5" 
+        <path
+          d="M 15 73 A 40 40 0 1 1 85 73"
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray="188.5"
           strokeDashoffset={offset}
         />
-        
+
         {/* Score text */}
-        <text 
-          x="50" 
-          y="55" 
-          fontFamily="Helvetica, Arial, sans-serif" 
-          fontSize="28" 
-          fontWeight="bold" 
-          fill={color} 
-          textAnchor="middle" 
+        <text
+          x="50"
+          y="55"
+          fontFamily="Helvetica, Arial, sans-serif"
+          fontSize="28"
+          fontWeight="bold"
+          fill={color}
+          textAnchor="middle"
           dominantBaseline="middle"
         >
-          {normalizedScore > 0 ? '+' : ''}{normalizedScore}
+          {normalizedScore > 0 ? '+' : ''}
+          {normalizedScore}
         </text>
       </svg>
     </div>
@@ -176,7 +150,10 @@ export default function EducationalAnalyzer() {
     try {
       const response = await apiService.getModels()
       console.log('Models response:', response)
-      console.log('Available models:', response.models.filter((m) => m.available))
+      console.log(
+        'Available models:',
+        response.models.filter((m) => m.available),
+      )
       console.log('Default model:', response.defaultModel)
       setModels(response.models.filter((m) => m.available))
       setSelectedModel(response.defaultModel)
@@ -255,7 +232,7 @@ export default function EducationalAnalyzer() {
     // Validate model ID - prevent invalid IDs from being sent
     const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
     let modelToUse = selectedModel
-    
+
     if (selectedModel && !validModelIds.includes(selectedModel)) {
       console.warn('Invalid model ID detected:', selectedModel)
       console.log('Falling back to default model')
@@ -400,7 +377,7 @@ export default function EducationalAnalyzer() {
                         </h3>
                         <Speedometer score={data?.score} />
                       </div>
-                      
+
                       {data?.error && (
                         <p className="text-sm text-red-600 mb-3">Error: {data.error}</p>
                       )}
@@ -431,19 +408,6 @@ export default function EducationalAnalyzer() {
                           </ul>
                         </div>
                       )}
-
-                      {/* Show recommendations */}
-                      <div>
-                        <h4 className="font-semibold text-sm text-black mb-2">Рекомендации:</h4>
-                        <ul className="text-xs text-gray-600 space-y-1">
-                          {METRIC_EXAMPLES[metric]?.map((example, index) => (
-                            <li key={index} className="flex items-start">
-                              <span className="mr-2">•</span>
-                              <span>{example}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     </div>
                   ))}
               </div>

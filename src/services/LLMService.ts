@@ -1,11 +1,17 @@
 import { env } from '@/src/config/env'
 import { modelsManager } from '@/src/config/models'
 import { logger } from '@/src/utils/logger'
-import { getPrompt, getProviderFamily, fillPromptTemplate, getPromptSnippet, type Metric } from '@/src/utils/prompts'
+import {
+  getPrompt,
+  getProviderFamily,
+  fillPromptTemplate,
+  getPromptSnippet,
+  type Metric,
+} from '@/src/utils/prompts'
 import { ClaudeProvider } from '@/src/providers/claude'
 import { OpenAIProvider } from '@/src/providers/openai'
 import { GeminiProvider } from '@/src/providers/gemini'
-import { LLMProvider, GenerateResult, ProviderError, ERROR_CODES } from '@/src/providers/types'
+import { LLMProvider, GenerateResult, ProviderError } from '@/src/providers/types'
 
 export class LLMService {
   private providers: Map<string, LLMProvider> = new Map()
@@ -55,7 +61,7 @@ export class LLMService {
     const providerFamily = getProviderFamily(this.currentProviderId)
     const prompt = getPrompt(providerFamily, metric)
     const filledPrompt = fillPromptTemplate(prompt, content)
-    
+
     console.log('\n📝 LLMService.analyze()')
     console.log('Metric:', metric)
     console.log('Model:', this.currentProviderId)
@@ -64,13 +70,13 @@ export class LLMService {
     console.log('Prompt length:', filledPrompt.length)
 
     // Log request start
-    const analysisId = crypto.randomUUID()
+    const analysisId = globalThis.crypto.randomUUID()
     logger.llmRequestStart({
       analysisId,
       metric,
       model: this.currentProviderId,
       promptLength: filledPrompt.length,
-      contentLength: content.length
+      contentLength: content.length,
     })
 
     try {
@@ -80,7 +86,7 @@ export class LLMService {
         model: modelConfig.model,
         temperature: modelConfig.temperature,
         maxTokens: modelConfig.maxTokens,
-        timeoutMs: env.server?.REQUEST_TIMEOUT || 30000
+        timeoutMs: env.server?.REQUEST_TIMEOUT || 30000,
       })
 
       // Log success
@@ -90,7 +96,7 @@ export class LLMService {
         model: this.currentProviderId,
         duration: result.durationMs,
         tokensUsed: result.tokensUsed,
-        success: true
+        success: true,
       })
 
       return result
@@ -102,7 +108,7 @@ export class LLMService {
         model: this.currentProviderId,
         error: error instanceof Error ? error.message : 'Unknown error',
         retryCount: 0,
-        promptSnippet: getPromptSnippet(filledPrompt)
+        promptSnippet: getPromptSnippet(filledPrompt),
       })
 
       throw error
@@ -110,9 +116,9 @@ export class LLMService {
   }
 
   async analyzeWithRetry(
-    content: string, 
-    metric: Metric, 
-    maxRetries?: number
+    content: string,
+    metric: Metric,
+    maxRetries?: number,
   ): Promise<GenerateResult> {
     const retries = maxRetries || env.server?.MAX_RETRIES || 3
     let lastError: Error | undefined
@@ -120,15 +126,15 @@ export class LLMService {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         const result = await this.analyze(content, metric)
-        
+
         if (attempt > 1) {
           logger.llmSuccess({ metric, attempt })
         }
-        
+
         return result
       } catch (error) {
         lastError = error as Error
-        
+
         // Check if error is retryable
         if (error instanceof ProviderError && !error.retryable) {
           throw error
@@ -137,24 +143,31 @@ export class LLMService {
         logger.llmRetry({
           metric,
           attempt,
-          error: lastError.message
+          error: lastError.message,
         })
+
+        // Add exponential backoff delay before retry (except on last attempt)
+        if (attempt < retries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000) // 1s, 2s, 4s, max 10s
+          console.log(`⏳ Waiting ${delay}ms before retry attempt ${attempt + 1}/${retries}...`)
+          await new Promise((resolve) => globalThis.setTimeout(resolve, delay))
+        }
 
         // If this was the last attempt and model switching is enabled, try fallback
         if (attempt === retries && modelsManager.isModelSwitchingEnabled()) {
           const fallbackModel = modelsManager.getNextFallbackModel(this.currentProviderId)
-          
+
           if (fallbackModel) {
             logger.modelFallback({ metric, fallbackModel })
-            
+
             // Switch to fallback model and try once more
             const oldModel = this.currentProviderId
             this.currentProviderId = fallbackModel
-            
+
             logger.modelSwitch({
               from: oldModel,
               to: fallbackModel,
-              reason: 'Max retries reached'
+              reason: 'Max retries reached',
             })
 
             try {
@@ -170,7 +183,7 @@ export class LLMService {
         // Add exponential backoff between retries
         if (attempt < retries) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000)
-          await new Promise(resolve => setTimeout(resolve, delay))
+          await new Promise((resolve) => globalThis.setTimeout(resolve, delay))
         }
       }
     }
@@ -179,9 +192,9 @@ export class LLMService {
   }
 
   async analyzeWithModel(
-    content: string, 
-    metric: Metric, 
-    providerId: string
+    content: string,
+    metric: Metric,
+    providerId: string,
   ): Promise<GenerateResult> {
     const oldModel = this.currentProviderId
     this.currentProviderId = providerId
@@ -190,7 +203,7 @@ export class LLMService {
       logger.modelSwitch({
         from: oldModel,
         to: providerId,
-        reason: 'Explicit model selection'
+        reason: 'Explicit model selection',
       })
 
       return await this.analyze(content, metric)

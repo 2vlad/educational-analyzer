@@ -10,9 +10,17 @@ export class ClaudeProvider implements LLMProvider {
 
   constructor() {
     if (env.isServer && env.server?.ANTHROPIC_API_KEY) {
+      console.log(
+        '🔑 Claude Provider: Initializing with API key:',
+        env.server.ANTHROPIC_API_KEY.substring(0, 20) + '...',
+      )
       this.client = new Anthropic({
         apiKey: env.server.ANTHROPIC_API_KEY,
       })
+    } else {
+      console.log('⚠️ Claude Provider: No API key found in environment')
+      console.log('env.isServer:', env.isServer)
+      console.log('env.server:', env.server)
     }
   }
 

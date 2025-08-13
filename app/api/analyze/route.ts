@@ -26,21 +26,21 @@ export async function POST(request: NextRequest) {
     }
 
     const { content, modelId } = validation.data
-    
+
     console.log('=== ANALYZE REQUEST ===')
     console.log('Model ID received:', modelId)
     console.log('Content length:', content.length)
-    
+
     // Validate and sanitize model ID
     const validModelIds = ['claude-sonnet-4', 'gpt-4o', 'gemini-pro']
     let finalModelId = modelId
-    
+
     if (modelId && !validModelIds.includes(modelId)) {
       console.warn('Invalid model ID received:', modelId)
       console.log('Using default model instead')
       finalModelId = undefined // Will use default
     }
-    
+
     console.log('Final model to use:', finalModelId || llmService.getCurrentModel())
     console.log('====================')
 
@@ -69,12 +69,28 @@ export async function POST(request: NextRequest) {
       metricsCount: METRICS.length,
     })
 
-    // Run all metrics in parallel
+    // Run metrics sequentially with delay to avoid rate limiting
     const startTime = Date.now()
-    const metricPromises = METRICS.map(async (metric) => {
+    const metricResults: Array<{
+      metric: string
+      success: boolean
+      result?: any
+      error?: string
+    }> = []
+
+    // Process metrics sequentially with 1 second delay between requests
+    for (let i = 0; i < METRICS.length; i++) {
+      const metric = METRICS[i]
+
+      // Add delay between requests (except for the first one)
+      if (i > 0) {
+        console.log(`⏳ Waiting 1 second before next metric to avoid rate limiting...`)
+        await new Promise((resolve) => globalThis.setTimeout(resolve, 1000))
+      }
+
       try {
         // Analyze with retry
-        console.log(`\n📊 Analyzing metric: ${metric}`)
+        console.log(`\n📊 Analyzing metric ${i + 1}/${METRICS.length}: ${metric}`)
         const result = finalModelId
           ? await llmService.analyzeWithModel(content, metric, finalModelId)
           : await llmService.analyzeWithRetry(content, metric)
@@ -99,12 +115,17 @@ export async function POST(request: NextRequest) {
 
         await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
-        return {
+        metricResults.push({
           metric,
           success: true,
           result,
-        }
+        })
       } catch (error) {
+        console.log(
+          `❌ Metric ${metric} failed:`,
+          error instanceof Error ? error.message : 'Unknown error',
+        )
+
         // Store failed LLM request
         const llmRequest: InsertLLMRequest = {
           analysis_id: analysisId,
@@ -114,16 +135,14 @@ export async function POST(request: NextRequest) {
 
         await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
-        return {
+        metricResults.push({
           metric,
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
-        }
+        })
       }
-    })
+    }
 
-    // Wait for all metrics to complete
-    const metricResults = await Promise.allSettled(metricPromises)
     const totalDuration = Date.now() - startTime
 
     // Process results
@@ -131,24 +150,20 @@ export async function POST(request: NextRequest) {
     let successCount = 0
     let failCount = 0
 
-    for (const settledResult of metricResults) {
-      if (settledResult.status === 'fulfilled') {
-        const { metric, success, result, error } = settledResult.value
-        if (success && result) {
-          results[metric] = {
-            score: result.score,
-            comment: result.comment,
-            examples: result.examples,
-            detailed_analysis: result.detailed_analysis,
-            durationMs: result.durationMs,
-            model: result.model,
-          }
-          successCount++
-        } else {
-          results[metric] = { error }
-          failCount++
+    for (const metricResult of metricResults) {
+      const { metric, success, result, error } = metricResult
+      if (success && result) {
+        results[metric] = {
+          score: result.score,
+          comment: result.comment,
+          examples: result.examples,
+          detailed_analysis: result.detailed_analysis,
+          durationMs: result.durationMs,
+          model: result.model,
         }
+        successCount++
       } else {
+        results[metric] = { error }
         failCount++
       }
     }
@@ -178,7 +193,7 @@ export async function POST(request: NextRequest) {
       successfulMetrics: successCount,
       failedMetrics: failCount,
     })
-    
+
     console.log('\n🎯 ANALYSIS COMPLETE')
     console.log('Analysis ID:', analysisId)
     console.log('Status:', finalStatus)

@@ -19,8 +19,6 @@ import {
   type AnalysisResult as ApiAnalysisResult,
   type Model,
 } from '@/src/services/api'
-import { useProgressStream } from '@/src/hooks/useProgressStream'
-import type { AnalysisProgress } from '@/src/services/ProgressService'
 import { ProgressTracker } from '@/components/ProgressTracker'
 import { ModernProgressTracker } from '@/components/ModernProgressTracker'
 import { MinimalProgressTracker } from '@/components/MinimalProgressTracker'
@@ -144,36 +142,6 @@ export default function EducationalAnalyzer() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
-  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null)
-  const [streamProgress, setStreamProgress] = useState<AnalysisProgress | null>(null)
-
-  // Use SSE hook for real-time progress
-  useProgressStream(currentAnalysisId, {
-    onProgress: (progress) => {
-      setStreamProgress(progress)
-      setAnalysisProgress(progress.overallProgress)
-      setProgressMessage(progress.message)
-    },
-    onComplete: async () => {
-      // Fetch final results when progress completes
-      if (currentAnalysisId) {
-        try {
-          const result = await apiService.getAnalysis(currentAnalysisId)
-          setAnalysisResult(result)
-          setCurrentScreen('results')
-        } catch (error) {
-          console.error('Failed to fetch final results:', error)
-          setError('Failed to fetch analysis results')
-          setCurrentScreen('upload')
-        }
-      }
-      setIsAnalyzing(false)
-    },
-    onError: (error) => {
-      console.error('Progress stream error:', error)
-      // Fall back to polling if SSE fails
-    },
-  })
 
   // Load available models on mount
   useEffect(() => {
@@ -323,69 +291,65 @@ export default function EducationalAnalyzer() {
       })
       console.log('Analysis started with ID:', analysisId)
 
-      // Set the analysis ID to trigger SSE connection
-      setCurrentAnalysisId(analysisId)
+      // Simple progress simulation and polling
+      let completed = 0
+      const metrics = ['logic', 'practical', 'complexity', 'interest', 'care']
 
-      // Start polling as fallback (SSE doesn't work well in Vercel serverless)
-      // Poll every 2 seconds for status updates
-      const pollInterval = window.setInterval(async () => {
+      // Set progress messages
+      const progressMessages = [
+        'Анализ логики...',
+        'Оценка практичности...',
+        'Проверка сложности...',
+        'Анализ интереса...',
+        'Оценка качества...',
+      ]
+
+      // Update progress to 15% after initial delay
+      window.setTimeout(() => {
+        setAnalysisProgress(15)
+        setProgressMessage(progressMessages[0])
+      }, 1000)
+
+      // Poll for results
+      const checkInterval = window.setInterval(async () => {
         try {
           const result = await apiService.getAnalysis(analysisId)
 
-          // Calculate progress based on completed metrics
-          const metrics = ['logic', 'practical', 'complexity', 'interest', 'care']
-          const completedCount = metrics.filter(
-            (m) => result.metrics[m]?.score !== undefined,
-          ).length
-          const newProgress = Math.min(10 + completedCount * 18, 95) // 10% base + 18% per metric, max 95%
+          // Count completed metrics
+          const completedNow = metrics.filter((m) => result.metrics[m]?.score !== undefined).length
 
-          // Smooth progress update
-          if (newProgress > analysisProgress) {
+          if (completedNow > completed) {
+            completed = completedNow
+            const newProgress = 15 + completed * 16 // Spread progress evenly
             setAnalysisProgress(newProgress)
-          }
 
-          // Update message based on current metric being processed
-          if (completedCount < metrics.length) {
-            const currentMetric = metrics[completedCount]
-            const metricNames: Record<string, string> = {
-              logic: 'Анализ логики...',
-              practical: 'Оценка практичности...',
-              complexity: 'Проверка сложности...',
-              interest: 'Анализ интереса...',
-              care: 'Оценка качества...',
+            if (completed < metrics.length) {
+              setProgressMessage(progressMessages[completed] || 'Обработка...')
             }
-            setProgressMessage(metricNames[currentMetric] || 'Обработка...')
           }
 
-          // Check if analysis is complete
-          if (result.status === 'completed' || completedCount === metrics.length) {
-            window.clearInterval(pollInterval)
-            setAnalysisResult(result)
+          // Check if complete
+          if (result.status === 'completed' || completed === metrics.length) {
+            window.clearInterval(checkInterval)
             setAnalysisProgress(100)
             setProgressMessage('Готово!')
+            setAnalysisResult(result)
+
             window.setTimeout(() => {
               setCurrentScreen('results')
               setIsAnalyzing(false)
             }, 500)
-          } else if (result.status === 'failed') {
-            window.clearInterval(pollInterval)
-            throw new Error('Analysis failed')
           }
         } catch (error) {
-          console.error('Polling error:', error)
-          window.clearInterval(pollInterval)
-          setError('Failed to get analysis status')
-          setCurrentScreen('upload')
-          setIsAnalyzing(false)
+          console.error('Failed to check status:', error)
         }
-      }, 2000)
+      }, 3000) // Check every 3 seconds
     } catch (error) {
       console.error('Analysis failed:', error)
       setError(error instanceof Error ? error.message : 'Analysis failed')
       setCurrentScreen('upload')
       setIsAnalyzing(false)
       setAnalysisProgress(0)
-      setCurrentAnalysisId(null)
     }
   }
 
@@ -400,7 +364,7 @@ export default function EducationalAnalyzer() {
       case 'minimal':
         return (
           <MinimalProgressTracker
-            progress={streamProgress}
+            progress={null}
             overallProgress={analysisProgress}
             message={progressMessage}
           />
@@ -408,7 +372,7 @@ export default function EducationalAnalyzer() {
       case 'modern':
         return (
           <ModernProgressTracker
-            progress={streamProgress}
+            progress={null}
             overallProgress={analysisProgress}
             message={progressMessage}
           />
@@ -417,7 +381,7 @@ export default function EducationalAnalyzer() {
       default:
         return (
           <ProgressTracker
-            progress={streamProgress}
+            progress={null}
             overallProgress={analysisProgress}
             message={progressMessage}
           />
@@ -535,8 +499,6 @@ export default function EducationalAnalyzer() {
                 setContent('')
                 setAnalysisResult(null)
                 setError(null)
-                setCurrentAnalysisId(null)
-                setStreamProgress(null)
                 setAnalysisProgress(0)
                 setProgressMessage('')
               }}

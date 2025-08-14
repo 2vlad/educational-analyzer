@@ -521,7 +521,8 @@ export default function EducationalAnalyzer() {
                 <SelectTrigger className="w-full border-gray-300">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[400px]">
+                  {console.log('Rendering models in dropdown:', models)}
                   {models.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
                       {model.name} {model.default && '(Default)'}

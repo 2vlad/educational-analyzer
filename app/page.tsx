@@ -326,8 +326,59 @@ export default function EducationalAnalyzer() {
       // Set the analysis ID to trigger SSE connection
       setCurrentAnalysisId(analysisId)
 
-      // The SSE hook will handle progress updates and completion
-      // No need for polling anymore as SSE provides real-time updates
+      // Start polling as fallback (SSE doesn't work well in Vercel serverless)
+      // Poll every 2 seconds for status updates
+      const pollInterval = window.setInterval(async () => {
+        try {
+          const result = await apiService.getAnalysis(analysisId)
+
+          // Calculate progress based on completed metrics
+          const metrics = ['logic', 'practical', 'complexity', 'interest', 'care']
+          const completedCount = metrics.filter(
+            (m) => result.metrics[m]?.score !== undefined,
+          ).length
+          const newProgress = Math.min(10 + completedCount * 18, 95) // 10% base + 18% per metric, max 95%
+
+          // Smooth progress update
+          if (newProgress > analysisProgress) {
+            setAnalysisProgress(newProgress)
+          }
+
+          // Update message based on current metric being processed
+          if (completedCount < metrics.length) {
+            const currentMetric = metrics[completedCount]
+            const metricNames: Record<string, string> = {
+              logic: 'Анализ логики...',
+              practical: 'Оценка практичности...',
+              complexity: 'Проверка сложности...',
+              interest: 'Анализ интереса...',
+              care: 'Оценка качества...',
+            }
+            setProgressMessage(metricNames[currentMetric] || 'Обработка...')
+          }
+
+          // Check if analysis is complete
+          if (result.status === 'completed' || completedCount === metrics.length) {
+            window.clearInterval(pollInterval)
+            setAnalysisResult(result)
+            setAnalysisProgress(100)
+            setProgressMessage('Готово!')
+            window.setTimeout(() => {
+              setCurrentScreen('results')
+              setIsAnalyzing(false)
+            }, 500)
+          } else if (result.status === 'failed') {
+            window.clearInterval(pollInterval)
+            throw new Error('Analysis failed')
+          }
+        } catch (error) {
+          console.error('Polling error:', error)
+          window.clearInterval(pollInterval)
+          setError('Failed to get analysis status')
+          setCurrentScreen('upload')
+          setIsAnalyzing(false)
+        }
+      }, 2000)
     } catch (error) {
       console.error('Analysis failed:', error)
       setError(error instanceof Error ? error.message : 'Analysis failed')

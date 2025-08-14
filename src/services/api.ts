@@ -17,16 +17,18 @@ export interface AnalysisResult {
   created_at: string
   updated_at: string
   results?: {
-    [metric: string]: {
-      score: number
-      comment: string
-      examples: string[]
-      detailed_analysis?: string
-      durationMs: number
-      model: string
-    } | {
-      error: string
-    }
+    [metric: string]:
+      | {
+          score: number
+          comment: string
+          examples: string[]
+          detailed_analysis?: string
+          durationMs: number
+          model: string
+        }
+      | {
+          error: string
+        }
   }
   metrics: Array<{
     metric: string
@@ -58,6 +60,11 @@ class ApiService {
   private baseUrl = ''
 
   async analyze(request: AnalyzeRequest): Promise<AnalyzeResponse> {
+    console.log('[API] Calling /api/analyze with:', {
+      contentLength: request.content.length,
+      modelId: request.modelId,
+    })
+
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: {
@@ -66,23 +73,39 @@ class ApiService {
       body: JSON.stringify(request),
     })
 
+    console.log('[API] /api/analyze response status:', response.status)
+
     if (!response.ok) {
       const error = await response.json()
+      console.error('[API] /api/analyze error:', error)
       throw new Error(error.error || 'Failed to analyze content')
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log('[API] /api/analyze success, analysis ID:', data.analysisId)
+    return data
   }
 
   async getAnalysis(id: string): Promise<AnalysisResult> {
+    console.log(`[API] Fetching analysis status for ID: ${id}`)
     const response = await fetch(`/api/analysis/${id}`)
+
+    console.log(`[API] /api/analysis/${id} response status:`, response.status)
 
     if (!response.ok) {
       const error = await response.json()
+      console.error(`[API] /api/analysis/${id} error:`, error)
       throw new Error(error.error || 'Failed to fetch analysis')
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log(
+      `[API] Analysis status:`,
+      data.status,
+      'Metrics count:',
+      Object.keys(data.metrics || {}).length,
+    )
+    return data
   }
 
   async getModels(): Promise<ModelsResponse> {

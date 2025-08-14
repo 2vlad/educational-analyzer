@@ -278,18 +278,22 @@ export default function EducationalAnalyzer() {
 
     try {
       // Start analysis
-      console.log('Starting analysis with model:', modelToUse)
-      console.log('Original selected model was:', selectedModel)
+      console.log('====== STARTING ANALYSIS ======')
+      console.log('Model:', modelToUse)
       console.log('Content length:', content.length)
+      console.log('First 100 chars:', content.substring(0, 100))
 
       // Update progress to 10% when sending
       setAnalysisProgress(10)
 
+      console.log('Calling apiService.analyze...')
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: modelToUse || undefined,
       })
-      console.log('Analysis started with ID:', analysisId)
+      console.log('✅ Analysis started successfully!')
+      console.log('Analysis ID:', analysisId)
+      console.log('================================')
 
       // Simple progress simulation and polling
       let completed = 0
@@ -311,25 +315,41 @@ export default function EducationalAnalyzer() {
       }, 1000)
 
       // Poll for results
+      let pollCount = 0
       const checkInterval = window.setInterval(async () => {
+        pollCount++
+        console.log(`[POLL ${pollCount}] Checking analysis status for ID: ${analysisId}`)
+
         try {
           const result = await apiService.getAnalysis(analysisId)
+          console.log(`[POLL ${pollCount}] Result status:`, result.status)
+          console.log(`[POLL ${pollCount}] Metrics:`, result.metrics)
 
           // Count completed metrics
-          const completedNow = metrics.filter((m) => result.metrics[m]?.score !== undefined).length
+          const completedNow = metrics.filter((m) => {
+            const hasScore = result.metrics[m]?.score !== undefined
+            console.log(`[POLL ${pollCount}] Metric ${m}: score exists = ${hasScore}`)
+            return hasScore
+          }).length
+
+          console.log(`[POLL ${pollCount}] Completed metrics: ${completedNow}/${metrics.length}`)
 
           if (completedNow > completed) {
             completed = completedNow
             const newProgress = 15 + completed * 16 // Spread progress evenly
+            console.log(`[POLL ${pollCount}] Updating progress to ${newProgress}%`)
             setAnalysisProgress(newProgress)
 
             if (completed < metrics.length) {
-              setProgressMessage(progressMessages[completed] || 'Обработка...')
+              const nextMessage = progressMessages[completed] || 'Обработка...'
+              console.log(`[POLL ${pollCount}] Setting message: ${nextMessage}`)
+              setProgressMessage(nextMessage)
             }
           }
 
           // Check if complete
           if (result.status === 'completed' || completed === metrics.length) {
+            console.log(`[POLL ${pollCount}] Analysis complete! Status: ${result.status}`)
             window.clearInterval(checkInterval)
             setAnalysisProgress(100)
             setProgressMessage('Готово!')
@@ -339,9 +359,24 @@ export default function EducationalAnalyzer() {
               setCurrentScreen('results')
               setIsAnalyzing(false)
             }, 500)
+          } else if (result.status === 'failed') {
+            console.error(`[POLL ${pollCount}] Analysis failed!`)
+            window.clearInterval(checkInterval)
+            setError('Analysis failed. Please try again.')
+            setCurrentScreen('upload')
+            setIsAnalyzing(false)
           }
         } catch (error) {
-          console.error('Failed to check status:', error)
+          console.error(`[POLL ${pollCount}] Failed to check status:`, error)
+          // Don't stop polling on error - might be temporary network issue
+          if (pollCount > 30) {
+            // Stop after 90 seconds
+            console.error(`[POLL ${pollCount}] Giving up after 30 attempts`)
+            window.clearInterval(checkInterval)
+            setError('Analysis timeout. Please try again.')
+            setCurrentScreen('upload')
+            setIsAnalyzing(false)
+          }
         }
       }, 3000) // Check every 3 seconds
     } catch (error) {

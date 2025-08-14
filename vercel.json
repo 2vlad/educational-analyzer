@@ -6,5 +6,8 @@
   "framework": "nextjs",
   "env": {
     "NODE_ENV": "production"
+  },
+  "git": {
+    "deploymentEnabled": true
   }
 }

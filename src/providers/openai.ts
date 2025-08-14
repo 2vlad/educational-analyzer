@@ -16,13 +16,17 @@ export class OpenAIProvider implements LLMProvider {
     }
   }
 
-  async generate(prompt: string, content: string, options: GenerateOptions = {}): Promise<GenerateResult> {
+  async generate(
+    prompt: string,
+    content: string,
+    options: GenerateOptions = {},
+  ): Promise<GenerateResult> {
     if (!this.client) {
       throw new ProviderError(
         'OpenAI API key not configured',
         ERROR_CODES.AUTH_ERROR,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -32,7 +36,7 @@ export class OpenAIProvider implements LLMProvider {
         'GPT model configuration not found',
         ERROR_CODES.INVALID_REQUEST,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -47,21 +51,17 @@ export class OpenAIProvider implements LLMProvider {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that analyzes educational content.'
+            content: 'You are a helpful assistant that analyzes educational content.',
           },
           {
             role: 'user',
-            content: finalPrompt
-          }
+            content: finalPrompt,
+          },
         ],
-        // Add timeout using AbortController if needed
-        ...(options.timeoutMs && {
-          signal: AbortSignal.timeout(options.timeoutMs)
-        })
-      } as any)
+      })
 
       const durationMs = Date.now() - startTime
-      
+
       // Extract text from response
       const responseText = response.choices[0]?.message?.content || ''
 
@@ -74,34 +74,39 @@ export class OpenAIProvider implements LLMProvider {
         tokensUsed: response.usage?.total_tokens,
         durationMs,
         provider: this.providerName,
-        model: response.model
+        model: response.model,
       }
     } catch (error: any) {
       // Handle different error types
       if (error.name === 'AbortError') {
+        throw new ProviderError('Request timeout', ERROR_CODES.TIMEOUT, true, this.providerName)
+      }
+
+      // Check for insufficient quota error
+      if (error.code === 'insufficient_quota' || error.error?.code === 'insufficient_quota') {
         throw new ProviderError(
-          'Request timeout',
-          ERROR_CODES.TIMEOUT,
-          true,
-          this.providerName
+          'OpenAI API quota exceeded. Please check your billing details',
+          ERROR_CODES.RATE_LIMIT,
+          false,
+          this.providerName,
         )
       }
-      
+
       if (error.status === 429) {
         throw new ProviderError(
           'Rate limit exceeded',
           ERROR_CODES.RATE_LIMIT,
           true,
-          this.providerName
+          this.providerName,
         )
       }
-      
+
       if (error.status === 401) {
         throw new ProviderError(
           'Authentication failed',
           ERROR_CODES.AUTH_ERROR,
           false,
-          this.providerName
+          this.providerName,
         )
       }
 
@@ -109,7 +114,7 @@ export class OpenAIProvider implements LLMProvider {
         error.message || 'Provider error',
         ERROR_CODES.PROVIDER_ERROR,
         error.status >= 500,
-        this.providerName
+        this.providerName,
       )
     }
   }

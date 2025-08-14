@@ -39,11 +39,26 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count INTEGER NOT NULL DEFAULT 1
 );
 
+-- Progress tracking table for real-time updates
+CREATE TABLE IF NOT EXISTS analysis_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
+  progress DECIMAL(5,2) NOT NULL CHECK (progress >= 0 AND progress <= 100),
+  message TEXT NOT NULL,
+  metric_status JSONB, -- { metric: string, status: 'pending' | 'processing' | 'completed', progress: number }[]
+  current_metric TEXT,
+  completed_metrics INTEGER DEFAULT 0,
+  total_metrics INTEGER DEFAULT 5,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_llm_requests_analysis_id ON llm_requests(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_system_logs_timestamp ON system_logs(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rate_limits_window_start ON rate_limits(window_start);
+CREATE INDEX IF NOT EXISTS idx_analysis_progress_analysis_id ON analysis_progress(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_analysis_progress_created_at ON analysis_progress(created_at DESC);
 
 -- Add updated_at trigger for analyses table
 CREATE OR REPLACE FUNCTION update_updated_at_column()

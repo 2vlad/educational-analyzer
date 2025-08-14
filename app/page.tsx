@@ -20,6 +20,8 @@ import {
   type AnalysisResult as ApiAnalysisResult,
   type Model,
 } from '@/src/services/api'
+import { useProgressStream } from '@/src/hooks/useProgressStream'
+import type { AnalysisProgress } from '@/src/services/ProgressService'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -140,6 +142,36 @@ export default function EducationalAnalyzer() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null)
+  const [streamProgress, setStreamProgress] = useState<AnalysisProgress | null>(null)
+
+  // Use SSE hook for real-time progress
+  useProgressStream(currentAnalysisId, {
+    onProgress: (progress) => {
+      setStreamProgress(progress)
+      setAnalysisProgress(progress.overallProgress)
+      setProgressMessage(progress.message)
+    },
+    onComplete: async () => {
+      // Fetch final results when progress completes
+      if (currentAnalysisId) {
+        try {
+          const result = await apiService.getAnalysis(currentAnalysisId)
+          setAnalysisResult(result)
+          setCurrentScreen('results')
+        } catch (error) {
+          console.error('Failed to fetch final results:', error)
+          setError('Failed to fetch analysis results')
+          setCurrentScreen('upload')
+        }
+      }
+      setIsAnalyzing(false)
+    },
+    onError: (error) => {
+      console.error('Progress stream error:', error)
+      // Fall back to polling if SSE fails
+    },
+  })
 
   // Load available models on mount
   useEffect(() => {
@@ -286,51 +318,18 @@ export default function EducationalAnalyzer() {
       })
       console.log('Analysis started with ID:', analysisId)
 
-      setAnalysisProgress(15) // 15% after successful send
-      setProgressMessage('Анализирую метрику 1 из 5...')
+      // Set the analysis ID to trigger SSE connection
+      setCurrentAnalysisId(analysisId)
 
-      // Poll for results with better progress tracking
-      const result = await apiService.pollAnalysis(
-        analysisId,
-        (progress) => {
-          // Calculate progress based on completed metrics
-          if (progress.metrics) {
-            const completed = progress.metrics.filter((m) => m.duration > 0).length
-            // Progress: 15% base + up to 80% for metrics (16% per metric)
-            const newProgress = 15 + completed * 16
-            setAnalysisProgress(newProgress)
-
-            if (completed < 5) {
-              setProgressMessage(`Анализирую метрику ${completed + 1} из 5...`)
-            } else {
-              setProgressMessage('Завершаю анализ...')
-            }
-          }
-        },
-        60, // Max 60 seconds
-      )
-
-      // Final progress
-      setAnalysisProgress(100)
-      setProgressMessage('Анализ завершен!')
-
-      console.log('Analysis Result Received:', result)
-      console.log('Results object:', result.results)
-      if (result.results) {
-        Object.entries(result.results).forEach(([metric, data]: [string, any]) => {
-          console.log(`Metric ${metric}:`, data)
-          console.log(`  Score:`, data?.score, `Type:`, typeof data?.score)
-        })
-      }
-      setAnalysisResult(result)
-      setCurrentScreen('results')
+      // The SSE hook will handle progress updates and completion
+      // No need for polling anymore as SSE provides real-time updates
     } catch (error) {
       console.error('Analysis failed:', error)
       setError(error instanceof Error ? error.message : 'Analysis failed')
       setCurrentScreen('upload')
-    } finally {
       setIsAnalyzing(false)
       setAnalysisProgress(0)
+      setCurrentAnalysisId(null)
     }
   }
 
@@ -343,23 +342,65 @@ export default function EducationalAnalyzer() {
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif',
         }}
       >
-        <div className="text-center space-y-6 max-w-md mx-auto">
+        <div className="text-center space-y-6 max-w-lg mx-auto">
           <Loader2 className="h-16 w-16 animate-spin mx-auto text-black" />
           <div className="space-y-4">
             <p className="text-xl font-semibold text-black">{progressMessage}</p>
             <div className="space-y-2">
-              <Progress value={analysisProgress} className="w-full h-2" />
+              <Progress value={analysisProgress} className="w-full h-3 transition-all duration-300" />
               <p className="text-sm text-gray-600">{Math.round(analysisProgress)}%</p>
             </div>
+            
+            {/* Metric Progress Indicators */}
+            {streamProgress && streamProgress.metricStatus && (
+              <div className="mt-6 space-y-2">
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Progress by Metric</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {streamProgress.metricStatus.map((metric, index) => (
+                    <div key={metric.metric} className="text-center">
+                      <div className="relative">
+                        <div 
+                          className={`w-12 h-12 mx-auto rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            metric.status === 'completed' 
+                              ? 'bg-green-100 border-green-500' 
+                              : metric.status === 'processing'
+                              ? 'bg-blue-100 border-blue-500 animate-pulse'
+                              : metric.status === 'failed'
+                              ? 'bg-red-100 border-red-500'
+                              : 'bg-gray-100 border-gray-300'
+                          }`}
+                        >
+                          {metric.status === 'completed' ? (
+                            <span className="text-green-600 font-bold">✓</span>
+                          ) : metric.status === 'processing' ? (
+                            <span className="text-blue-600 text-xs">{Math.round(metric.progress)}%</span>
+                          ) : metric.status === 'failed' ? (
+                            <span className="text-red-600 font-bold">✗</span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">{index + 1}</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {METRIC_NAMES[metric.metric] || metric.metric}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="text-xs text-gray-500 mt-4">
-              {analysisProgress < 20 && 'Подключаюсь к AI...'}
-              {analysisProgress >= 20 && analysisProgress < 40 && 'Анализирую логику материала...'}
-              {analysisProgress >= 40 &&
-                analysisProgress < 60 &&
-                'Оцениваю практическую ценность...'}
-              {analysisProgress >= 60 && analysisProgress < 80 && 'Проверяю уровень сложности...'}
-              {analysisProgress >= 80 && analysisProgress < 95 && 'Финальная оценка...'}
-              {analysisProgress >= 95 && 'Готово!'}
+              {streamProgress?.currentMetric && (
+                <p className="font-medium">
+                  Currently analyzing: {METRIC_NAMES[streamProgress.currentMetric] || streamProgress.currentMetric}
+                </p>
+              )}
+              {streamProgress && (
+                <p className="mt-1">
+                  {streamProgress.completedMetrics} of {streamProgress.totalMetrics} metrics completed
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -477,6 +518,10 @@ export default function EducationalAnalyzer() {
                 setContent('')
                 setAnalysisResult(null)
                 setError(null)
+                setCurrentAnalysisId(null)
+                setStreamProgress(null)
+                setAnalysisProgress(0)
+                setProgressMessage('')
               }}
               className="px-8 py-3 border border-gray-400 text-gray-700 bg-white hover:bg-gray-700 hover:text-white transition-colors"
             >

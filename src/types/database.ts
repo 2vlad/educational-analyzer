@@ -50,8 +50,21 @@ export interface RateLimit {
   count: number
 }
 
+export interface AnalysisProgressRecord {
+  id: string
+  analysis_id: string
+  progress: number
+  message: string
+  metric_status?: any // JSONB
+  current_metric?: string
+  completed_metrics: number
+  total_metrics: number
+  created_at: string
+}
+
 // Insert types (without auto-generated fields)
 export type InsertAnalysis = Omit<Analysis, 'id' | 'created_at' | 'updated_at'>
 export type InsertLLMRequest = Omit<LLMRequest, 'id' | 'created_at'>
 export type InsertSystemLog = Omit<SystemLog, 'id' | 'timestamp'>
 export type InsertRateLimit = RateLimit
+export type InsertAnalysisProgress = Omit<AnalysisProgressRecord, 'id' | 'created_at'>

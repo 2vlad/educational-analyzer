@@ -5,6 +5,7 @@ import { llmService } from '@/src/services/LLMService'
 import { logger } from '@/src/utils/logger'
 import { METRICS } from '@/src/utils/prompts'
 import { InsertAnalysis, InsertLLMRequest } from '@/src/types/database'
+import { progressService } from '@/src/services/ProgressService'
 
 // Request schema
 const analyzeRequestSchema = z.object({
@@ -140,6 +141,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create analysis' }, { status: 500 })
     }
 
+    // Initialize progress tracking
+    await progressService.initializeProgress(analysisId, METRICS as unknown as string[])
+
     // Log analysis start
     logger.analysisStart({
       analysisId,
@@ -161,6 +165,9 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < METRICS.length; i++) {
       const metric = METRICS[i]
 
+      // Update progress: metric starting to process
+      await progressService.updateMetricProgress(analysisId, metric, 'processing', 10)
+
       // Add delay between requests (except for the first one)
       if (i > 0) {
         console.log(`⏳ Waiting 1 second before next metric to avoid rate limiting...`)
@@ -168,11 +175,29 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // Simulate granular progress updates during LLM processing
+        const progressInterval = globalThis.setInterval(async () => {
+          const currentProgress = await getCurrentMetricProgress(analysisId, metric)
+          if (currentProgress < 90) {
+            await progressService.updateGranularProgress(
+              analysisId,
+              metric,
+              Math.min(90, currentProgress + 15),
+            )
+          }
+        }, 500) // Update every 500ms for smooth animation
+
         // Analyze with retry
         console.log(`\n📊 Analyzing metric ${i + 1}/${METRICS.length}: ${metric}`)
         const result = finalModelId
           ? await llmService.analyzeWithModel(content, metric, finalModelId)
           : await llmService.analyzeWithRetry(content, metric)
+
+        // Clear the progress interval
+        globalThis.clearInterval(progressInterval)
+
+        // Mark metric as completed
+        await progressService.updateMetricProgress(analysisId, metric, 'completed', 100)
 
         console.log(`✅ Metric ${metric} complete:`, {
           score: result.score,
@@ -200,6 +225,9 @@ export async function POST(request: NextRequest) {
           result,
         })
       } catch (error) {
+        // Mark metric as failed
+        await progressService.updateMetricProgress(analysisId, metric, 'failed', 0)
+
         console.log(
           `❌ Metric ${metric} failed:`,
           error instanceof Error ? error.message : 'Unknown error',
@@ -220,6 +248,16 @@ export async function POST(request: NextRequest) {
           error: error instanceof Error ? error.message : 'Unknown error',
         })
       }
+    }
+
+    // Helper function to get current metric progress
+    async function getCurrentMetricProgress(analysisId: string, metric: string): Promise<number> {
+      const progress = await progressService.getProgressFromDb(analysisId)
+      if (progress) {
+        const metricStatus = progress.metricStatus.find((m) => m.metric === metric)
+        return metricStatus?.progress || 0
+      }
+      return 0
     }
 
     const totalDuration = Date.now() - startTime
@@ -288,6 +326,9 @@ export async function POST(request: NextRequest) {
       }
     })
     console.log('=================\n')
+
+    // Clean up progress tracking for this analysis
+    progressService.cleanup(analysisId)
 
     // Return analysis ID for polling
     return NextResponse.json({

@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+import type React from 'react'
 
 export const metadata: Metadata = {
-  title: 'Educational Content Analyzer',
+  title: 'Лёха Эйай',
   description: 'AI-powered educational content analysis with Lyoha',
   generator: 'Next.js',
 }

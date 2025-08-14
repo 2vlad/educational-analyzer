@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   apiService,
@@ -22,6 +21,9 @@ import {
 } from '@/src/services/api'
 import { useProgressStream } from '@/src/hooks/useProgressStream'
 import type { AnalysisProgress } from '@/src/services/ProgressService'
+import { ProgressTracker } from '@/components/ProgressTracker'
+import { ModernProgressTracker } from '@/components/ModernProgressTracker'
+import { MinimalProgressTracker } from '@/components/MinimalProgressTracker'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -300,8 +302,11 @@ export default function EducationalAnalyzer() {
     setIsAnalyzing(true)
     setError(null)
     setCurrentScreen('loading')
-    setAnalysisProgress(5) // Start with 5% for sending
+    setAnalysisProgress(0) // Start with 0% for smooth animation
     setProgressMessage('Отправка на анализ...')
+
+    // Smooth initial progress animation
+    window.setTimeout(() => setAnalysisProgress(5), 100)
 
     try {
       // Start analysis
@@ -334,78 +339,39 @@ export default function EducationalAnalyzer() {
   }
 
   if (currentScreen === 'loading') {
-    return (
-      <div
-        className="min-h-screen bg-white p-4 flex items-center justify-center"
-        style={{
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif',
-        }}
-      >
-        <div className="text-center space-y-6 max-w-lg mx-auto">
-          <Loader2 className="h-16 w-16 animate-spin mx-auto text-black" />
-          <div className="space-y-4">
-            <p className="text-xl font-semibold text-black">{progressMessage}</p>
-            <div className="space-y-2">
-              <Progress value={analysisProgress} className="w-full h-3 transition-all duration-300" />
-              <p className="text-sm text-gray-600">{Math.round(analysisProgress)}%</p>
-            </div>
-            
-            {/* Metric Progress Indicators */}
-            {streamProgress && streamProgress.metricStatus && (
-              <div className="mt-6 space-y-2">
-                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Progress by Metric</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {streamProgress.metricStatus.map((metric, index) => (
-                    <div key={metric.metric} className="text-center">
-                      <div className="relative">
-                        <div 
-                          className={`w-12 h-12 mx-auto rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                            metric.status === 'completed' 
-                              ? 'bg-green-100 border-green-500' 
-                              : metric.status === 'processing'
-                              ? 'bg-blue-100 border-blue-500 animate-pulse'
-                              : metric.status === 'failed'
-                              ? 'bg-red-100 border-red-500'
-                              : 'bg-gray-100 border-gray-300'
-                          }`}
-                        >
-                          {metric.status === 'completed' ? (
-                            <span className="text-green-600 font-bold">✓</span>
-                          ) : metric.status === 'processing' ? (
-                            <span className="text-blue-600 text-xs">{Math.round(metric.progress)}%</span>
-                          ) : metric.status === 'failed' ? (
-                            <span className="text-red-600 font-bold">✗</span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">{index + 1}</span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {METRIC_NAMES[metric.metric] || metric.metric}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="text-xs text-gray-500 mt-4">
-              {streamProgress?.currentMetric && (
-                <p className="font-medium">
-                  Currently analyzing: {METRIC_NAMES[streamProgress.currentMetric] || streamProgress.currentMetric}
-                </p>
-              )}
-              {streamProgress && (
-                <p className="mt-1">
-                  {streamProgress.completedMetrics} of {streamProgress.totalMetrics} metrics completed
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    // Three beautiful progress UI options:
+    // 1. 'minimal' - Clean, Vercel-inspired design
+    // 2. 'modern' - Dark theme with circular progress
+    // 3. 'colorful' - Light theme with animated cards
+    const progressUIStyle: 'minimal' | 'modern' | 'colorful' = 'minimal'
+
+    switch (progressUIStyle) {
+      case 'minimal':
+        return (
+          <MinimalProgressTracker
+            progress={streamProgress}
+            overallProgress={analysisProgress}
+            message={progressMessage}
+          />
+        )
+      case 'modern':
+        return (
+          <ModernProgressTracker
+            progress={streamProgress}
+            overallProgress={analysisProgress}
+            message={progressMessage}
+          />
+        )
+      case 'colorful':
+      default:
+        return (
+          <ProgressTracker
+            progress={streamProgress}
+            overallProgress={analysisProgress}
+            message={progressMessage}
+          />
+        )
+    }
   }
 
   if (currentScreen === 'results' && analysisResult) {

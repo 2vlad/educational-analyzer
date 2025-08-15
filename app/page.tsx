@@ -19,9 +19,7 @@ import {
   type AnalysisResult as ApiAnalysisResult,
   type Model,
 } from '@/src/services/api'
-import { ProgressTracker } from '@/components/ProgressTracker'
-import { ModernProgressTracker } from '@/components/ModernProgressTracker'
-import { MinimalProgressTracker } from '@/components/MinimalProgressTracker'
+import { SimpleLoader } from '@/components/SimpleLoader'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -138,7 +136,6 @@ export default function EducationalAnalyzer() {
   const [models, setModels] = useState<Model[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisProgress, setAnalysisProgress] = useState(0)
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
@@ -270,11 +267,7 @@ export default function EducationalAnalyzer() {
     setIsAnalyzing(true)
     setError(null)
     setCurrentScreen('loading')
-    setAnalysisProgress(0) // Start with 0% for smooth animation
     setProgressMessage('Отправка на анализ...')
-
-    // Smooth initial progress animation
-    window.setTimeout(() => setAnalysisProgress(5), 100)
 
     try {
       // Start analysis
@@ -284,7 +277,6 @@ export default function EducationalAnalyzer() {
       console.log('First 100 chars:', content.substring(0, 100))
 
       // Update progress to 10% when sending
-      setAnalysisProgress(10)
 
       console.log('Calling apiService.analyze...')
       const { analysisId } = await apiService.analyze({
@@ -310,7 +302,6 @@ export default function EducationalAnalyzer() {
 
       // Update progress to 15% after initial delay
       window.setTimeout(() => {
-        setAnalysisProgress(15)
         setProgressMessage(progressMessages[0])
       }, 1000)
 
@@ -338,7 +329,6 @@ export default function EducationalAnalyzer() {
             completed = completedNow
             const newProgress = 15 + completed * 16 // Spread progress evenly
             console.log(`[POLL ${pollCount}] Updating progress to ${newProgress}%`)
-            setAnalysisProgress(newProgress)
 
             if (completed < metrics.length) {
               const nextMessage = progressMessages[completed] || 'Обработка...'
@@ -351,7 +341,6 @@ export default function EducationalAnalyzer() {
           if (result.status === 'completed' || completed === metrics.length) {
             console.log(`[POLL ${pollCount}] Analysis complete! Status: ${result.status}`)
             window.clearInterval(checkInterval)
-            setAnalysisProgress(100)
             setProgressMessage('Готово!')
             setAnalysisResult(result)
 
@@ -384,44 +373,11 @@ export default function EducationalAnalyzer() {
       setError(error instanceof Error ? error.message : 'Analysis failed')
       setCurrentScreen('upload')
       setIsAnalyzing(false)
-      setAnalysisProgress(0)
     }
   }
 
   if (currentScreen === 'loading') {
-    // Three beautiful progress UI options:
-    // 1. 'minimal' - Clean, Vercel-inspired design
-    // 2. 'modern' - Dark theme with circular progress
-    // 3. 'colorful' - Light theme with animated cards
-    const progressUIStyle: 'minimal' | 'modern' | 'colorful' = 'minimal'
-
-    switch (progressUIStyle) {
-      case 'minimal':
-        return (
-          <MinimalProgressTracker
-            progress={null}
-            overallProgress={analysisProgress}
-            message={progressMessage}
-          />
-        )
-      case 'modern':
-        return (
-          <ModernProgressTracker
-            progress={null}
-            overallProgress={analysisProgress}
-            message={progressMessage}
-          />
-        )
-      case 'colorful':
-      default:
-        return (
-          <ProgressTracker
-            progress={null}
-            overallProgress={analysisProgress}
-            message={progressMessage}
-          />
-        )
-    }
+    return <SimpleLoader message={progressMessage} />
   }
 
   if (currentScreen === 'results' && analysisResult) {
@@ -534,7 +490,6 @@ export default function EducationalAnalyzer() {
                 setContent('')
                 setAnalysisResult(null)
                 setError(null)
-                setAnalysisProgress(0)
                 setProgressMessage('')
               }}
               className="px-8 py-3 border border-gray-400 text-gray-700 bg-white hover:bg-gray-700 hover:text-white transition-colors"

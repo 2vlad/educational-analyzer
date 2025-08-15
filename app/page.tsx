@@ -327,7 +327,7 @@ export default function EducationalAnalyzer() {
 
           // Count completed metrics
           const completedNow = metrics.filter((m) => {
-            const hasScore = result.metrics[m]?.score !== undefined
+            const hasScore = result.results && result.results[m]?.score !== undefined
             console.log(`[POLL ${pollCount}] Metric ${m}: score exists = ${hasScore}`)
             return hasScore
           }).length

@@ -30,47 +30,10 @@ function isEducationalContent(content: string): boolean {
   const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/
   if (urlPattern.test(content.trim())) return false
 
-  // Check for educational keywords (at least one should be present)
-  const educationalKeywords = [
-    'learn',
-    'teach',
-    'understand',
-    'explain',
-    'example',
-    'concept',
-    'tutorial',
-    'lesson',
-    'exercise',
-    'practice',
-    'study',
-    'knowledge',
-    'изуч',
-    'урок',
-    'пример',
-    'задач',
-    'объясн',
-    'понима',
-    'практик',
-    'function',
-    'variable',
-    'method',
-    'class',
-    'algorithm',
-    'data',
-    'переменн',
-    'функци',
-    'метод',
-    'класс',
-    'алгоритм',
-    'данн',
-  ]
-
-  const lowerContent = content.toLowerCase()
-  const hasEducationalContent = educationalKeywords.some((keyword) =>
-    lowerContent.includes(keyword),
-  )
-
-  return hasEducationalContent
+  // More flexible educational content detection
+  // Accept any content that has substantial text with proper sentence structure
+  // We already checked for minimum length, words, and sentences above
+  return true
 }
 
 export async function POST(request: NextRequest) {
@@ -99,7 +62,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'Invalid content',
           details:
-            'Please provide educational content such as a lesson, tutorial, or learning material. Random text or company names cannot be analyzed.',
+            'Please provide substantial text content with at least 100 characters, 20 words, and multiple sentences.',
         },
         { status: 400 },
       )

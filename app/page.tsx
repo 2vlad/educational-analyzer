@@ -391,7 +391,7 @@ export default function EducationalAnalyzer() {
       >
         <div className="max-w-[700px] mx-auto">
           <header className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-black mb-2">Analysis Results</h1>
+            <h1 className="text-3xl font-bold text-black mb-2">Результаты анализа</h1>
             {analysisResult.model_used && (
               <p className="text-sm text-gray-600">Model: {analysisResult.model_used}</p>
             )}
@@ -513,7 +513,7 @@ export default function EducationalAnalyzer() {
     >
       <div className="max-w-[700px] mx-auto">
         <header className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-black mb-2">Educational Content Analyzer</h1>
+          <h1 className="text-3xl font-bold text-black mb-2">Лёха Эйай</h1>
           <p className="text-gray-600">
             Анализ образовательного контента с помощью ИИ-студента Лёхи
           </p>

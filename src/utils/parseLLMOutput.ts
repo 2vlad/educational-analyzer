@@ -37,15 +37,37 @@ export function parseLLMOutput(text: string): ParsedOutput {
  */
 function tryParseJSON(text: string): ParsedOutput | null {
   try {
-    // Look for JSON block in the text
-    const jsonMatch =
-      text.match(/```json\s*([\s\S]*?)\s*```/) ||
-      text.match(/```\s*([\s\S]*?)\s*```/) ||
-      text.match(/\{[\s\S]*\}/)
+    // Look for JSON block in the text - handle incomplete JSON from Claude
+    let jsonStr = text
 
-    if (!jsonMatch) return null
+    // First try to extract from code blocks
+    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/)
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1]
+    }
 
-    const jsonStr = jsonMatch[1] || jsonMatch[0]
+    // Try to find JSON object pattern
+    const jsonObjMatch = jsonStr.match(/\{[\s\S]*/)
+    if (jsonObjMatch) {
+      jsonStr = jsonObjMatch[0]
+    }
+
+    // Handle truncated JSON by closing it properly
+    if (jsonStr.includes('{') && !jsonStr.trim().endsWith('}')) {
+      // Count open and close braces
+      const openBraces = (jsonStr.match(/\{/g) || []).length
+      const closeBraces = (jsonStr.match(/\}/g) || []).length
+      const bracesToAdd = openBraces - closeBraces
+
+      // Try to close arrays and strings if needed
+      if (jsonStr.includes('"examples": [') && !jsonStr.includes(']')) {
+        jsonStr += '"]'
+      }
+
+      // Add missing closing braces
+      jsonStr += '}'.repeat(bracesToAdd)
+    }
+
     const parsed = JSON.parse(jsonStr)
 
     // Validate the parsed object
@@ -71,8 +93,20 @@ function tryParseJSON(text: string): ParsedOutput | null {
  * Parse text using regex patterns
  */
 function parseWithRegex(text: string): ParsedOutput {
-  // Look for score (-2 to 2)
-  const scoreMatch = text.match(/(?:^|\s)(-2|-1|0|\+?1|\+?2)(?:\s|:|$)/m)
+  // Look for score (-2 to 2) - improved patterns
+  const scorePatterns = [
+    /"score"\s*:\s*(-?[0-2])/, // "score": 1
+    /score:\s*(-?[0-2])/i, // score: 1
+    /оценка:\s*(-?[0-2])/i, // оценка: 1 (Russian)
+    /(?:^|\s)(-2|-1|0|\+?1|\+?2)(?:\s|:|,|$)/m, // standalone number
+  ]
+
+  let scoreMatch = null
+  for (const pattern of scorePatterns) {
+    scoreMatch = text.match(pattern)
+    if (scoreMatch) break
+  }
+
   if (!scoreMatch) {
     throw new ProviderError('Could not find score in output', ERROR_CODES.BAD_OUTPUT, false)
   }

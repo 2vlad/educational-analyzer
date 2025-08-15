@@ -115,27 +115,18 @@ export async function POST(request: NextRequest) {
       metricsCount: METRICS.length,
     })
 
-    // Run metrics sequentially with delay to avoid rate limiting
+    // Run metrics in parallel for faster processing
     const startTime = Date.now()
-    const metricResults: Array<{
-      metric: string
-      success: boolean
-      result?: any
-      error?: string
-    }> = []
 
-    // Process metrics sequentially with 1 second delay between requests
-    for (let i = 0; i < METRICS.length; i++) {
-      const metric = METRICS[i]
+    console.log(`\n📊 Analyzing ${METRICS.length} metrics in parallel...`)
+
+    // Process all metrics in parallel
+    const metricPromises = METRICS.map(async (metric, index) => {
+      // Small staggered delay to avoid hitting rate limits
+      await new Promise((resolve) => globalThis.setTimeout(resolve, index * 200))
 
       // Update progress: metric starting to process
       await progressService.updateMetricProgress(analysisId, metric, 'processing', 10)
-
-      // Add delay between requests (except for the first one)
-      if (i > 0) {
-        console.log(`⏳ Waiting 1 second before next metric to avoid rate limiting...`)
-        await new Promise((resolve) => globalThis.setTimeout(resolve, 1000))
-      }
 
       try {
         // Simulate granular progress updates during LLM processing
@@ -151,7 +142,7 @@ export async function POST(request: NextRequest) {
         }, 500) // Update every 500ms for smooth animation
 
         // Analyze with retry
-        console.log(`\n📊 Analyzing metric ${i + 1}/${METRICS.length}: ${metric}`)
+        console.log(`\n📊 Analyzing metric ${index + 1}/${METRICS.length}: ${metric}`)
         const result = finalModelId
           ? await llmService.analyzeWithModel(content, metric, finalModelId)
           : await llmService.analyzeWithRetry(content, metric)
@@ -182,11 +173,11 @@ export async function POST(request: NextRequest) {
 
         await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
-        metricResults.push({
+        return {
           metric,
           success: true,
           result,
-        })
+        }
       } catch (error) {
         // Mark metric as failed
         await progressService.updateMetricProgress(analysisId, metric, 'failed', 0)
@@ -205,13 +196,16 @@ export async function POST(request: NextRequest) {
 
         await supabaseAdmin.from('llm_requests').insert(llmRequest)
 
-        metricResults.push({
+        return {
           metric,
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
-        })
+        }
       }
-    }
+    })
+
+    // Wait for all metrics to complete
+    const metricResults = await Promise.all(metricPromises)
 
     // Helper function to get current metric progress
     async function getCurrentMetricProgress(analysisId: string, metric: string): Promise<number> {

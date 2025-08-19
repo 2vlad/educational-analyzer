@@ -472,12 +472,12 @@ export default function EducationalAnalyzer() {
         <div className="max-w-[660px] mx-auto">
           {/* Header */}
           <header className="mb-8">
-            <h1 className="text-[48px] font-bold text-black mb-2">Лёха AI</h1>
-            <p className="text-[16px] text-black mb-4">
-              оценивает качество контента
-              <br />
-              на основе LX-метрик
-            </p>
+            <div className="flex items-baseline gap-4 mb-2">
+              <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
+              <p className="text-[16px] text-black">
+                оценивает качество контента на основе LX-метрик
+              </p>
+            </div>
             <p className="text-[14px] text-black">
               {analysisResult.results?.lessonTitle ||
                 (content ? content.substring(0, 50) + '...' : 'Анализ контента')}
@@ -491,16 +491,15 @@ export default function EducationalAnalyzer() {
               className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {analysisResult.results?.logic?.score > 0 ? '+' : ''}
-                {analysisResult.results?.logic?.score || 0}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Логика
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {analysisResult.results?.logic?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.logic?.score || 0}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Логика
-              </h3>
               <div className="flex-grow" />
               <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
                 {getShortComment(analysisResult.results?.logic?.comment)}
@@ -512,16 +511,15 @@ export default function EducationalAnalyzer() {
               className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {analysisResult.results?.practical?.score > 0 ? '+' : ''}
-                {analysisResult.results?.practical?.score || 0}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Польза
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {analysisResult.results?.practical?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.practical?.score || 0}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Польза
-              </h3>
               <div className="flex-grow" />
               <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
                 {getShortComment(analysisResult.results?.practical?.comment)}
@@ -533,16 +531,15 @@ export default function EducationalAnalyzer() {
               className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {analysisResult.results?.interest?.score > 0 ? '+' : ''}
-                {analysisResult.results?.interest?.score || 0}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Интерес
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {analysisResult.results?.interest?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.interest?.score || 0}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Интерес
-              </h3>
               <div className="flex-grow" />
               <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
                 {getShortComment(analysisResult.results?.interest?.comment)}
@@ -554,16 +551,15 @@ export default function EducationalAnalyzer() {
               className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {analysisResult.results?.care?.score > 0 ? '+' : ''}
-                {analysisResult.results?.care?.score || 0}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Забота
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {analysisResult.results?.care?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.care?.score || 0}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Забота
-              </h3>
               <div className="flex-grow" />
               <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
                 {getShortComment(analysisResult.results?.care?.comment)}
@@ -575,16 +571,15 @@ export default function EducationalAnalyzer() {
               className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
-                {analysisResult.results?.complexity?.score || 0}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Сложность
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.complexity?.score || 0}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Сложность
-              </h3>
               <div className="flex-grow" />
               <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
                 {getShortComment(analysisResult.results?.complexity?.comment)}
@@ -596,18 +591,17 @@ export default function EducationalAnalyzer() {
               className="bg-[#C8E6C9] rounded-lg p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px' }}
             >
-              <div className="text-[32px] font-bold text-black mb-2">
-                {overallScore > 0 ? '+' : ''}
-                {overallScore}
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                  Общий
+                  <br />
+                  результат
+                </h3>
+                <div className="text-[32px] font-bold text-black">
+                  {overallScore > 0 ? '+' : ''}
+                  {overallScore}
+                </div>
               </div>
-              <h3
-                className="text-[28px] font-semibold text-black mb-2"
-                style={{ lineHeight: '90%' }}
-              >
-                Общий
-                <br />
-                результат
-              </h3>
               <div className="flex-grow" />
             </div>
           </div>

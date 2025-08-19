@@ -2,10 +2,8 @@
 
 import type React from 'react'
 import { useState, useEffect } from 'react'
-import { Upload, Loader2 } from 'lucide-react'
+import { CloudUpload, Loader2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -20,18 +18,18 @@ import {
   type Model,
 } from '@/src/services/api'
 import { SimpleLoader } from '@/components/SimpleLoader'
+import Image from 'next/image'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
   logic: 'Логика',
   practical: 'Польза',
-  complexity: 'Уровень',
-  interest: 'Цепляет',
-  care: 'С душой',
+  complexity: 'Сложность',
+  interest: 'Интерес',
+  care: 'Забота',
 }
 
-// Removed hardcoded examples - all content comes from LLM
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Speedometer = ({ score }: { score: number | undefined | null }) => {
   // Handle undefined/null/NaN cases
   if (score === undefined || score === null || isNaN(score)) {
@@ -51,7 +49,7 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
           <text
             x="50"
             y="55"
-            fontFamily="Helvetica, Arial, sans-serif"
+            fontFamily="Inter, sans-serif"
             fontSize="16"
             fill="#9ca3af"
             textAnchor="middle"
@@ -114,7 +112,7 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
         <text
           x="50"
           y="55"
-          fontFamily="Helvetica, Arial, sans-serif"
+          fontFamily="Inter, sans-serif"
           fontSize="28"
           fontWeight="bold"
           fill={color}
@@ -139,6 +137,7 @@ export default function EducationalAnalyzer() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Load available models on mount
   useEffect(() => {
@@ -164,7 +163,7 @@ export default function EducationalAnalyzer() {
     }
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
       // Check file size (10MB limit)
@@ -173,19 +172,57 @@ export default function EducationalAnalyzer() {
         return
       }
 
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const text = e.target?.result as string
-        // Check text length (2000 chars limit)
-        if (text.length > 2000) {
-          setContent(text.substring(0, 2000))
-          setError('Content truncated to 2000 characters')
-        } else {
-          setContent(text)
-          setError(null)
+      // Handle PDF files
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        setError(null)
+        setProgressMessage('Извлекаем текст из PDF...')
+
+        try {
+          const formData = new globalThis.FormData()
+          formData.append('file', file)
+
+          const response = await fetch('/api/parse-pdf', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            setError(error.error || 'Failed to parse PDF')
+            setProgressMessage('')
+            return
+          }
+
+          const result = await response.json()
+          setContent(result.text)
+          setProgressMessage('')
+
+          if (result.truncated) {
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+          } else {
+            setError(null)
+          }
+        } catch (error) {
+          console.error('PDF parsing error:', error)
+          setError('Failed to parse PDF file')
+          setProgressMessage('')
         }
+      } else {
+        // Handle text files (.txt, .md)
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const text = e.target?.result as string
+          // Check text length (20000 chars limit)
+          if (text.length > 20000) {
+            setContent(text.substring(0, 20000))
+            setError('Content truncated to 20000 characters')
+          } else {
+            setContent(text)
+            setError(null)
+          }
+        }
+        reader.readAsText(file)
       }
-      reader.readAsText(file)
     }
   }
 
@@ -199,7 +236,7 @@ export default function EducationalAnalyzer() {
     setIsDragOver(false)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
     const file = e.dataTransfer.files[0]
@@ -210,18 +247,56 @@ export default function EducationalAnalyzer() {
         return
       }
 
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const text = e.target?.result as string
-        if (text.length > 2000) {
-          setContent(text.substring(0, 2000))
-          setError('Content truncated to 2000 characters')
-        } else {
-          setContent(text)
-          setError(null)
+      // Handle PDF files
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        setError(null)
+        setProgressMessage('Извлекаем текст из PDF...')
+
+        try {
+          const formData = new globalThis.FormData()
+          formData.append('file', file)
+
+          const response = await fetch('/api/parse-pdf', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!response.ok) {
+            const error = await response.json()
+            setError(error.error || 'Failed to parse PDF')
+            setProgressMessage('')
+            return
+          }
+
+          const result = await response.json()
+          setContent(result.text)
+          setProgressMessage('')
+
+          if (result.truncated) {
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+          } else {
+            setError(null)
+          }
+        } catch (error) {
+          console.error('PDF parsing error:', error)
+          setError('Failed to parse PDF file')
+          setProgressMessage('')
         }
+      } else {
+        // Handle text files
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const text = e.target?.result as string
+          if (text.length > 20000) {
+            setContent(text.substring(0, 20000))
+            setError('Content truncated to 20000 characters')
+          } else {
+            setContent(text)
+            setError(null)
+          }
+        }
+        reader.readAsText(file)
       }
-      reader.readAsText(file)
     }
   }
 
@@ -275,8 +350,6 @@ export default function EducationalAnalyzer() {
       console.log('Model:', modelToUse)
       console.log('Content length:', content.length)
       console.log('First 100 chars:', content.substring(0, 100))
-
-      // Update progress to 10% when sending
 
       console.log('Calling apiService.analyze...')
       const { analysisId } = await apiService.analyze({
@@ -351,7 +424,7 @@ export default function EducationalAnalyzer() {
           } else if (result.status === 'failed') {
             console.error(`[POLL ${pollCount}] Analysis failed!`)
             window.clearInterval(checkInterval)
-            setError('Analysis failed. Please try again.')
+            setError('Analysis failed. Please check your API keys in .env.local file.')
             setCurrentScreen('upload')
             setIsAnalyzing(false)
           }
@@ -381,109 +454,240 @@ export default function EducationalAnalyzer() {
   }
 
   if (currentScreen === 'results' && analysisResult) {
+    // Calculate overall score
+    const overallScore = analysisResult.results
+      ? Object.values(analysisResult.results).reduce((sum: number, data: any) => {
+          return sum + (data?.score || 0)
+        }, 0)
+      : 0
+
+    // Get shortened comment for metric cards (max 150 chars)
+    const getShortComment = (comment: string | undefined) => {
+      if (!comment) return ''
+      return comment.length > 150 ? comment.substring(0, 147) + '...' : comment
+    }
+
     return (
-      <div
-        className="min-h-screen bg-white p-4"
-        style={{
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif',
-        }}
-      >
-        <div className="max-w-[700px] mx-auto">
-          <header className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-black mb-2">Результаты анализа</h1>
-            {analysisResult.model_used && (
-              <p className="text-sm text-gray-600">Model: {analysisResult.model_used}</p>
-            )}
+      <div className="min-h-screen bg-white p-6">
+        <div className="max-w-[660px] mx-auto">
+          {/* Header */}
+          <header className="mb-8">
+            <h1 className="text-[48px] font-bold text-black mb-2">Лёха AI</h1>
+            <p className="text-[16px] text-black mb-4">
+              оценивает качество контента
+              <br />
+              на основе LX-метрик
+            </p>
+            <p className="text-[14px] text-black">
+              {analysisResult.results?.lessonTitle ||
+                (content ? content.substring(0, 50) + '...' : 'Анализ контента')}
+            </p>
           </header>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {analysisResult.results &&
-              Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => (
-                <Card key={metric} className="border-gray-300 border p-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-bold text-lg text-black">
-                        {METRIC_NAMES[metric] || metric}
-                      </h3>
-                      <Speedometer score={data?.score} />
-                    </div>
-                    {data?.error ? (
-                      <p className="text-sm text-red-600">Error: {data.error}</p>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-700 italic">
-                          {data?.comment ? `"${data.comment}"` : '...'}
-                        </p>
-                        {data?.durationMs && (
-                          <p className="text-xs text-gray-500">
-                            {(data.durationMs / 1000).toFixed(1)}s
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </Card>
-              ))}
+          {/* Metrics Grid - 2x3 layout */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {/* Logic */}
+            <div
+              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {analysisResult.results?.logic?.score > 0 ? '+' : ''}
+                {analysisResult.results?.logic?.score || 0}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Логика
+              </h3>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.logic?.comment)}
+              </p>
+            </div>
+
+            {/* Practical */}
+            <div
+              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {analysisResult.results?.practical?.score > 0 ? '+' : ''}
+                {analysisResult.results?.practical?.score || 0}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Польза
+              </h3>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.practical?.comment)}
+              </p>
+            </div>
+
+            {/* Interest */}
+            <div
+              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {analysisResult.results?.interest?.score > 0 ? '+' : ''}
+                {analysisResult.results?.interest?.score || 0}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Интерес
+              </h3>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.interest?.comment)}
+              </p>
+            </div>
+
+            {/* Care */}
+            <div
+              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {analysisResult.results?.care?.score > 0 ? '+' : ''}
+                {analysisResult.results?.care?.score || 0}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Забота
+              </h3>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.care?.comment)}
+              </p>
+            </div>
+
+            {/* Complexity */}
+            <div
+              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
+                {analysisResult.results?.complexity?.score || 0}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Сложность
+              </h3>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.complexity?.comment)}
+              </p>
+            </div>
+
+            {/* Overall Result */}
+            <div
+              className="bg-[#C8E6C9] rounded-lg p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px' }}
+            >
+              <div className="text-[32px] font-bold text-black mb-2">
+                {overallScore > 0 ? '+' : ''}
+                {overallScore}
+              </div>
+              <h3
+                className="text-[28px] font-semibold text-black mb-2"
+                style={{ lineHeight: '90%' }}
+              >
+                Общий
+                <br />
+                результат
+              </h3>
+              <div className="flex-grow" />
+            </div>
           </div>
 
-          {/* Detailed Analysis Section */}
-          <div className="mb-8">
-            <Card className="border-gray-300 border p-6">
-              <h2 className="text-2xl font-bold text-black mb-6 text-center">Detailed Analysis</h2>
-              <div className="space-y-6">
-                {analysisResult.results &&
-                  Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => (
-                    <div
-                      key={metric}
-                      className="border-b border-gray-200 last:border-b-0 pb-4 last:pb-0"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold text-lg text-black">
-                          {METRIC_NAMES[metric] || metric}
-                        </h3>
-                        <Speedometer score={data?.score} />
+          {/* Quick Win Section */}
+          <div className="bg-[#F5F5F5] rounded-lg p-6 mb-8" style={{ width: '660px' }}>
+            <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
+            <p className="text-[14px] text-black leading-relaxed">
+              {overallScore > 0
+                ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
+                : overallScore < 0
+                  ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
+                  : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
+            </p>
+          </div>
+
+          {/* Detailed Analysis Sections */}
+          <div className="space-y-8" style={{ width: '660px' }}>
+            {analysisResult.results &&
+              Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
+                if (!data || data.error) return null
+
+                return (
+                  <div key={metric} className="bg-white rounded-lg">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="bg-[#F5F5F5] rounded-lg px-4 py-2">
+                        <span className="text-[20px] font-bold text-black">
+                          {data.score > 0 ? '+' : ''}
+                          {data.score}
+                        </span>
                       </div>
+                      <h3 className="text-[24px] font-bold text-black">
+                        {METRIC_NAMES[metric] || metric}
+                      </h3>
+                    </div>
 
-                      {data?.error && (
-                        <p className="text-sm text-red-600 mb-3">Error: {data.error}</p>
-                      )}
-
-                      {/* Show detailed analysis if available */}
-                      {data.detailed_analysis && (
-                        <div className="mb-3">
-                          <h4 className="font-semibold text-sm text-black mb-2">Анализ:</h4>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {/* Analysis Text */}
+                    {data.detailed_analysis && (
+                      <div className="bg-[#F5F5F5] rounded-lg p-6 mb-4">
+                        <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
+                        {typeof data.detailed_analysis === 'string' ? (
+                          <p className="text-[14px] text-black leading-relaxed">
                             {data.detailed_analysis}
                           </p>
-                        </div>
-                      )}
-
-                      {/* Show examples from LLM if available */}
-                      {data.examples && data.examples.length > 0 && (
-                        <div className="mb-3">
-                          <h4 className="font-semibold text-sm text-black mb-2">
-                            Примеры из текста:
-                          </h4>
-                          <ul className="text-sm text-gray-600 space-y-1">
-                            {data.examples.map((example, index) => (
-                              <li key={index} className="flex items-start">
-                                <span className="mr-2">•</span>
-                                <span className="italic">"{example}"</span>
-                              </li>
+                        ) : (
+                          <div className="space-y-3">
+                            {Object.entries(data.detailed_analysis).map(([key, value]) => (
+                              <div key={key}>
+                                <h5 className="text-[14px] font-medium text-black mb-1">{key}:</h5>
+                                <p className="text-[14px] text-black ml-4">{value}</p>
+                              </div>
                             ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </Card>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Examples */}
+                    {data.examples && data.examples.length > 0 && (
+                      <div className="bg-[#F5F5F5] rounded-lg p-6">
+                        <h4 className="text-[16px] font-semibold text-black mb-3">
+                          Примеры из текста
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.examples.map((example: string, index: number) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-black mr-2">•</span>
+                              <span className="text-[14px] text-black italic">"{example}"</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
           </div>
 
           {/* Return Button */}
-          <div className="text-center">
+          <div className="mt-12 text-center">
             <Button
               onClick={() => {
                 setCurrentScreen('upload')
@@ -492,9 +696,9 @@ export default function EducationalAnalyzer() {
                 setError(null)
                 setProgressMessage('')
               }}
-              className="px-8 py-3 border border-gray-400 text-gray-700 bg-white hover:bg-gray-700 hover:text-white transition-colors"
+              className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition-colors rounded-lg"
             >
-              Analyze New Content
+              Новый анализ
             </Button>
           </div>
         </div>
@@ -502,120 +706,201 @@ export default function EducationalAnalyzer() {
     )
   }
 
-  // Upload screen
+  // Upload screen - New design based on Figma
   return (
-    <div
-      className="min-h-screen bg-white p-4"
-      style={{
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif',
-      }}
-    >
-      <div className="max-w-[700px] mx-auto">
-        <header className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-black mb-2">Лёха Эйай</h1>
-          <p className="text-gray-600">
-            Анализ образовательного контента с помощью ИИ-студента Лёхи
-          </p>
-        </header>
+    <div className="min-h-screen bg-white flex justify-center p-6">
+      <div className="w-full max-w-[450px] mt-[50px]">
+        {/* Header with title, subtitle and image */}
+        <div className="flex justify-between mb-10">
+          <div>
+            <h1
+              className="text-[48px] font-bold text-black mb-3 leading-tight"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Лёха AI
+            </h1>
+            <p
+              className="text-[20px] font-normal text-black"
+              style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
+            >
+              оценивает качество
+              <br />
+              контента на основе
+              <br />
+              lx-метрик
+            </p>
+          </div>
 
-        <div className="space-y-8">
-          {/* Error Alert */}
-          {error && (
-            <Alert className="border-red-500 text-red-700">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          {/* Image positioned to the right */}
+          <div className="flex items-center">
+            <Image
+              src="/lekha-illustration.png"
+              alt="Лёха AI - Educational Content Analyzer"
+              width={120}
+              height={150}
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
 
-          {/* Model Selector */}
-          {models.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">AI Model</label>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="w-full border-gray-300">
-                  <SelectValue placeholder="Select a model" />
+        {/* Form section */}
+        <div>
+          {/* Model Section */}
+          <div className="mb-6">
+            <label
+              className="block text-[15px] font-normal text-gray-500 mb-3"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Модель
+            </label>
+            {models.length > 0 ? (
+              <Select
+                value={selectedModel}
+                onValueChange={setSelectedModel}
+                onOpenChange={setIsDropdownOpen}
+              >
+                <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-[#F2F2F2] hover:bg-gray-100 transition-colors rounded-[50px] border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="Выберите модель" />
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <ChevronRight
+                      className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`}
+                    />
+                  </div>
                 </SelectTrigger>
-                <SelectContent className="max-h-[400px]">
-                  {console.log('Rendering models in dropdown:', models)}
+                <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
                   {models.map((model) => (
-                    <SelectItem key={model.id} value={model.id}>
-                      {model.name} {model.default && '(Default)'}
+                    <SelectItem
+                      key={model.id}
+                      value={model.id}
+                      className="text-[20px] text-black py-2"
+                    >
+                      {model.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-14 px-6 flex items-center text-[20px] font-light text-black bg-[#F2F2F2] rounded-[50px]">
+                Loading models...
+              </div>
+            )}
+          </div>
 
-          {/* File Upload Area */}
-          <div
-            className={`border-2 border-dashed border-gray-300 rounded-lg p-12 text-center transition-colors ${
-              isDragOver ? 'bg-gray-50' : 'bg-white'
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <Upload className="mx-auto mb-4 h-12 w-12 text-gray-600" />
-            <p className="text-lg text-black mb-4">Drag & drop your file here</p>
-            <p className="text-sm text-gray-600 mb-4">Supported: .txt, .md (max 10MB)</p>
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="file-upload"
-              accept=".txt,.md"
-            />
+          {/* Content Section */}
+          <div className="mb-6 mt-[40px]">
             <label
-              htmlFor="file-upload"
-              className="inline-block px-6 py-2 border border-gray-400 text-gray-700 hover:bg-gray-700 hover:text-white transition-colors cursor-pointer rounded-lg"
+              className="block text-[15px] font-normal text-gray-500 mb-3"
+              style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              Choose File
+              Контент
             </label>
-          </div>
 
-          {/* Text Area */}
-          <div>
-            <div className="flex justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Or paste your content
-              </label>
-              <span className="text-sm text-gray-500">{content.length} / 2000</span>
-            </div>
-            <Textarea
-              placeholder="Paste your lesson content here..."
-              value={content}
-              onChange={(e) => {
-                const text = e.target.value
-                if (text.length <= 2000) {
-                  setContent(text)
-                  setError(null)
-                } else {
-                  setError('Content must be less than 2000 characters')
-                }
-              }}
-              className="min-h-[200px] font-mono text-sm border border-gray-300 focus:ring-gray-400 focus:border-gray-400"
-              maxLength={2000}
-            />
-          </div>
-
-          {/* Analyze Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleAnalyze}
-              disabled={!content.trim() || isAnalyzing}
-              className="px-12 py-3 bg-gray-700 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500"
+            {/* Text Input Area with Upload Button */}
+            <div
+              className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
+                isDragOver ? 'bg-gray-100' : ''
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
-                </>
+              {progressMessage && progressMessage.includes('PDF') ? (
+                // Show loading state for PDF processing
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
+                  <p className="text-[18px] text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    {progressMessage}
+                  </p>
+                </div>
               ) : (
-                'Analyze Content'
+                <>
+                  {/* Plus/Upload Button */}
+                  <button
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
+                             text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                    title="Загрузить файл"
+                  >
+                    <CloudUpload className="w-[30px] h-[30px]" />
+                  </button>
+
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                    accept=".txt,.md,.pdf"
+                  />
+
+                  {/* Textarea */}
+                  <textarea
+                    placeholder="Текст урока"
+                    value={content}
+                    onChange={(e) => {
+                      const text = e.target.value
+                      if (text.length <= 20000) {
+                        setContent(text)
+                        setError(null)
+                      } else {
+                        setError('Content must be less than 20000 characters')
+                      }
+                    }}
+                    className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                    maxLength={20000}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  />
+
+                  {/* Character Counter */}
+                  {content && (
+                    <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                      {content.length} / 20000
+                    </div>
+                  )}
+
+                  {/* Analyze Button inside textarea */}
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={!content.trim() || isAnalyzing}
+                    className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                             hover:opacity-80
+                             rounded-full transition-opacity duration-200 flex items-center justify-center"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Анализируем...
+                      </>
+                    ) : (
+                      'Проанализировать'
+                    )}
+                  </Button>
+                </>
               )}
-            </Button>
+            </div>
           </div>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        {/* Illustration credit */}
+        <div className="mt-8 text-center">
+          <p
+            className="text-[10px] text-[#9F9F9F]"
+            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+          >
+            иллюстрация
+            <br />
+            pinterest.com/miapasfield/
+          </p>
         </div>
       </div>
     </div>

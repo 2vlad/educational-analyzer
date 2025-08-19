@@ -13,7 +13,7 @@ const serverEnvSchema = z.object({
   YANDEX_FOLDER_ID: z.string().optional(),
 
   // LLM Config
-  DEFAULT_MODEL: z.string().default('claude-sonnet-4'),
+  DEFAULT_MODEL: z.string().default('claude-haiku'),
   ENABLE_MODEL_SWITCHING: z
     .string()
     .transform((val) => val === 'true')
@@ -23,7 +23,7 @@ const serverEnvSchema = z.object({
 
   // App config
   MAX_FILE_SIZE_MB: z.string().transform(Number).default('10'),
-  MAX_TEXT_LENGTH: z.string().transform(Number).default('2000'),
+  MAX_TEXT_LENGTH: z.string().transform(Number).default('20000'),
   RATE_LIMIT_PER_HOUR: z.string().transform(Number).default('10'),
 
   // Security

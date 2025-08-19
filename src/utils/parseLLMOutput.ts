@@ -68,15 +68,23 @@ function tryParseJSON(text: string): ParsedOutput | null {
       jsonStr += '}'.repeat(bracesToAdd)
     }
 
+    // Clean up the JSON string to handle +2 notation
+    jsonStr = jsonStr.replace(/"score"\s*:\s*\+(\d)/g, '"score": $1')
+
     const parsed = JSON.parse(jsonStr)
 
-    // Validate the parsed object
-    if (typeof parsed.score !== 'number' || parsed.score < -2 || parsed.score > 2) {
+    // Validate the parsed object - handle both number and string scores
+    let scoreValue = parsed.score
+    if (typeof scoreValue === 'string') {
+      scoreValue = parseInt(scoreValue.replace('+', ''))
+    }
+
+    if (typeof scoreValue !== 'number' || scoreValue < -2 || scoreValue > 2) {
       return null
     }
 
     return {
-      score: Math.round(parsed.score), // Ensure it's an integer
+      score: Math.round(scoreValue), // Ensure it's an integer
       comment: parsed.comment || '',
       examples: Array.isArray(parsed.examples)
         ? parsed.examples.slice(0, 2).map((e) => String(e).substring(0, 200))
@@ -95,9 +103,9 @@ function tryParseJSON(text: string): ParsedOutput | null {
 function parseWithRegex(text: string): ParsedOutput {
   // Look for score (-2 to 2) - improved patterns
   const scorePatterns = [
-    /"score"\s*:\s*(-?[0-2])/, // "score": 1
-    /score:\s*(-?[0-2])/i, // score: 1
-    /оценка:\s*(-?[0-2])/i, // оценка: 1 (Russian)
+    /"score"\s*:\s*(\+?-?[0-2])/, // "score": 1 or "score": +1
+    /score:\s*(\+?-?[0-2])/i, // score: 1
+    /оценка:\s*(\+?-?[0-2])/i, // оценка: 1 (Russian)
     /(?:^|\s)(-2|-1|0|\+?1|\+?2)(?:\s|:|,|$)/m, // standalone number
   ]
 
@@ -113,17 +121,37 @@ function parseWithRegex(text: string): ParsedOutput {
 
   const score = parseInt(scoreMatch[1].replace('+', ''))
 
-  // Extract comment - look for text after the score or in quotes
+  // Extract comment - look for text after "comment": or in quotes
   let comment = ''
-  const quotedMatch = text.match(/"([^"]+)"/) || text.match(/'([^']+)'/)
-  if (quotedMatch) {
-    comment = quotedMatch[1]
+
+  // First try to find comment field specifically
+  const commentMatch = text.match(/"comment"\s*:\s*"([^"]+)"/)
+  if (commentMatch) {
+    comment = commentMatch[1]
   } else {
-    // Get first sentence after score
-    const afterScore = text.substring(text.indexOf(scoreMatch[0]) + scoreMatch[0].length)
-    const sentenceMatch = afterScore.match(/[^.!?]+[.!?]/)
-    if (sentenceMatch) {
-      comment = sentenceMatch[0].trim()
+    // Try other quoted text, but skip if it's "score" or similar
+    const quotedMatches = text.match(/"([^"]+)"/g)
+    if (quotedMatches) {
+      for (const match of quotedMatches) {
+        const content = match.replace(/"/g, '')
+        // Skip field names and score-related content
+        if (
+          !content.match(/^(score|comment|examples|detailed_analysis)$/i) &&
+          content.length > 10
+        ) {
+          comment = content
+          break
+        }
+      }
+    }
+
+    if (!comment) {
+      // Get first sentence after score
+      const afterScore = text.substring(text.indexOf(scoreMatch[0]) + scoreMatch[0].length)
+      const sentenceMatch = afterScore.match(/[^.!?]+[.!?]/)
+      if (sentenceMatch) {
+        comment = sentenceMatch[0].trim()
+      }
     }
   }
 

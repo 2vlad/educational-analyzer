@@ -17,6 +17,7 @@ export interface AnalysisResult {
   created_at: string
   updated_at: string
   results?: {
+    lessonTitle?: string
     [metric: string]:
       | {
           score: number
@@ -29,6 +30,8 @@ export interface AnalysisResult {
       | {
           error: string
         }
+      | string
+      | undefined
   }
   metrics: Array<{
     metric: string

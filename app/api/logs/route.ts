@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/src/lib/supabaseServer'
-import { env } from '@/src/config/env'
 
 export async function GET(request: NextRequest) {
   try {
+    // Lazy load dependencies to catch import errors
+    const [{ supabaseAdmin }, { env }] = await Promise.all([
+      import('@/src/lib/supabaseServer').catch(() => ({ supabaseAdmin: null })),
+      import('@/src/config/env').catch(() => ({ env: { server: null } })),
+    ])
+
     // Simple auth check - you can improve this with proper auth
     const authHeader = request.headers.get('authorization')
     const expectedToken = env.server?.RATE_LIMIT_SALT // Using salt as simple token for now
-    
+
     if (authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 503 })
     }
 
     // Parse query params
@@ -41,10 +46,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Logs fetch error:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch logs' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -52,15 +54,11 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        total: count || 0
-      }
+        total: count || 0,
+      },
     })
-
   } catch (error) {
     console.error('Logs endpoint error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

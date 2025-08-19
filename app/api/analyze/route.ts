@@ -9,7 +9,7 @@ import { progressService } from '@/src/services/ProgressService'
 
 // Request schema
 const analyzeRequestSchema = z.object({
-  content: z.string().min(1).max(2000),
+  content: z.string().min(1).max(20000),
   modelId: z.string().optional(),
 })
 
@@ -119,6 +119,33 @@ export async function POST(request: NextRequest) {
     const startTime = Date.now()
 
     console.log(`\n📊 Analyzing ${METRICS.length} metrics in parallel...`)
+
+    // Generate lesson title first
+    let lessonTitle = ''
+    try {
+      const titlePrompt = `Придумай короткое название (3-6 слов) для этого учебного материала по IT. Ответь только названием, без объяснений.
+
+Материал:
+${content.substring(0, 1000)}...
+
+Название:`
+
+      const titleResult = await llmService.analyze(titlePrompt, content.substring(0, 1000), {
+        model: finalModelId,
+        maxTokens: 50,
+        temperature: 0.3,
+      })
+
+      if (titleResult) {
+        // Use the comment field which contains the parsed title
+        lessonTitle = titleResult.comment || 'Учебный материал'
+        // Clean up the title
+        lessonTitle = lessonTitle.trim().replace(/["'`]/g, '').substring(0, 100)
+      }
+    } catch (error) {
+      console.error('Failed to generate title:', error)
+      lessonTitle = 'Учебный материал'
+    }
 
     // Process all metrics in parallel
     const metricPromises = METRICS.map(async (metric, index) => {
@@ -245,6 +272,9 @@ export async function POST(request: NextRequest) {
     // Determine final status
     const finalStatus =
       successCount === METRICS.length ? 'completed' : successCount > 0 ? 'partial' : 'failed'
+
+    // Add lesson title to results
+    results.lessonTitle = lessonTitle
 
     // Update analysis with results
     const { error: updateError } = await supabaseAdmin

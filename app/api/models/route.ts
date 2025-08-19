@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
-import { modelsManager } from '@/src/config/models'
 
 export async function GET() {
   try {
+    // Lazy load the models manager to catch import errors
+    const { modelsManager } = await import('@/src/config/models').catch((error) => {
+      console.error('Failed to load models configuration:', error)
+      throw new Error('Models configuration not available. Please check environment variables.')
+    })
+
     const allModels = modelsManager.getAllConfigs()
     const availableModels = modelsManager.getAvailableModels()
     const defaultModel = modelsManager.getDefaultModel()
@@ -38,6 +43,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Models endpoint error:', error)
-    return NextResponse.json({ error: 'Failed to fetch models' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch models'
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

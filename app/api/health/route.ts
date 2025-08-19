@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/src/lib/supabaseServer'
-import { env } from '@/src/config/env'
 
 export async function GET() {
   const health: Record<string, any> = {
@@ -10,28 +8,51 @@ export async function GET() {
     checks: {},
   }
 
-  // Check environment variables
-  health.checks.env = {
-    hasAnthropicKey: !!env.server?.ANTHROPIC_API_KEY,
-    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    hasSupabaseServiceKey: !!env.server?.SUPABASE_SERVICE_KEY,
-    hasYandexKey: !!env.server?.YANDEX_API_KEY,
-    defaultModel: env.server?.DEFAULT_MODEL || 'not set',
-  }
-
-  // Check database connectivity
   try {
-    const { error } = await supabaseAdmin.from('analyses').select('count').limit(1)
+    // Lazy load dependencies to catch import errors
+    const [{ supabaseAdmin }, { env }] = await Promise.all([
+      import('@/src/lib/supabaseServer').catch(() => ({ supabaseAdmin: null })),
+      import('@/src/config/env').catch(() => ({ env: { server: null } })),
+    ])
 
-    health.checks.database = {
-      connected: !error,
-      error: error?.message || null,
+    // Check environment variables
+    health.checks.env = {
+      hasAnthropicKey: !!env.server?.ANTHROPIC_API_KEY,
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasSupabaseServiceKey: !!env.server?.SUPABASE_SERVICE_KEY,
+      hasYandexKey: !!env.server?.YANDEX_API_KEY,
+      defaultModel: env.server?.DEFAULT_MODEL || 'not set',
     }
-  } catch (dbError) {
+
+    // Check database connectivity
+    if (supabaseAdmin) {
+      try {
+        const { error } = await supabaseAdmin.from('analyses').select('count').limit(1)
+
+        health.checks.database = {
+          connected: !error,
+          error: error?.message || null,
+        }
+      } catch (dbError) {
+        health.checks.database = {
+          connected: false,
+          error: dbError instanceof Error ? dbError.message : 'Unknown error',
+        }
+      }
+    } else {
+      health.checks.database = {
+        connected: false,
+        error: 'Supabase client not available',
+      }
+    }
+  } catch {
+    health.checks.env = {
+      error: 'Failed to load configuration',
+    }
     health.checks.database = {
       connected: false,
-      error: dbError instanceof Error ? dbError.message : 'Unknown error',
+      error: 'Configuration not available',
     }
   }
 

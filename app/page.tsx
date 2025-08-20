@@ -486,7 +486,7 @@ export default function EducationalAnalyzer() {
               <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
               <p
                 className="text-[16px] text-black absolute right-0 text-right"
-                style={{ top: '0px', maxWidth: '300px' }}
+                style={{ top: '0px', maxWidth: '300px', marginTop: '20px' }}
               >
                 оценивает качество контента
                 <br />

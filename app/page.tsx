@@ -507,7 +507,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Логика
                 </h3>
                 <div
@@ -533,7 +541,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Польза
                 </h3>
                 <div
@@ -559,7 +575,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Интерес
                 </h3>
                 <div
@@ -585,7 +609,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Забота
                 </h3>
                 <div
@@ -611,7 +643,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Сложность
                 </h3>
                 <div
@@ -637,7 +677,15 @@ export default function EducationalAnalyzer() {
                 className="flex justify-between items-start"
                 style={{ marginTop: '20px', marginBottom: '8px' }}
               >
-                <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
                   Общий
                   <br />
                   результат

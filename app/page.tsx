@@ -676,32 +676,23 @@ export default function EducationalAnalyzer() {
               className="bg-[#C8E6C9] p-6 flex flex-col"
               style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Общий
-                  <br />
-                  результат
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {overallScore > 0 ? '+' : ''}
-                  {overallScore}
+              <div className="flex-grow flex items-center justify-center">
+                <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
+                  {overallScore + 10}/10
                 </div>
               </div>
-              <div className="flex-grow" />
+              <h3
+                className="text-black"
+                style={{
+                  fontWeight: 600,
+                  fontSize: '32px',
+                  lineHeight: '90%',
+                }}
+              >
+                Общий
+                <br />
+                результат
+              </h3>
             </div>
           </div>
 

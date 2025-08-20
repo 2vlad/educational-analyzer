@@ -485,7 +485,9 @@ export default function EducationalAnalyzer() {
             <div className="flex items-baseline gap-4 mb-2">
               <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
               <p className="text-[16px] text-black">
-                оценивает качество контента на основе LX-метрик
+                оценивает качество контента
+                <br />
+                на основе LX-метрик
               </p>
             </div>
             <p className="text-[14px] text-black">
@@ -498,8 +500,8 @@ export default function EducationalAnalyzer() {
           <div className="grid grid-cols-2 gap-4 mb-8">
             {/* Logic */}
             <div
-              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -508,7 +510,10 @@ export default function EducationalAnalyzer() {
                 <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
                   Логика
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {analysisResult.results?.logic?.score > 0 ? '+' : ''}
                   {analysisResult.results?.logic?.score || 0}
                 </div>
@@ -521,8 +526,8 @@ export default function EducationalAnalyzer() {
 
             {/* Practical */}
             <div
-              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -531,7 +536,10 @@ export default function EducationalAnalyzer() {
                 <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
                   Польза
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {analysisResult.results?.practical?.score > 0 ? '+' : ''}
                   {analysisResult.results?.practical?.score || 0}
                 </div>
@@ -544,8 +552,8 @@ export default function EducationalAnalyzer() {
 
             {/* Interest */}
             <div
-              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -554,7 +562,10 @@ export default function EducationalAnalyzer() {
                 <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
                   Интерес
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {analysisResult.results?.interest?.score > 0 ? '+' : ''}
                   {analysisResult.results?.interest?.score || 0}
                 </div>
@@ -567,8 +578,8 @@ export default function EducationalAnalyzer() {
 
             {/* Care */}
             <div
-              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -577,7 +588,10 @@ export default function EducationalAnalyzer() {
                 <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
                   Забота
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {analysisResult.results?.care?.score > 0 ? '+' : ''}
                   {analysisResult.results?.care?.score || 0}
                 </div>
@@ -590,8 +604,8 @@ export default function EducationalAnalyzer() {
 
             {/* Complexity */}
             <div
-              className="bg-[#F5F5F5] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -600,7 +614,10 @@ export default function EducationalAnalyzer() {
                 <h3 className="text-[28px] font-semibold text-black" style={{ lineHeight: '90%' }}>
                   Сложность
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
                   {analysisResult.results?.complexity?.score || 0}
                 </div>
@@ -613,8 +630,8 @@ export default function EducationalAnalyzer() {
 
             {/* Overall Result */}
             <div
-              className="bg-[#C8E6C9] rounded-lg p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px' }}
+              className="bg-[#C8E6C9] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
             >
               <div
                 className="flex justify-between items-start"
@@ -625,7 +642,10 @@ export default function EducationalAnalyzer() {
                   <br />
                   результат
                 </h3>
-                <div className="text-[32px] font-bold text-black">
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
                   {overallScore > 0 ? '+' : ''}
                   {overallScore}
                 </div>
@@ -635,7 +655,7 @@ export default function EducationalAnalyzer() {
           </div>
 
           {/* Quick Win Section */}
-          <div className="bg-[#F5F5F5] rounded-lg p-6 mb-8" style={{ width: '660px' }}>
+          <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
             <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
             <p className="text-[14px] text-black leading-relaxed">
               {overallScore > 0
@@ -663,7 +683,7 @@ export default function EducationalAnalyzer() {
 
                     {/* Analysis Text */}
                     {data.detailed_analysis && (
-                      <div className="bg-[#F5F5F5] rounded-lg p-6 mb-4">
+                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
                         {typeof data.detailed_analysis === 'string' ? (
                           <p className="text-[14px] text-black leading-relaxed">
@@ -684,7 +704,7 @@ export default function EducationalAnalyzer() {
 
                     {/* Examples */}
                     {data.examples && data.examples.length > 0 && (
-                      <div className="bg-[#F5F5F5] rounded-lg p-6">
+                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
                           Примеры из текста
                         </h4>

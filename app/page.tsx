@@ -718,7 +718,8 @@ export default function EducationalAnalyzer() {
           <div className="space-y-8" style={{ width: '660px' }}>
             {analysisResult.results &&
               Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
-                if (!data || data.error) return null
+                // Skip lessonTitle as it's not a metric
+                if (!data || data.error || metric === 'lessonTitle') return null
 
                 return (
                   <div key={metric} className="bg-white rounded-lg">

@@ -481,16 +481,16 @@ export default function EducationalAnalyzer() {
       <div className="min-h-screen bg-white p-6">
         <div className="max-w-[660px] mx-auto">
           {/* Header */}
-          <header className="mb-8">
-            <div className="flex items-baseline gap-4 mb-2">
+          <header className="mb-8 relative">
+            <div className="mb-2">
               <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
-              <p className="text-[16px] text-black">
+              <p className="text-[16px] text-black absolute left-0" style={{ marginTop: '-30px' }}>
                 оценивает качество контента
                 <br />
                 на основе LX-метрик
               </p>
             </div>
-            <p className="text-[14px] text-black">
+            <p className="text-[14px] text-black mt-8">
               {analysisResult.results?.lessonTitle ||
                 (content ? content.substring(0, 50) + '...' : 'Анализ контента')}
             </p>

@@ -10,7 +10,20 @@ export async function GET() {
 
     const allModels = modelsManager.getAllConfigs()
     const availableModels = modelsManager.getAvailableModels()
-    const defaultModel = modelsManager.getDefaultModel()
+    let defaultModel = modelsManager.getDefaultModel()
+
+    // Log the default model for debugging
+    console.log('Default model from manager:', defaultModel)
+    console.log('DEFAULT_MODEL env var:', process.env.DEFAULT_MODEL || 'not set')
+    console.log('Config default:', allModels.default)
+
+    // Ensure yandex-gpt-pro is default if available
+    if (!defaultModel || defaultModel === 'claude-haiku') {
+      if (availableModels.includes('yandex-gpt-pro')) {
+        defaultModel = 'yandex-gpt-pro'
+        console.log('Overriding default to yandex-gpt-pro')
+      }
+    }
 
     // Format response with model details
     const models = Object.entries(allModels.models).map(([id, config]) => {
@@ -36,8 +49,18 @@ export async function GET() {
       }
     })
 
+    // Sort models to put default first
+    const sortedModels = models.sort((a, b) => {
+      if (a.id === defaultModel) return -1
+      if (b.id === defaultModel) return 1
+      // Then sort yandex-gpt-pro before others
+      if (a.id === 'yandex-gpt-pro') return -1
+      if (b.id === 'yandex-gpt-pro') return 1
+      return 0
+    })
+
     return NextResponse.json({
-      models,
+      models: sortedModels,
       defaultModel,
       switchingEnabled: modelsManager.isModelSwitchingEnabled(),
     })

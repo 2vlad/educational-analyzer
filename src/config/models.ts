@@ -33,11 +33,12 @@ class ModelsManager {
   }
 
   getDefaultModel(): string {
-    // Use env override if available, otherwise use config default
-    if (env.isServer && env.server?.DEFAULT_MODEL) {
+    // Use env override if available and it's not the old default
+    if (env.isServer && env.server?.DEFAULT_MODEL && env.server.DEFAULT_MODEL !== 'claude-haiku') {
       return env.server.DEFAULT_MODEL
     }
-    return this.config.default
+    // Always prefer yandex-gpt-pro if no valid env override
+    return 'yandex-gpt-pro'
   }
 
   listModels(): string[] {

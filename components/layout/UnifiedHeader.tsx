@@ -21,6 +21,13 @@ export default function UnifiedHeader() {
     router.push('/')
   }
 
+  const handleSettingsClick = () => {
+    router.push('/settings')
+  }
+
+  // Determine which button is active
+  const isSettingsActive = pathname === '/settings'
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
@@ -32,12 +39,12 @@ export default function UnifiedHeader() {
 
           {/* Centered Toggle */}
           <div className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
-            {/* Metric Mode Toggle */}
+            {/* Metric Mode Toggle with Settings */}
             <div className="flex items-center bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => handleModeChange('lx')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  metricMode === 'lx'
+                  metricMode === 'lx' && !isSettingsActive
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -47,12 +54,22 @@ export default function UnifiedHeader() {
               <button
                 onClick={() => handleModeChange('custom')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  metricMode === 'custom'
+                  metricMode === 'custom' && !isSettingsActive
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Мой сет
+              </button>
+              <button
+                onClick={handleSettingsClick}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  isSettingsActive
+                    ? 'bg-white text-black shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Настройки
               </button>
             </div>
           </div>
@@ -89,13 +106,13 @@ export default function UnifiedHeader() {
                         <p className="text-xs text-gray-500 mt-1">Бесплатный план</p>
                       </div>
 
-                      {/* Metric Mode Toggle for Mobile */}
+                      {/* Toggle for Mobile with Settings */}
                       <div className="p-3 border-b border-gray-200 md:hidden">
                         <div className="flex items-center bg-gray-100 rounded-full p-1">
                           <button
                             onClick={() => handleModeChange('lx')}
-                            className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                              metricMode === 'lx'
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              metricMode === 'lx' && !isSettingsActive
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
                             }`}
@@ -104,31 +121,29 @@ export default function UnifiedHeader() {
                           </button>
                           <button
                             onClick={() => handleModeChange('custom')}
-                            className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                              metricMode === 'custom'
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              metricMode === 'custom' && !isSettingsActive
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
                             }`}
                           >
                             Мой сет
                           </button>
+                          <button
+                            onClick={handleSettingsClick}
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              isSettingsActive
+                                ? 'bg-white text-black shadow-sm'
+                                : 'text-gray-600'
+                            }`}
+                          >
+                            Настройки
+                          </button>
                         </div>
                       </div>
 
-                      {/* Desktop Menu Items */}
+                      {/* Desktop Menu Items - Only History now */}
                       <div className="border-b border-gray-200">
-                        <Link
-                          href="/settings"
-                          onClick={() => setShowUserMenu(false)}
-                          className={`flex items-center gap-3 px-4 py-2 text-sm ${
-                            pathname === '/settings'
-                              ? 'bg-blue-50 text-blue-600'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <Settings className="w-4 h-4" />
-                          Настройки метрик
-                        </Link>
                         <Link
                           href="/history"
                           onClick={() => setShowUserMenu(false)}

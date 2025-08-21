@@ -9,88 +9,8 @@ import SearchFilter from '@/components/history/SearchFilter'
 import Pagination from '@/components/history/Pagination'
 import ExportButton from '@/components/history/ExportButton'
 import ComparisonView from '@/components/history/ComparisonView'
-import { Loader2, History, Search, Filter, User, ChevronRight, Settings, LogOut } from 'lucide-react'
+import { Loader2, History } from 'lucide-react'
 import { format } from 'date-fns'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-
-// User Account Header Component (same as main page)
-const UserAccountHeader = () => {
-  const { user, signOut } = useAuth()
-  const [showMenu, setShowMenu] = useState(false)
-
-  if (!user) {
-    return (
-      <div className="w-full flex justify-end p-4">
-        <Link href="/login">
-          <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
-            Войти
-          </Button>
-        </Link>
-      </div>
-    )
-  }
-
-  return (
-    <div className="w-full flex justify-between items-center p-4">
-      <Link href="/" className="text-[32px] font-bold text-black hover:opacity-80 transition-opacity">
-        Лёха AI
-      </Link>
-      
-      <div className="relative">
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">{user.email}</span>
-          <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
-        </button>
-
-        {showMenu && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setShowMenu(false)}
-            />
-            <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-              <div className="p-3 border-b border-gray-200">
-                <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              </div>
-              
-              <Link href="/settings" onClick={() => setShowMenu(false)}>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <Settings className="w-4 h-4" />
-                  Настройки метрик
-                </button>
-              </Link>
-              
-              <Link href="/history" onClick={() => setShowMenu(false)}>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <History className="w-4 h-4" />
-                  История анализов
-                </button>
-              </Link>
-              
-              <button
-                onClick={() => {
-                  setShowMenu(false)
-                  signOut()
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
-              >
-                <LogOut className="w-4 h-4" />
-                Выйти
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
 
 interface AnalysisData {
   id: string
@@ -193,10 +113,8 @@ export default function HistoryPage() {
   const pagination = data?.pagination
 
   return (
-    <div className="min-h-screen bg-white">
-      <UserAccountHeader />
-      
-      <div className="max-w-[1200px] mx-auto px-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-[1200px] mx-auto">
         {/* Header - Лёха AI style */}
         <header className="mb-12">
           <div className="mb-4">

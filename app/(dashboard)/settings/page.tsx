@@ -8,7 +8,87 @@ import MetricListView from '@/components/settings/MetricListView'
 import AddMetricForm from '@/components/settings/AddMetricForm'
 import MetricPreview from '@/components/settings/MetricPreview'
 import { Toaster, toast } from 'react-hot-toast'
-import { Loader2, Settings, Plus } from 'lucide-react'
+import { Loader2, Settings, Plus, User, ChevronRight, History, LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
+// User Account Header Component (same as main page)
+const UserAccountHeader = () => {
+  const { user, signOut } = useAuth()
+  const [showMenu, setShowMenu] = useState(false)
+
+  if (!user) {
+    return (
+      <div className="w-full flex justify-end p-4">
+        <Link href="/login">
+          <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
+            Войти
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full flex justify-between items-center p-4">
+      <Link href="/" className="text-[32px] font-bold text-black hover:opacity-80 transition-opacity">
+        Лёха AI
+      </Link>
+      
+      <div className="relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-sm font-medium text-gray-700">{user.email}</span>
+          <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
+        </button>
+
+        {showMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowMenu(false)}
+            />
+            <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+              <div className="p-3 border-b border-gray-200">
+                <p className="text-sm font-medium text-gray-900">{user.email}</p>
+              </div>
+              
+              <Link href="/settings" onClick={() => setShowMenu(false)}>
+                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <Settings className="w-4 h-4" />
+                  Настройки метрик
+                </button>
+              </Link>
+              
+              <Link href="/history" onClick={() => setShowMenu(false)}>
+                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <History className="w-4 h-4" />
+                  История анализов
+                </button>
+              </Link>
+              
+              <button
+                onClick={() => {
+                  setShowMenu(false)
+                  signOut()
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
+              >
+                <LogOut className="w-4 h-4" />
+                Выйти
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth()
@@ -176,90 +256,89 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <Toaster position="top-right" />
+    <div className="min-h-screen bg-white">
+      <UserAccountHeader />
+      
+      <div className="max-w-[1200px] mx-auto px-6">
+        <Toaster position="top-right" />
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Settings className="w-8 h-8 text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Metric Settings</h1>
-              <p className="text-gray-600 mt-1">
-                Customize your analysis metrics to match your evaluation criteria
-              </p>
-            </div>
+        {/* Header - Лёха AI style */}
+        <header className="mb-12">
+          <div className="mb-4">
+            <h1 className="text-[48px] font-bold text-black mb-2">Настройки метрик</h1>
+            <p className="text-[16px] text-black/70">
+              Настройте критерии оценки контента под ваши потребности
+            </p>
           </div>
           <button
             onClick={handleResetToDefaults}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-6 py-2 text-sm text-black/60 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
           >
-            Reset to Defaults
+            Сбросить к стандартным
           </button>
-        </div>
-      </div>
+        </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Metric List */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Your Metrics</h2>
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Metric
-                </button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Metric List */}
+          <div className="lg:col-span-2">
+            <div className="bg-[#F5F5F5] p-8" style={{ borderRadius: '40px' }}>
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-[24px] font-semibold text-black">Ваши метрики</h2>
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Добавить метрику
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <MetricListView
-              metrics={metrics}
-              onReorder={handleReorder}
-              onEdit={setEditingMetric}
-              onDelete={handleDeleteMetric}
-              onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-            />
+              <MetricListView
+                metrics={metrics}
+                onReorder={handleReorder}
+                onEdit={setEditingMetric}
+                onDelete={handleDeleteMetric}
+                onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+              />
+            </div>
+          </div>
+
+          {/* Sidebar - Preview */}
+          <div className="lg:col-span-1">
+            <div className="bg-[#F5F5F5] p-8 sticky top-4" style={{ borderRadius: '40px' }}>
+              <div className="mb-6">
+                <h2 className="text-[24px] font-semibold text-black">Предпросмотр</h2>
+                <p className="text-[14px] text-black/70 mt-1">
+                  Так будут выглядеть метрики при анализе
+                </p>
+              </div>
+              <MetricPreview metrics={metrics.filter((m) => m.is_active)} />
+            </div>
           </div>
         </div>
 
-        {/* Sidebar - Preview */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-4">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Preview</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                See how your metrics will appear in analysis
-              </p>
-            </div>
-            <MetricPreview metrics={metrics.filter((m) => m.is_active)} />
-          </div>
-        </div>
+        {/* Add Metric Modal */}
+        {showAddForm && (
+          <AddMetricForm
+            onSubmit={handleAddMetric}
+            onCancel={() => setShowAddForm(false)}
+            existingNames={metrics.map((m) => m.name)}
+          />
+        )}
+
+        {/* Edit Metric Modal */}
+        {editingMetric && (
+          <AddMetricForm
+            metric={editingMetric}
+            onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
+            onCancel={() => setEditingMetric(null)}
+            existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
+            isEdit
+          />
+        )}
       </div>
-
-      {/* Add Metric Modal */}
-      {showAddForm && (
-        <AddMetricForm
-          onSubmit={handleAddMetric}
-          onCancel={() => setShowAddForm(false)}
-          existingNames={metrics.map((m) => m.name)}
-        />
-      )}
-
-      {/* Edit Metric Modal */}
-      {editingMetric && (
-        <AddMetricForm
-          metric={editingMetric}
-          onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
-          onCancel={() => setEditingMetric(null)}
-          existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
-          isEdit
-        />
-      )}
     </div>
   )
 }

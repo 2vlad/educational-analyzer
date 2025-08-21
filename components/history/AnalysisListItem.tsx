@@ -55,7 +55,7 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
     analysis.content.substring(0, 150) + (analysis.content.length > 150 ? '...' : '')
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-[#F5F5F5] overflow-hidden" style={{ borderRadius: '30px' }}>
       {/* Header */}
       <div className="p-6">
         <div className="flex items-start gap-4">
@@ -65,7 +65,7 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
               type="checkbox"
               checked={selected}
               onChange={(e) => onSelect(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-black border-gray-400 rounded focus:ring-black"
             />
           </div>
 
@@ -74,29 +74,29 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <span className="text-sm text-black/60 flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')}
+                    {format(new Date(analysis.created_at), 'dd.MM.yyyy HH:mm')}
                   </span>
-                  <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <span className="text-sm text-black/60 flex items-center gap-1">
                     <Cpu className="w-4 h-4" />
-                    {analysis.model_used || 'Unknown Model'}
+                    {analysis.model_used || 'Неизвестная модель'}
                   </span>
                 </div>
-                <p className="text-gray-700">{contentPreview}</p>
+                <p className="text-black">{contentPreview}</p>
               </div>
 
               {/* Overall Score */}
               <div className="text-center ml-4">
-                <div className="text-2xl font-bold text-blue-600">{overallScore}</div>
-                <div className="text-xs text-gray-500">Overall</div>
+                <div className="text-[32px] font-bold text-black">{overallScore}</div>
+                <div className="text-xs text-black/60">Общий</div>
               </div>
             </div>
 
             {/* Expand Button */}
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+              className="flex items-center gap-2 text-sm text-black hover:text-black/80 transition-colors"
             >
               <FileText className="w-4 h-4" />
               {expanded ? 'Hide Details' : 'View Full Analysis'}

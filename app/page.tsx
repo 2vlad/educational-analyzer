@@ -2,8 +2,10 @@
 
 import type React from 'react'
 import { useState, useEffect } from 'react'
-import { CloudUpload, Loader2, ChevronRight } from 'lucide-react'
+import { CloudUpload, Loader2, ChevronRight, User, Settings, History, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/src/providers/AuthProvider'
+import Link from 'next/link'
 import {
   Select,
   SelectContent,
@@ -27,6 +29,78 @@ const METRIC_NAMES: Record<string, string> = {
   complexity: 'Сложность',
   interest: 'Интерес',
   care: 'Забота',
+}
+
+// User Account Header Component
+const UserAccountHeader = () => {
+  const { user, signOut } = useAuth()
+  const [showMenu, setShowMenu] = useState(false)
+
+  if (!user) {
+    return (
+      <div className="w-full flex justify-end p-4">
+        <Link href="/login">
+          <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
+            Войти
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full flex justify-end p-4 relative">
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
+      >
+        <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+          <User className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-sm font-medium text-gray-700">{user.email}</span>
+        <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
+      </button>
+
+      {showMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setShowMenu(false)}
+          />
+          <div className="absolute right-4 top-16 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+            <div className="p-3 border-b border-gray-200">
+              <p className="text-sm font-medium text-gray-900">{user.email}</p>
+            </div>
+            
+            <Link href="/settings" onClick={() => setShowMenu(false)}>
+              <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <Settings className="w-4 h-4" />
+                Настройки метрик
+              </button>
+            </Link>
+            
+            <Link href="/history" onClick={() => setShowMenu(false)}>
+              <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <History className="w-4 h-4" />
+                История анализов
+              </button>
+            </Link>
+            
+            <button
+              onClick={() => {
+                setShowMenu(false)
+                signOut()
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
+            >
+              <LogOut className="w-4 h-4" />
+              Выйти
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -788,17 +862,21 @@ export default function EducationalAnalyzer() {
 
   // Upload screen - New design based on Figma
   return (
-    <div className="min-h-screen bg-white flex justify-center p-6">
-      <div className="w-full max-w-[450px] mt-[50px]">
-        {/* Header with title, subtitle and image */}
-        <div className="flex justify-between mb-10">
-          <div>
-            <h1
-              className="text-[48px] font-bold text-black mb-3 leading-tight"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Лёха AI
-            </h1>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* User Account Header */}
+      <UserAccountHeader />
+      
+      <div className="flex-1 flex justify-center p-6">
+        <div className="w-full max-w-[450px] mt-[50px]">
+          {/* Header with title, subtitle and image */}
+          <div className="flex justify-between mb-10">
+            <div>
+              <h1
+                className="text-[48px] font-bold text-black mb-3 leading-tight"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Лёха AI
+              </h1>
             <p
               className="text-[20px] font-normal text-black"
               style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}

@@ -9,8 +9,88 @@ import SearchFilter from '@/components/history/SearchFilter'
 import Pagination from '@/components/history/Pagination'
 import ExportButton from '@/components/history/ExportButton'
 import ComparisonView from '@/components/history/ComparisonView'
-import { Loader2, History, Search, Filter } from 'lucide-react'
+import { Loader2, History, Search, Filter, User, ChevronRight, Settings, LogOut } from 'lucide-react'
 import { format } from 'date-fns'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
+// User Account Header Component (same as main page)
+const UserAccountHeader = () => {
+  const { user, signOut } = useAuth()
+  const [showMenu, setShowMenu] = useState(false)
+
+  if (!user) {
+    return (
+      <div className="w-full flex justify-end p-4">
+        <Link href="/login">
+          <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
+            Войти
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full flex justify-between items-center p-4">
+      <Link href="/" className="text-[32px] font-bold text-black hover:opacity-80 transition-opacity">
+        Лёха AI
+      </Link>
+      
+      <div className="relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-sm font-medium text-gray-700">{user.email}</span>
+          <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${showMenu ? 'rotate-90' : ''}`} />
+        </button>
+
+        {showMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowMenu(false)}
+            />
+            <div className="absolute right-0 top-12 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+              <div className="p-3 border-b border-gray-200">
+                <p className="text-sm font-medium text-gray-900">{user.email}</p>
+              </div>
+              
+              <Link href="/settings" onClick={() => setShowMenu(false)}>
+                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <Settings className="w-4 h-4" />
+                  Настройки метрик
+                </button>
+              </Link>
+              
+              <Link href="/history" onClick={() => setShowMenu(false)}>
+                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  <History className="w-4 h-4" />
+                  История анализов
+                </button>
+              </Link>
+              
+              <button
+                onClick={() => {
+                  setShowMenu(false)
+                  signOut()
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
+              >
+                <LogOut className="w-4 h-4" />
+                Выйти
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface AnalysisData {
   id: string
@@ -113,24 +193,25 @@ export default function HistoryPage() {
   const pagination = data?.pagination
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <History className="w-8 h-8 text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Analysis History</h1>
-              <p className="text-gray-600 mt-1">View and manage your past content analyses</p>
-            </div>
+    <div className="min-h-screen bg-white">
+      <UserAccountHeader />
+      
+      <div className="max-w-[1200px] mx-auto px-6">
+        {/* Header - Лёха AI style */}
+        <header className="mb-12">
+          <div className="mb-4">
+            <h1 className="text-[48px] font-bold text-black mb-2">История анализов</h1>
+            <p className="text-[16px] text-black/70">
+              Просматривайте и управляйте вашими прошлыми анализами контента
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {selectedAnalyses.length > 0 && (
               <button
                 onClick={() => setCompareMode(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
               >
-                Compare Selected ({selectedAnalyses.length})
+                Сравнить выбранные ({selectedAnalyses.length})
               </button>
             )}
             <ExportButton
@@ -139,85 +220,87 @@ export default function HistoryPage() {
               totalCount={analyses.length}
             />
           </div>
+        </header>
+
+        {/* Search and Filters */}
+        <div className="mb-8">
+          <SearchFilter
+            search={search}
+            onSearchChange={setSearch}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            onApply={() => {
+              setPage(1)
+              refetch()
+            }}
+          />
         </div>
-      </div>
 
-      {/* Search and Filters */}
-      <SearchFilter
-        search={search}
-        onSearchChange={setSearch}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
-        onApply={() => {
-          setPage(1)
-          refetch()
-        }}
-      />
+        {/* Comparison View */}
+        {compareMode && selectedAnalyses.length > 0 && (
+          <ComparisonView
+            analysisIds={selectedAnalyses}
+            analyses={analyses.filter((a) => selectedAnalyses.includes(a.id))}
+            onClose={() => {
+              setCompareMode(false)
+              setSelectedAnalyses([])
+            }}
+          />
+        )}
 
-      {/* Comparison View */}
-      {compareMode && selectedAnalyses.length > 0 && (
-        <ComparisonView
-          analysisIds={selectedAnalyses}
-          analyses={analyses.filter((a) => selectedAnalyses.includes(a.id))}
-          onClose={() => {
-            setCompareMode(false)
-            setSelectedAnalyses([])
-          }}
-        />
-      )}
-
-      {/* Analysis List */}
-      {!compareMode && (
-        <>
-          {analyses.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-              <div className="text-center">
-                <History className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No analyses yet</h3>
-                <p className="text-gray-600 mb-6">
-                  Start analyzing content to see your history here
-                </p>
-                <button
-                  onClick={() => router.push('/')}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Analyze Content
-                </button>
+        {/* Analysis List */}
+        {!compareMode && (
+          <>
+            {analyses.length === 0 ? (
+              <div className="bg-[#F5F5F5] p-12" style={{ borderRadius: '40px' }}>
+                <div className="text-center">
+                  <History className="w-12 h-12 text-black/40 mx-auto mb-4" />
+                  <h3 className="text-[24px] font-medium text-black mb-2">Пока нет анализов</h3>
+                  <p className="text-black/60 mb-6">
+                    Начните анализировать контент, чтобы увидеть вашу историю
+                  </p>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                  >
+                    Начать анализ
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {analyses.map((analysis) => (
-                <AnalysisListItem
-                  key={analysis.id}
-                  analysis={analysis}
-                  selected={selectedAnalyses.includes(analysis.id)}
-                  onSelect={(selected) => {
-                    if (selected) {
-                      setSelectedAnalyses([...selectedAnalyses, analysis.id])
-                    } else {
-                      setSelectedAnalyses(selectedAnalyses.filter((id) => id !== analysis.id))
-                    }
-                  }}
-                />
-              ))}
-            </div>
-          )}
+            ) : (
+              <div className="space-y-4">
+                {analyses.map((analysis) => (
+                  <AnalysisListItem
+                    key={analysis.id}
+                    analysis={analysis}
+                    selected={selectedAnalyses.includes(analysis.id)}
+                    onSelect={(selected) => {
+                      if (selected) {
+                        setSelectedAnalyses([...selectedAnalyses, analysis.id])
+                      } else {
+                        setSelectedAnalyses(selectedAnalyses.filter((id) => id !== analysis.id))
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
 
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              hasNextPage={pagination.hasNextPage}
-              hasPreviousPage={pagination.hasPreviousPage}
-              onPageChange={setPage}
-            />
-          )}
-        </>
-      )}
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+                onPageChange={setPage}
+              />
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

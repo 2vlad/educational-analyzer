@@ -20,7 +20,7 @@ const reorderSchema = z.object({
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check authentication
     const {

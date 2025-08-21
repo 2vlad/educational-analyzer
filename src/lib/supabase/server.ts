@@ -5,8 +5,8 @@ import { cookies } from 'next/headers'
  * Create a Supabase client for server-side operations with cookie-based auth
  * This client respects RLS policies based on the authenticated user
  */
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,8 +43,8 @@ export function createClient() {
  * Create a Supabase client for server-side operations with service role key
  * This client bypasses RLS and should be used carefully for admin operations
  */
-export function createServiceClient() {
-  const cookieStore = cookies()
+export async function createServiceClient() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -16,10 +16,11 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type')
 
     // Get client IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
-               request.headers.get('x-real-ip') || 
-               'unknown'
-    
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0] ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
+
     // Add IP header for API routes to use
     response.headers.set('x-client-ip', ip)
 
@@ -80,19 +81,15 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getSession()
 
   // Protected routes that require authentication
-  const protectedPaths = [
-    '/dashboard',
-    '/settings',
-    '/history',
-    '/api/user',
-    '/api/configuration',
-  ]
+  const protectedPaths = ['/dashboard', '/settings', '/history', '/api/user', '/api/configuration']
 
   const path = request.nextUrl.pathname
-  const isProtectedPath = protectedPaths.some(p => path.startsWith(p))
+  const isProtectedPath = protectedPaths.some((p) => path.startsWith(p))
 
   if (isProtectedPath) {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     if (!user) {
       // Redirect to login page for web routes
@@ -100,10 +97,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url))
       }
       // Return 401 for protected API routes
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
   }
 

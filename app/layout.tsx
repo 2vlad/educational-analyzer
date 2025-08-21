@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import type React from 'react'
+import { AuthProvider } from '@/src/providers/AuthProvider'
+import { QueryProvider } from '@/src/providers/QueryProvider'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -21,7 +23,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <AuthProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </AuthProvider>
+      </body>
     </html>
   )
 }

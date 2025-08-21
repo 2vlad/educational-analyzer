@@ -54,7 +54,7 @@ export class RateLimiter {
     if (existingLimit) {
       // Existing rate limit found
       const remaining = this.maxRequests - existingLimit.count
-      
+
       if (remaining <= 0) {
         // Rate limit exceeded
         return {
@@ -84,13 +84,11 @@ export class RateLimiter {
       }
     } else {
       // No existing limit, create new one
-      const { error: insertError } = await supabase
-        .from('rate_limits')
-        .insert({
-          ip_hash: hashedId,
-          window_start: now.toISOString(),
-          count: 1,
-        })
+      const { error: insertError } = await supabase.from('rate_limits').insert({
+        ip_hash: hashedId,
+        window_start: now.toISOString(),
+        count: 1,
+      })
 
       if (insertError) {
         console.error('Rate limit insert error:', insertError)
@@ -130,7 +128,7 @@ export class RateLimiter {
     const data = encoder.encode(identifier)
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
     return hashHex
   }
 }
@@ -139,10 +137,7 @@ export class RateLimiter {
  * Get identifier for rate limiting
  * Uses user ID for authenticated users, IP for guests
  */
-export function getRateLimitIdentifier(
-  request: Request,
-  userId?: string
-): string {
+export function getRateLimitIdentifier(request: Request, userId?: string): string {
   if (userId) {
     return `user:${userId}`
   }
@@ -151,7 +146,7 @@ export function getRateLimitIdentifier(
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
   const cfIp = request.headers.get('cf-connecting-ip') // Cloudflare
-  
+
   const ip = forwarded?.split(',')[0] || realIp || cfIp || 'unknown'
   return `ip:${ip}`
 }

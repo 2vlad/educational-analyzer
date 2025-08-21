@@ -31,14 +31,12 @@ class Logger {
 
     try {
       if (this.isServer) {
-        await supabaseAdmin
-          .from('system_logs')
-          .insert(logsToFlush)
+        await supabaseAdmin.from('system_logs').insert(logsToFlush)
       }
     } catch (error) {
       // Fall back to console if DB insert fails
       console.error('Failed to flush logs to database:', error)
-      logsToFlush.forEach(log => {
+      logsToFlush.forEach((log) => {
         console.log(`[${log.level.toUpperCase()}] ${log.message}`, log.metadata)
       })
     }
@@ -51,9 +49,9 @@ class Logger {
 
   private sanitizeMetadata(metadata?: LogMetadata): LogMetadata | undefined {
     if (!metadata) return undefined
-    
+
     const sanitized = { ...metadata }
-    
+
     // Truncate large fields
     if (sanitized.promptSnippet && typeof sanitized.promptSnippet === 'string') {
       sanitized.promptSnippet = this.truncate(sanitized.promptSnippet, 500)
@@ -61,31 +59,31 @@ class Logger {
     if (sanitized.contentSnippet && typeof sanitized.contentSnippet === 'string') {
       sanitized.contentSnippet = this.truncate(sanitized.contentSnippet, 500)
     }
-    
+
     // Redact sensitive keys
     const sensitiveKeys = ['api_key', 'apiKey', 'token', 'password', 'secret']
-    Object.keys(sanitized).forEach(key => {
-      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+    Object.keys(sanitized).forEach((key) => {
+      if (sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))) {
         sanitized[key] = '[REDACTED]'
       }
     })
-    
+
     return sanitized
   }
 
   private log(level: LogLevel, message: string, metadata?: LogMetadata) {
     const sanitizedMetadata = this.sanitizeMetadata(metadata)
-    
+
     // Always log to console
     const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'
     console[consoleMethod](`[${level.toUpperCase()}] ${message}`, sanitizedMetadata || '')
-    
+
     // Queue for database insert (server only)
     if (this.isServer) {
       this.queue.push({
         level,
         message,
-        metadata: sanitizedMetadata
+        metadata: sanitizedMetadata,
       })
     }
   }
@@ -135,12 +133,7 @@ class Logger {
     this.error('LLM_REQUEST_ERROR', metadata)
   }
 
-  modelSwitch(metadata: {
-    from: string
-    to: string
-    reason: string
-    analysisId?: string
-  }) {
+  modelSwitch(metadata: { from: string; to: string; reason: string; analysisId?: string }) {
     this.info('MODEL_SWITCH', metadata)
   }
 
@@ -162,25 +155,15 @@ class Logger {
     this.info('ANALYSIS_COMPLETE', metadata)
   }
 
-  llmSuccess(metadata: {
-    metric: string
-    attempt: number
-  }) {
+  llmSuccess(metadata: { metric: string; attempt: number }) {
     this.info('LLM_SUCCESS', metadata)
   }
 
-  llmRetry(metadata: {
-    metric: string
-    attempt: number
-    error: string
-  }) {
+  llmRetry(metadata: { metric: string; attempt: number; error: string }) {
     this.warn('LLM_RETRY', metadata)
   }
 
-  modelFallback(metadata: {
-    metric: string
-    fallbackModel: string
-  }) {
+  modelFallback(metadata: { metric: string; fallbackModel: string }) {
     this.info('MODEL_FALLBACK', metadata)
   }
 

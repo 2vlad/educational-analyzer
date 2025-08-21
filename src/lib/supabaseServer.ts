@@ -12,9 +12,9 @@ export const supabaseAdmin = createClient(
   {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
-  }
+      persistSession: false,
+    },
+  },
 )
 
 // Helper function to get server-side Supabase client

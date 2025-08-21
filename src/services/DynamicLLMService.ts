@@ -20,7 +20,7 @@ import {
   DynamicAnalysisOptions,
   DEFAULT_METRIC_CONFIGS,
   validateMetricConfigs,
-  ValidationError
+  ValidationError,
 } from '@/src/types/metrics'
 
 /**
@@ -72,10 +72,7 @@ export class DynamicLLMService {
   /**
    * Analyze content using a single metric configuration
    */
-  private async analyzeSingleMetric(
-    content: string,
-    config: MetricConfig
-  ): Promise<MetricResult> {
+  private async analyzeSingleMetric(content: string, config: MetricConfig): Promise<MetricResult> {
     const modelConfig = modelsManager.getModelConfig(this.currentProviderId)
     if (!modelConfig) {
       throw new Error(`Model configuration not found: ${this.currentProviderId}`)
@@ -103,7 +100,7 @@ export class DynamicLLMService {
     try {
       // Get provider and generate
       const provider = this.getProvider(this.currentProviderId)
-      
+
       // For backward compatibility, try to load existing prompt file if it exists
       // Otherwise use the dynamic prompt
       let promptToUse = filledPrompt
@@ -125,7 +122,7 @@ export class DynamicLLMService {
           temperature: modelConfig.temperature,
           maxTokens: modelConfig.maxTokens,
           timeoutMs: env.server?.REQUEST_TIMEOUT || 30000,
-        }
+        },
       )
 
       // Log success
@@ -141,7 +138,6 @@ export class DynamicLLMService {
       // Parse the response to extract score and feedback
       const parsedResult = this.parseMetricResponse(result.text, config)
       return parsedResult
-
     } catch (error) {
       // Log error
       logger.llmRequestError({
@@ -158,7 +154,7 @@ export class DynamicLLMService {
         metric: config.name,
         score: 0,
         feedback: 'Analysis failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   }
@@ -173,7 +169,7 @@ export class DynamicLLMService {
       /[Ss]core[:\s]+([+-]?\d+(?:\.\d+)?)/,
       /([+-]?\d+(?:\.\d+)?)\s*\/\s*1/,
       /^([+-]?\d+(?:\.\d+)?)/m,
-      /:\s*([+-]?\d+(?:\.\d+)?)/
+      /:\s*([+-]?\d+(?:\.\d+)?)/,
     ]
 
     let score = 0
@@ -191,14 +187,14 @@ export class DynamicLLMService {
     // Extract feedback (everything except the score line)
     const feedback = response
       .split('\n')
-      .filter(line => !line.match(/^[Ss]core[:\s]/))
+      .filter((line) => !line.match(/^[Ss]core[:\s]/))
       .join('\n')
       .trim()
 
     return {
       metric: config.name,
       score,
-      feedback: feedback || response
+      feedback: feedback || response,
     }
   }
 
@@ -207,20 +203,20 @@ export class DynamicLLMService {
    */
   async analyzeWithConfigs(
     content: string,
-    options: DynamicAnalysisOptions = {}
+    options: DynamicAnalysisOptions = {},
   ): Promise<AnalysisResponse> {
     // Use provided configs or fall back to defaults
     const configs = options.configurations || this.defaultConfigs
-    
+
     // Validate configurations
     const errors = validateMetricConfigs(configs)
     if (errors.length > 0) {
-      throw new Error(`Invalid configurations: ${errors.map(e => e.message).join(', ')}`)
+      throw new Error(`Invalid configurations: ${errors.map((e) => e.message).join(', ')}`)
     }
 
     // Filter active configs and sort by display order
     const activeConfigs = configs
-      .filter(c => c.is_active)
+      .filter((c) => c.is_active)
       .sort((a, b) => a.display_order - b.display_order)
 
     // Apply max metrics limit if specified
@@ -232,17 +228,18 @@ export class DynamicLLMService {
     // Process all metrics in parallel for better performance
     const startTime = Date.now()
     const results = await Promise.all(
-      configsToProcess.map(config => this.analyzeSingleMetric(content, config))
+      configsToProcess.map((config) => this.analyzeSingleMetric(content, config)),
     )
 
     // Calculate overall score (average of all scores)
     const validScores = results
-      .filter(r => !r.error && typeof r.score === 'number')
-      .map(r => r.score)
-    
-    const overallScore = validScores.length > 0
-      ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
-      : 0
+      .filter((r) => !r.error && typeof r.score === 'number')
+      .map((r) => r.score)
+
+    const overallScore =
+      validScores.length > 0
+        ? validScores.reduce((sum, score) => sum + score, 0) / validScores.length
+        : 0
 
     const duration = Date.now() - startTime
 
@@ -251,7 +248,7 @@ export class DynamicLLMService {
       overallScore,
       model: this.currentProviderId,
       duration,
-      configurationSnapshot: configsToProcess
+      configurationSnapshot: configsToProcess,
     }
   }
 
@@ -261,7 +258,7 @@ export class DynamicLLMService {
    */
   async analyze(content: string, metric: Metric): Promise<GenerateResult> {
     // Find matching config from defaults
-    const config = this.defaultConfigs.find(c => c.id === metric)
+    const config = this.defaultConfigs.find((c) => c.id === metric)
     if (!config) {
       throw new Error(`Unknown metric: ${metric}`)
     }
@@ -293,7 +290,7 @@ export class DynamicLLMService {
   async analyzeWithRetry(
     content: string,
     metric: Metric,
-    maxRetries?: number
+    maxRetries?: number,
   ): Promise<GenerateResult> {
     const retries = maxRetries || env.server?.MAX_RETRIES || 3
     let lastError: Error | undefined
@@ -343,7 +340,7 @@ export class DynamicLLMService {
   setDefaultConfigs(configs: MetricConfig[]): void {
     const errors = validateMetricConfigs(configs)
     if (errors.length > 0) {
-      throw new Error(`Invalid default configurations: ${errors.map(e => e.message).join(', ')}`)
+      throw new Error(`Invalid default configurations: ${errors.map((e) => e.message).join(', ')}`)
     }
     this.defaultConfigs = configs
   }

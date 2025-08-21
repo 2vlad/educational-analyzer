@@ -119,7 +119,14 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family:
+      var(--font-inter),
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      system-ui,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -152,6 +159,6 @@
   animation: slideDown 200ms ease-out;
 }
 
-[data-radix-select-content][data-state="closed"] {
+[data-radix-select-content][data-state='closed'] {
   animation: slideUp 200ms ease-out;
 }

@@ -19,7 +19,10 @@ export function useSession() {
     // Get initial session
     const getSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
         if (error) throw error
         setSession(session)
       } catch (err) {
@@ -32,12 +35,12 @@ export function useSession() {
     getSession()
 
     // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
-        setLoading(false)
-      }
-    )
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setLoading(false)
+    })
 
     return () => subscription.unsubscribe()
   }, [])

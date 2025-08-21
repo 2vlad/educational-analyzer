@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Educational Analyzer - A multi-user SaaS platform for analyzing educational content quality using AI. The system allows users to:
+
 - Create personal accounts and manage their own analysis metrics
 - Customize evaluation cards and prompts
 - Save and view analysis history
@@ -83,6 +84,7 @@ task-master set-status --id=<id> --status=done # Complete task
 ### Current Metrics
 
 The system currently uses 5 hardcoded metrics:
+
 1. **logic** - Logical structure and argumentation
 2. **practical** - Practical applicability
 3. **complexity** - Content depth and complexity
@@ -96,22 +98,26 @@ These will be migrated to database-driven configurations.
 Based on PRD-2.txt, the implementation follows these stages:
 
 ### Stage 1: Database Schema Setup (Task ID: 1)
+
 - Create `profiles` table linked to auth.users
 - Create `metric_configurations` table for storing metrics
 - Modify `analyses` table to add user_id and configuration_snapshot
 - Implement database triggers for user onboarding
 
 ### Stage 2: Core Refactoring (Tasks 5-6)
+
 - Refactor LLMService to accept dynamic metric configurations
 - Update /api/analyze to support authenticated users
 - Implement configuration snapshot saving
 
 ### Stage 3: Authentication (Tasks 7-8)
+
 - Integrate Supabase Auth with Next.js
 - Create login/registration UI components
 - Implement session management
 
 ### Stage 4: User Features (Tasks 9-11)
+
 - Configuration management API endpoints
 - Settings interface for metric customization
 - Analysis history page with configuration snapshots
@@ -182,18 +188,21 @@ analyses (
 ## Important Considerations
 
 ### Security
+
 - Never expose API keys in client-side code
 - Validate all user inputs, especially prompts
 - Implement prompt injection prevention
 - Use HTTPS in production
 
 ### Performance
+
 - Cache default configurations
 - Implement pagination for history
 - Use database indexes on frequently queried columns
 - Optimize prompt lengths for AI providers
 
 ### Backward Compatibility
+
 - Maintain full guest mode functionality
 - Existing analyses must remain accessible
 - Default metrics available to all users
@@ -202,6 +211,7 @@ analyses (
 ## Environment Variables
 
 Required in `.env.local`:
+
 ```
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=
@@ -223,11 +233,13 @@ This project uses Task Master AI for task management. Key tasks are tracked in `
 ## Design References
 
 The UI implementation follows the designs provided in:
+
 - design-1.png, design-2.png: Analysis results interface
 - design-3.png: Settings/configuration interface
 - design-4.png: Authentication interface
 
 Key UI elements:
+
 - Metric cards with +1/0/-1 scoring
 - Overall result display
 - User account menu in top-right

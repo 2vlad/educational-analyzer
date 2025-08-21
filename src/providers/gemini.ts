@@ -14,13 +14,17 @@ export class GeminiProvider implements LLMProvider {
     }
   }
 
-  async generate(prompt: string, content: string, options: GenerateOptions = {}): Promise<GenerateResult> {
+  async generate(
+    prompt: string,
+    content: string,
+    options: GenerateOptions = {},
+  ): Promise<GenerateResult> {
     if (!this.client) {
       throw new ProviderError(
         'Google API key not configured',
         ERROR_CODES.AUTH_ERROR,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -30,7 +34,7 @@ export class GeminiProvider implements LLMProvider {
         'Gemini model configuration not found',
         ERROR_CODES.INVALID_REQUEST,
         false,
-        this.providerName
+        this.providerName,
       )
     }
 
@@ -39,7 +43,7 @@ export class GeminiProvider implements LLMProvider {
 
     try {
       // Get the generative model
-      const model = this.client.getGenerativeModel({ 
+      const model = this.client.getGenerativeModel({
         model: options.model || modelConfig.model,
       })
 
@@ -51,7 +55,7 @@ export class GeminiProvider implements LLMProvider {
 
       // Create timeout promise if needed
       let timeoutId: NodeJS.Timeout | undefined
-      const timeoutPromise = options.timeoutMs 
+      const timeoutPromise = options.timeoutMs
         ? new Promise<never>((_, reject) => {
             timeoutId = setTimeout(() => {
               reject(new Error('Timeout'))
@@ -65,14 +69,14 @@ export class GeminiProvider implements LLMProvider {
         generationConfig,
       })
 
-      const result = timeoutPromise 
+      const result = timeoutPromise
         ? await Promise.race([generatePromise, timeoutPromise])
         : await generatePromise
 
       if (timeoutId) clearTimeout(timeoutId)
 
       const durationMs = Date.now() - startTime
-      
+
       // Extract text from response
       const response = result.response
       const responseText = response.text()
@@ -86,34 +90,29 @@ export class GeminiProvider implements LLMProvider {
         tokensUsed: undefined, // Gemini doesn't provide token usage in the same way
         durationMs,
         provider: this.providerName,
-        model: modelConfig.model
+        model: modelConfig.model,
       }
     } catch (error: any) {
       // Handle different error types
       if (error.message === 'Timeout') {
-        throw new ProviderError(
-          'Request timeout',
-          ERROR_CODES.TIMEOUT,
-          true,
-          this.providerName
-        )
+        throw new ProviderError('Request timeout', ERROR_CODES.TIMEOUT, true, this.providerName)
       }
-      
+
       if (error.status === 429 || error.message?.includes('quota')) {
         throw new ProviderError(
           'Rate limit exceeded',
           ERROR_CODES.RATE_LIMIT,
           true,
-          this.providerName
+          this.providerName,
         )
       }
-      
+
       if (error.status === 401 || error.message?.includes('API key')) {
         throw new ProviderError(
           'Authentication failed',
           ERROR_CODES.AUTH_ERROR,
           false,
-          this.providerName
+          this.providerName,
         )
       }
 
@@ -121,7 +120,7 @@ export class GeminiProvider implements LLMProvider {
         error.message || 'Provider error',
         ERROR_CODES.PROVIDER_ERROR,
         error.status >= 500,
-        this.providerName
+        this.providerName,
       )
     }
   }

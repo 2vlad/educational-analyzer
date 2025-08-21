@@ -153,10 +153,7 @@ export async function POST(request: NextRequest) {
 
       if (defaultError) {
         console.error('Failed to load default configurations:', defaultError)
-        return NextResponse.json(
-          { error: 'Failed to load metric configurations' },
-          { status: 500 },
-        )
+        return NextResponse.json({ error: 'Failed to load metric configurations' }, { status: 500 })
       }
 
       if (defaultConfigs && defaultConfigs.length > 0) {
@@ -172,10 +169,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (metricConfigs.length === 0) {
-      return NextResponse.json(
-        { error: 'No metric configurations available' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'No metric configurations available' }, { status: 500 })
     }
 
     // Validate and sanitize model ID
@@ -203,9 +197,9 @@ export async function POST(request: NextRequest) {
 
     // Create analysis record with user_id and configuration_snapshot
     const analysisId = globalThis.crypto.randomUUID()
-    const analysis: InsertAnalysis & { 
-      user_id?: string, 
-      configuration_snapshot?: any 
+    const analysis: InsertAnalysis & {
+      user_id?: string
+      configuration_snapshot?: any
     } = {
       content,
       status: 'running',
@@ -266,12 +260,7 @@ export async function POST(request: NextRequest) {
           successCount++
 
           // Update progress
-          await progressService.updateMetricProgress(
-            analysisId,
-            result.metric,
-            'completed',
-            100,
-          )
+          await progressService.updateMetricProgress(analysisId, result.metric, 'completed', 100)
         } else {
           results[result.metric] = { error: result.error }
           failCount++
@@ -300,8 +289,8 @@ export async function POST(request: NextRequest) {
         successCount === metricConfigs.length
           ? 'completed'
           : successCount > 0
-          ? 'partial'
-          : 'failed'
+            ? 'partial'
+            : 'failed'
 
       // Update analysis with results
       const { error: updateError } = await supabaseAdmin
@@ -365,10 +354,7 @@ export async function POST(request: NextRequest) {
         analysisId,
       })
 
-      return NextResponse.json(
-        { error: 'Failed to process analysis' },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: 'Failed to process analysis' }, { status: 500 })
     }
   } catch (error) {
     logger.error('Analyze V2 endpoint error', {

@@ -74,10 +74,7 @@ export class ProgressService {
         ...progress.metricStatus[metricIndex],
         status,
         progress: metricProgress,
-        startTime:
-          status === 'processing'
-            ? now
-            : progress.metricStatus[metricIndex].startTime,
+        startTime: status === 'processing' ? now : progress.metricStatus[metricIndex].startTime,
         endTime: status === 'completed' || status === 'failed' ? now : undefined,
       }
 
@@ -180,7 +177,7 @@ export class ProgressService {
   // Get progress message based on metric and sub-progress
   private getProgressMessage(metric: string, subProgress: number): string {
     const metricName = this.getMetricDisplayName(metric)
-    
+
     if (subProgress < 30) {
       return `Initializing ${metricName} analysis...`
     } else if (subProgress < 60) {

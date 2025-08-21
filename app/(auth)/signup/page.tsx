@@ -7,7 +7,14 @@ import { createClient } from '@/src/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Loader2, CheckCircle } from 'lucide-react'
 
@@ -86,16 +93,14 @@ export default function SignupPage() {
             <div className="flex justify-center mb-4">
               <CheckCircle className="h-12 w-12 text-green-500" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center">
-              Регистрация успешна!
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Регистрация успешна!</CardTitle>
           </CardHeader>
           <CardContent>
             <Alert>
               <AlertTitle>Проверьте вашу почту</AlertTitle>
               <AlertDescription>
-                Мы отправили вам письмо с подтверждением на {email}.
-                Пожалуйста, перейдите по ссылке в письме для активации аккаунта.
+                Мы отправили вам письмо с подтверждением на {email}. Пожалуйста, перейдите по ссылке
+                в письме для активации аккаунта.
               </AlertDescription>
             </Alert>
           </CardContent>

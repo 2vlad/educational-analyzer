@@ -460,12 +460,23 @@ export default function EducationalAnalyzer() {
   }
 
   if (currentScreen === 'results' && analysisResult) {
-    // Calculate overall score
-    const overallScore = analysisResult.results
-      ? Object.values(analysisResult.results).reduce((sum: number, data: any) => {
-          return sum + (data?.score || 0)
-        }, 0)
-      : 0
+    // Calculate overall score and count metrics
+    let overallScore = 0
+    let metricCount = 0
+    
+    if (analysisResult.results) {
+      Object.entries(analysisResult.results).forEach(([key, data]: [string, any]) => {
+        // Skip non-metric fields like lessonTitle
+        if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
+          overallScore += (data.score || 0)
+          metricCount++
+        }
+      })
+    }
+    
+    // Calculate total possible score based on number of metrics
+    const totalPossibleScore = metricCount * 5 // Range is -2 to +2, total spread is 5
+    const adjustedScore = overallScore + (metricCount * 2) // Shift from -2..+2 to 0..4 per metric
 
     // Get shortened comment for metric cards (max 150 chars)
     const getShortComment = (comment: string | undefined) => {
@@ -686,7 +697,7 @@ export default function EducationalAnalyzer() {
             >
               <div className="flex-grow flex items-center justify-center">
                 <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
-                  {overallScore + 10}/20
+                  {adjustedScore}/{totalPossibleScore}
                 </div>
               </div>
               <h3

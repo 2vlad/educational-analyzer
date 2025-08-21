@@ -122,7 +122,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Удалить навсегда
+                    Удалить
                   </button>
                 </div>
               </>
@@ -159,7 +159,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                Удалить навсегда
+                Удалить
               </button>
             </div>
           </div>

@@ -42,6 +42,10 @@ function PreviewCard({ metric, score = 0 }: PreviewCardProps) {
 export default function MetricPreview({ metrics }: MetricPreviewProps) {
   // Simulate different scores for preview
   const sampleScores = [2, 1, 0, -1, -2]
+  
+  // Calculate max possible score based on number of metrics
+  const maxScore = metrics.length * 2
+  const totalPossibleScore = metrics.length * 5 // Since range is -2 to +2, total spread is 5
 
   if (metrics.length === 0) {
     return (
@@ -60,7 +64,9 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
       {/* Overall Score Preview */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
         <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-1">15/25</div>
+          <div className="text-3xl font-bold text-blue-600 mb-1">
+            {Math.round(totalPossibleScore * 0.6)}/{totalPossibleScore}
+          </div>
           <div className="text-sm text-gray-600">Общий балл</div>
         </div>
       </div>

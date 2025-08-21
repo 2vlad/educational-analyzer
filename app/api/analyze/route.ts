@@ -11,6 +11,7 @@ import { progressService } from '@/src/services/ProgressService'
 const analyzeRequestSchema = z.object({
   content: z.string().min(1).max(20000),
   modelId: z.string().optional(),
+  metricMode: z.enum(['lx', 'custom']).optional(),
 })
 
 // Check if content looks like educational material

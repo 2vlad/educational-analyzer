@@ -3,6 +3,7 @@
 export interface AnalyzeRequest {
   content: string
   modelId?: string
+  metricMode?: 'lx' | 'custom'
 }
 
 export interface AnalyzeResponse {

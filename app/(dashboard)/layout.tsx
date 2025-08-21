@@ -3,21 +3,23 @@
 import { useAuth } from '@/src/providers/AuthProvider'
 import { useMetricMode } from '@/src/providers/MetricModeProvider'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Home, Settings, History, LogOut, User, ChevronDown } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Settings, History, LogOut, User, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth()
   const { metricMode, setMetricMode } = useMetricMode()
   const pathname = usePathname()
+  const router = useRouter()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
-  const navigation = [
-    { name: 'Главная', href: '/dashboard', icon: Home },
-  ]
+  const handleModeChange = (mode: 'lx' | 'custom') => {
+    setMetricMode(mode)
+    // Always redirect to main page when switching modes
+    router.push('/')
+  }
 
-  const isActive = (href: string) => pathname === href
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,16 +28,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/dashboard" className="text-xl font-bold text-black">
+            <Link href="/" className="text-xl font-bold text-black">
               Лёха AI
             </Link>
 
-            {/* Centered Navigation with Toggle */}
-            <div className="hidden md:flex items-center gap-4 absolute left-1/2 transform -translate-x-1/2">
+            {/* Centered Toggle */}
+            <div className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
               {/* Metric Mode Toggle */}
               <div className="flex items-center bg-gray-100 rounded-full p-1">
                 <button
-                  onClick={() => setMetricMode('lx')}
+                  onClick={() => handleModeChange('lx')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                     metricMode === 'lx'
                       ? 'bg-white text-black shadow-sm'
@@ -45,7 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   LX
                 </button>
                 <button
-                  onClick={() => setMetricMode('custom')}
+                  onClick={() => handleModeChange('custom')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                     metricMode === 'custom'
                       ? 'bg-white text-black shadow-sm'
@@ -55,27 +57,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   Мой сет
                 </button>
               </div>
-
-              {/* Navigation Links */}
-              <nav className="flex items-center gap-1">
-                {navigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        isActive(item.href)
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
             </div>
 
             {/* User Menu */}
@@ -106,7 +87,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="p-3 border-b border-gray-200 md:hidden">
                       <div className="flex items-center bg-gray-100 rounded-full p-1">
                         <button
-                          onClick={() => setMetricMode('lx')}
+                          onClick={() => handleModeChange('lx')}
                           className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                             metricMode === 'lx'
                               ? 'bg-white text-black shadow-sm'
@@ -116,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           LX
                         </button>
                         <button
-                          onClick={() => setMetricMode('custom')}
+                          onClick={() => handleModeChange('custom')}
                           className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                             metricMode === 'custom'
                               ? 'bg-white text-black shadow-sm'
@@ -134,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         href="/settings"
                         onClick={() => setShowUserMenu(false)}
                         className={`flex items-center gap-3 px-4 py-2 text-sm ${
-                          isActive('/settings')
+                          pathname === '/settings'
                             ? 'bg-blue-50 text-blue-600'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
@@ -146,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         href="/history"
                         onClick={() => setShowUserMenu(false)}
                         className={`flex items-center gap-3 px-4 py-2 text-sm ${
-                          isActive('/history')
+                          pathname === '/history'
                             ? 'bg-blue-50 text-blue-600'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}

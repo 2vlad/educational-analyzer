@@ -6,6 +6,7 @@ import { logger } from '@/src/utils/logger'
 import { METRICS } from '@/src/utils/prompts'
 import { InsertAnalysis, InsertLLMRequest } from '@/src/types/database'
 import { progressService } from '@/src/services/ProgressService'
+import { modelsManager } from '@/src/config/models'
 
 // Request schema
 const analyzeRequestSchema = z.object({
@@ -123,31 +124,65 @@ export async function POST(request: NextRequest) {
     // Generate lesson title first
     let lessonTitle = ''
     try {
+      // Get provider directly for title generation
+      const modelConfig = modelsManager.getModelConfig(finalModelId)
+      if (!modelConfig) {
+        throw new Error(`Model configuration not found for: ${finalModelId}`)
+      }
+
+      const provider = llmService.getProvider(finalModelId)
       const titlePrompt = `Проанализируй этот учебный материал и дай ему конкретное техническое название (3-6 слов), которое точно отражает тему. 
 Избегай общих слов типа "Основы", "Введение", "Учебный материал". 
 Используй конкретные технологии, методы или концепции из текста.
 Ответь только названием, без объяснений.
+
+Примеры хороших названий:
+- "Настройка UI-sans-serif в CSS"
+- "React Hooks и useEffect"
+- "Миграция базы данных PostgreSQL"
+- "Алгоритмы сортировки массивов"
 
 Материал:
 ${content.substring(0, 1500)}...
 
 Название:`
 
-      const titleResult = await llmService.analyze(titlePrompt, content.substring(0, 1000), {
-        model: finalModelId,
+      const titleResult = await provider.generate(titlePrompt, '', {
+        model: modelConfig.model,
+        temperature: 0.5,
         maxTokens: 50,
-        temperature: 0.3,
+        timeoutMs: 10000,
       })
 
-      if (titleResult) {
-        // Use the comment field which contains the parsed title
-        lessonTitle = titleResult.comment || 'Учебный материал'
-        // Clean up the title
-        lessonTitle = lessonTitle.trim().replace(/["'`]/g, '').substring(0, 100)
+      if (titleResult && titleResult.response) {
+        // Extract title from response
+        lessonTitle = titleResult.response.trim()
+        // Clean up the title - remove quotes, limit length
+        lessonTitle = lessonTitle
+          .replace(/["'`]/g, '')
+          .replace(/^(Название|Title|Тема|Topic):?\s*/i, '')
+          .trim()
+          .substring(0, 100)
+
+        // If title is too generic or empty, use first topic from content
+        if (!lessonTitle || lessonTitle.length < 3 || lessonTitle === 'Учебный материал') {
+          // Try to extract something meaningful from the content
+          const contentWords = content.substring(0, 500).split(/\s+/)
+          const techWords = contentWords
+            .filter((word) => word.length > 4 && /[A-Z]/.test(word[0]))
+            .slice(0, 3)
+          lessonTitle = techWords.length > 0 ? techWords.join(' ') : 'Технический материал'
+        }
       }
     } catch (error) {
       console.error('Failed to generate title:', error)
-      lessonTitle = 'Учебный материал'
+      // Fallback: try to extract title from content
+      const firstLine = content.split('\n')[0].trim()
+      if (firstLine && firstLine.length > 5 && firstLine.length < 100) {
+        lessonTitle = firstLine
+      } else {
+        lessonTitle = 'Технический материал'
+      }
     }
 
     // Process all metrics in parallel

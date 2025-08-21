@@ -41,7 +41,7 @@ export class LLMService {
     }
   }
 
-  private getProvider(providerId: string): LLMProvider {
+  public getProvider(providerId: string): LLMProvider {
     const modelConfig = modelsManager.getModelConfig(providerId)
     if (!modelConfig) {
       throw new Error(`Unknown model: ${providerId}`)

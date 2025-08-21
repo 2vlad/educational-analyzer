@@ -71,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Настройки
+                  Настроить
                 </button>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               : 'text-gray-600'
                           }`}
                         >
-                          Настройки
+                          Настроить
                         </button>
                       </div>
                     </div>

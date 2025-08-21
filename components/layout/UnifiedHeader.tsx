@@ -69,7 +69,7 @@ export default function UnifiedHeader() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Настройки
+                Настроить
               </button>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function UnifiedHeader() {
                                 : 'text-gray-600'
                             }`}
                           >
-                            Настройки
+                            Настроить
                           </button>
                         </div>
                       </div>

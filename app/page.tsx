@@ -752,7 +752,7 @@ export default function EducationalAnalyzer() {
             >
               <div className="flex-grow flex items-center justify-center">
                 <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
-                  {overallScore + 10}/10
+                  {overallScore + 10}/20
                 </div>
               </div>
               <h3

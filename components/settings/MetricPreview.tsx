@@ -14,15 +14,16 @@ interface PreviewCardProps {
 
 function PreviewCard({ metric, score = 0 }: PreviewCardProps) {
   const getScoreColor = (score: number) => {
-    if (score > 0) return 'text-green-600 bg-green-50 border-green-200'
-    if (score < 0) return 'text-red-600 bg-red-50 border-red-200'
+    if (score === 2) return 'text-green-700 bg-green-100 border-green-300'
+    if (score === 1) return 'text-green-600 bg-green-50 border-green-200'
+    if (score === -1) return 'text-orange-600 bg-orange-50 border-orange-200'
+    if (score === -2) return 'text-red-600 bg-red-50 border-red-200'
     return 'text-gray-600 bg-gray-50 border-gray-200'
   }
 
   const getScoreText = (score: number) => {
-    if (score > 0) return '+1'
-    if (score < 0) return '-1'
-    return '0'
+    if (score > 0) return `+${score}`
+    return score.toString()
   }
 
   return (
@@ -40,7 +41,7 @@ function PreviewCard({ metric, score = 0 }: PreviewCardProps) {
 
 export default function MetricPreview({ metrics }: MetricPreviewProps) {
   // Simulate different scores for preview
-  const sampleScores = [1, 0, -1, 1, 0]
+  const sampleScores = [2, 1, 0, -1, -2]
 
   if (metrics.length === 0) {
     return (
@@ -59,7 +60,7 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
       {/* Overall Score Preview */}
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
         <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-1">7.5/10</div>
+          <div className="text-3xl font-bold text-blue-600 mb-1">15/25</div>
           <div className="text-sm text-gray-600">Общий балл</div>
         </div>
       </div>
@@ -89,13 +90,19 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
             <p className="font-medium mb-1">Как работает оценка:</p>
             <ul className="space-y-0.5">
               <li>
-                • <span className="text-green-600 font-medium">+1</span>: Соответствует или превосходит критерии
+                • <span className="text-green-700 font-medium">+2</span>: Превосходно
               </li>
               <li>
-                • <span className="text-gray-600 font-medium">0</span>: Частично соответствует критериям
+                • <span className="text-green-600 font-medium">+1</span>: Хорошо
               </li>
               <li>
-                • <span className="text-red-600 font-medium">-1</span>: Не соответствует критериям
+                • <span className="text-gray-600 font-medium">0</span>: Удовлетворительно
+              </li>
+              <li>
+                • <span className="text-orange-600 font-medium">-1</span>: Плохо
+              </li>
+              <li>
+                • <span className="text-red-600 font-medium">-2</span>: Очень плохо
               </li>
             </ul>
           </div>

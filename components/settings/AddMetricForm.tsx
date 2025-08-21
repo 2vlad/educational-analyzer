@@ -131,9 +131,6 @@ export default function AddMetricForm({
           <div className="mb-6">
             <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
               Описание метрики
-              <span className="ml-2 text-xs text-gray-500 font-normal">
-                (Опишите, что должна оценивать эта метрика)
-              </span>
             </label>
             <textarea
               id="prompt"

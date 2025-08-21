@@ -678,7 +678,7 @@ export default function EducationalAnalyzer() {
             >
               <div className="flex-grow flex items-center justify-center">
                 <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
-                  {overallScore + 10}/10
+                  {Math.round((overallScore + 10) * 1.25)}/25
                 </div>
               </div>
               <h3
@@ -701,10 +701,10 @@ export default function EducationalAnalyzer() {
             <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
             <p className="text-[14px] text-black leading-relaxed">
               {overallScore > 0
-                ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
+                ? `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал хорошо структурирован и будет полезен для изучения.`
                 : overallScore < 0
-                  ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
-                  : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
+                  ? `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал требует доработки для лучшего восприятия студентами.`
+                  : `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал имеет сбалансированные характеристики.`}
             </p>
           </div>
 

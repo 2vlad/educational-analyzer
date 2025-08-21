@@ -314,6 +314,78 @@ ${content.substring(0, 1500)}...
     // Add lesson title to results
     results.lessonTitle = lessonTitle
 
+    // Generate Hot Fixes - 3 quick improvements
+    let hotFixes: string[] = []
+    try {
+      const modelConfig = modelsManager.getModelConfig(finalModelId)
+      if (modelConfig) {
+        const provider = llmService.getProvider(finalModelId)
+
+        // Analyze the results to determine which metrics need improvement
+        const weakMetrics = Object.entries(results)
+          .filter(
+            ([key, value]: [string, any]) =>
+              key !== 'lessonTitle' && value?.score !== undefined && value.score < 1,
+          )
+          .sort((a: any, b: any) => a[1].score - b[1].score)
+          .slice(0, 3)
+          .map(([key]: [string, any]) => key)
+
+        const hotFixPrompt = `На основе анализа учебного материала, предложи 3 самых важных быстрых улучшения (hot fixes), которые максимально повлияют на качество урока.
+
+Слабые метрики: ${weakMetrics.join(', ')}
+
+Материал:
+${content.substring(0, 1000)}...
+
+Дай ровно 3 конкретных, практических совета (каждый 10-20 слов).
+Формат ответа:
+1. [совет]
+2. [совет]  
+3. [совет]`
+
+        const hotFixResult = await provider.generate(hotFixPrompt, '', {
+          model: modelConfig.model,
+          temperature: 0.7,
+          maxTokens: 200,
+          timeoutMs: 10000,
+        })
+
+        if (hotFixResult && hotFixResult.response) {
+          // Parse the response to extract the 3 fixes
+          const lines = hotFixResult.response
+            .split('\n')
+            .filter((line) => line.match(/^\d\./))
+            .map((line) => line.replace(/^\d\.\s*/, '').trim())
+            .slice(0, 3)
+
+          if (lines.length === 3) {
+            hotFixes = lines
+          } else {
+            // Fallback to splitting by periods if numbered format fails
+            hotFixes = hotFixResult.response
+              .split(/[.!?]/)
+              .filter((s) => s.trim().length > 10)
+              .map((s) => s.trim())
+              .slice(0, 3)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate hot fixes:', error)
+    }
+
+    // Provide default hot fixes if generation failed
+    if (hotFixes.length !== 3) {
+      hotFixes = [
+        'Добавьте больше практических примеров и упражнений',
+        'Упростите сложные концепции с помощью аналогий',
+        'Добавьте визуальные материалы и диаграммы',
+      ]
+    }
+
+    results.hotFixes = hotFixes
+
     // Update analysis with results
     const { error: updateError } = await supabaseAdmin
       .from('analyses')

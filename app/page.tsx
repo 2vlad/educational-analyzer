@@ -708,12 +708,31 @@ export default function EducationalAnalyzer() {
             </p>
           </div>
 
+          {/* Hot Fixes Section */}
+          {analysisResult.results?.hotFixes && (
+            <div className="bg-[#FFE5B4] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+              <h2 className="text-[20px] font-semibold text-black mb-4">🔥 Hot Fixes</h2>
+              <p className="text-[12px] text-gray-600 mb-4">
+                3 быстрых улучшения, которые максимально повлияют на качество урока:
+              </p>
+              <ol className="space-y-3">
+                {analysisResult.results.hotFixes.map((fix, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-[16px] font-bold text-orange-600 mr-3">{index + 1}.</span>
+                    <span className="text-[14px] text-black flex-1">{fix}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
           {/* Detailed Analysis Sections */}
           <div className="space-y-8" style={{ width: '660px' }}>
             {analysisResult.results &&
               Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
-                // Skip lessonTitle as it's not a metric
-                if (!data || data.error || metric === 'lessonTitle') return null
+                // Skip lessonTitle and hotFixes as they're not metrics
+                if (!data || data.error || metric === 'lessonTitle' || metric === 'hotFixes')
+                  return null
 
                 return (
                   <div key={metric} className="bg-white rounded-lg">

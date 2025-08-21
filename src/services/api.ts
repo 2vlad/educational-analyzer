@@ -18,6 +18,7 @@ export interface AnalysisResult {
   updated_at: string
   results?: {
     lessonTitle?: string
+    hotFixes?: string[]
     [metric: string]:
       | {
           score: number

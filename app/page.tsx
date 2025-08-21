@@ -454,12 +454,20 @@ export default function EducationalAnalyzer() {
   }
 
   if (currentScreen === 'results' && analysisResult) {
-    // Calculate overall score
+    // Calculate overall score (exclude non-metric fields)
     const overallScore = analysisResult.results
-      ? Object.values(analysisResult.results).reduce((sum: number, data: any) => {
-          return sum + (data?.score || 0)
+      ? Object.entries(analysisResult.results).reduce((sum: number, [key, data]: [string, any]) => {
+          // Skip non-metric fields
+          if (key === 'lessonTitle' || key === 'hotFixes' || !data?.score) {
+            return sum
+          }
+          return sum + (data.score || 0)
         }, 0)
       : 0
+
+    // Log for debugging
+    console.log('Overall score:', overallScore)
+    console.log('Adjusted score (out of 25):', Math.round((overallScore + 10) * 1.25))
 
     // Get shortened comment for metric cards (max 150 chars)
     const getShortComment = (comment: string | undefined) => {

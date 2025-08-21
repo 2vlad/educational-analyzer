@@ -868,15 +868,15 @@ export default function EducationalAnalyzer() {
       
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[450px] mt-[50px]">
-          {/* Header with title, subtitle and image */}
-          <div className="flex justify-between mb-10">
-            <div>
-              <h1
-                className="text-[48px] font-bold text-black mb-3 leading-tight"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                Лёха AI
-              </h1>
+        {/* Header with title, subtitle and image */}
+        <div className="flex justify-between mb-10">
+          <div>
+            <h1
+              className="text-[48px] font-bold text-black mb-3 leading-tight"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Лёха AI
+            </h1>
             <p
               className="text-[20px] font-normal text-black"
               style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
@@ -1060,6 +1060,7 @@ export default function EducationalAnalyzer() {
             pinterest.com/miapasfield/
           </p>
         </div>
+      </div>
       </div>
     </div>
   )

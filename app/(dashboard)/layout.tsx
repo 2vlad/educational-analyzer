@@ -13,8 +13,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navigation = [
     { name: 'Главная', href: '/dashboard', icon: Home },
-    { name: 'Настройки', href: '/settings', icon: Settings },
-    { name: 'История', href: '/history', icon: History },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -25,32 +23,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo & Nav */}
-            <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="text-xl font-bold text-black">
-                Лёха AI
-              </Link>
+            {/* Logo */}
+            <Link href="/dashboard" className="text-xl font-bold text-black">
+              Лёха AI
+            </Link>
 
-              <nav className="hidden md:flex items-center gap-1">
-                {navigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                        isActive(item.href)
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-sm font-medium">{item.name}</span>
-                    </Link>
-                  )
-                })}
-              </nav>
-            </div>
+            {/* Centered Navigation */}
+            <nav className="hidden md:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2">
+              {navigation.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </nav>
 
             {/* User Menu */}
             <div className="relative">
@@ -58,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 <span className="hidden md:block text-sm font-medium text-gray-700">
@@ -76,26 +73,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-xs text-gray-500 mt-1">Бесплатный план</p>
                     </div>
 
-                    {/* Mobile Navigation */}
-                    <div className="md:hidden border-b border-gray-200">
-                      {navigation.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <Link
-                            key={item.name}
-                            href={item.href}
-                            onClick={() => setShowUserMenu(false)}
-                            className={`flex items-center gap-3 px-4 py-2 text-sm ${
-                              isActive(item.href)
-                                ? 'bg-blue-50 text-blue-600'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                            {item.name}
-                          </Link>
-                        )
-                      })}
+                    {/* Desktop Menu Items */}
+                    <div className="border-b border-gray-200">
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowUserMenu(false)}
+                        className={`flex items-center gap-3 px-4 py-2 text-sm ${
+                          isActive('/settings')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4" />
+                        Настройки метрик
+                      </Link>
+                      <Link
+                        href="/history"
+                        onClick={() => setShowUserMenu(false)}
+                        className={`flex items-center gap-3 px-4 py-2 text-sm ${
+                          isActive('/history')
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <History className="w-4 h-4" />
+                        История анализов
+                      </Link>
                     </div>
 
                     <button

@@ -13,7 +13,7 @@ const serverEnvSchema = z.object({
   YANDEX_FOLDER_ID: z.string().optional(),
 
   // LLM Config
-  DEFAULT_MODEL: z.string().default('claude-haiku'),
+  DEFAULT_MODEL: z.string().default('yandex-gpt-pro'),
   ENABLE_MODEL_SWITCHING: z
     .string()
     .transform((val) => val === 'true')

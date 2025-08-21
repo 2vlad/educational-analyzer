@@ -68,7 +68,7 @@ An AI-powered educational content analyzer that evaluates IT learning materials 
    YANDEX_FOLDER_ID=your_yandex_folder_id
 
    # Default model (optional)
-   DEFAULT_MODEL=claude-haiku
+   DEFAULT_MODEL=yandex-gpt-pro
    ```
 
 4. **Set up Supabase database**

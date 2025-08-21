@@ -159,7 +159,7 @@ export default function EducationalAnalyzer() {
       console.error('Failed to load models:', error)
       // Continue with default model
       // Set a fallback model if API fails
-      setSelectedModel('claude-haiku')
+      setSelectedModel('yandex-gpt-pro')
     }
   }
 
@@ -336,7 +336,7 @@ export default function EducationalAnalyzer() {
     if (selectedModel && !validModelIds.includes(selectedModel)) {
       console.warn('Invalid model ID detected:', selectedModel)
       console.log('Falling back to default model')
-      modelToUse = 'claude-haiku'
+      modelToUse = 'yandex-gpt-pro'
     }
 
     setIsAnalyzing(true)

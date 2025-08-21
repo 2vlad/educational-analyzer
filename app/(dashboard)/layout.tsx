@@ -12,9 +12,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'History', href: '/history', icon: History },
+    { name: 'Главная', href: '/dashboard', icon: Home },
+    { name: 'Настройки', href: '/settings', icon: Settings },
+    { name: 'История', href: '/history', icon: History },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -27,8 +27,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center justify-between h-16">
             {/* Logo & Nav */}
             <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="text-xl font-bold text-blue-600">
-                EduAnalyzer
+              <Link href="/dashboard" className="text-xl font-bold text-black">
+                Лёха AI
               </Link>
 
               <nav className="hidden md:flex items-center gap-1">
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                     <div className="p-3 border-b border-gray-200">
                       <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                      <p className="text-xs text-gray-500 mt-1">Free Plan</p>
+                      <p className="text-xs text-gray-500 mt-1">Бесплатный план</p>
                     </div>
 
                     {/* Mobile Navigation */}
@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="w-4 h-4" />
-                      Sign Out
+                      Выйти
                     </button>
                   </div>
                 </>

@@ -74,7 +74,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
             <h3 className="font-medium text-gray-900">{metric.name}</h3>
             {!metric.is_active && (
               <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                Inactive
+                Неактивна
               </span>
             )}
           </div>
@@ -87,7 +87,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
           <button
             onClick={() => onToggleActive(!metric.is_active)}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title={metric.is_active ? 'Deactivate' : 'Activate'}
+            title={metric.is_active ? 'Деактивировать' : 'Активировать'}
           >
             {metric.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </button>
@@ -96,7 +96,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
           <button
             onClick={onEdit}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Edit"
+            title="Редактировать"
           >
             <Edit2 className="w-4 h-4" />
           </button>
@@ -122,7 +122,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Permanently
+                    Удалить навсегда
                   </button>
                 </div>
               </>
@@ -138,10 +138,10 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
             <div className="flex items-start gap-3 mb-4">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
               <div>
-                <h3 className="font-semibold text-gray-900">Delete Metric</h3>
+                <h3 className="font-semibold text-gray-900">Удалить метрику</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Are you sure you want to permanently delete "{metric.name}"? This action cannot be
-                  undone.
+                  Вы уверены, что хотите навсегда удалить "{metric.name}"? Это действие нельзя
+                  отменить.
                 </p>
               </div>
             </div>
@@ -150,7 +150,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                Cancel
+                Отмена
               </button>
               <button
                 onClick={() => {
@@ -159,7 +159,7 @@ function MetricItem({ metric, onEdit, onDelete, onToggleActive }: MetricItemProp
                 }}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                Delete Permanently
+                Удалить навсегда
               </button>
             </div>
           </div>
@@ -200,8 +200,8 @@ export default function MetricListView({
   if (metrics.length === 0) {
     return (
       <div className="p-8 text-center text-gray-500">
-        <p>No metrics configured yet.</p>
-        <p className="text-sm mt-2">Click "Add Metric" to create your first metric.</p>
+        <p>Метрики ещё не настроены.</p>
+        <p className="text-sm mt-2">Нажмите "Добавить метрику", чтобы создать первую метрику.</p>
       </div>
     )
   }

@@ -47,8 +47,8 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
       <div className="p-6">
         <div className="text-center text-gray-500">
           <Info className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm">No active metrics</p>
-          <p className="text-xs mt-1">Add and activate metrics to see them here</p>
+          <p className="text-sm">Нет активных метрик</p>
+          <p className="text-xs mt-1">Добавьте и активируйте метрики для просмотра</p>
         </div>
       </div>
     )
@@ -60,13 +60,13 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
       <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
         <div className="text-center">
           <div className="text-3xl font-bold text-blue-600 mb-1">7.5/10</div>
-          <div className="text-sm text-gray-600">Overall Score</div>
+          <div className="text-sm text-gray-600">Общий балл</div>
         </div>
       </div>
 
       {/* Metrics Preview */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Active Metrics Preview</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Предпросмотр активных метрик</h3>
         {metrics.slice(0, 5).map((metric, index) => (
           <PreviewCard
             key={metric.id}
@@ -76,7 +76,7 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
         ))}
         {metrics.length > 5 && (
           <div className="text-center text-sm text-gray-500 pt-2">
-            +{metrics.length - 5} more metric{metrics.length - 5 > 1 ? 's' : ''}
+            +{metrics.length - 5} ещё метрик{metrics.length - 5 > 1 ? 'и' : 'а'}
           </div>
         )}
       </div>
@@ -86,16 +86,16 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 text-gray-400 mt-0.5" />
           <div className="text-xs text-gray-600">
-            <p className="font-medium mb-1">How scoring works:</p>
+            <p className="font-medium mb-1">Как работает оценка:</p>
             <ul className="space-y-0.5">
               <li>
-                • <span className="text-green-600 font-medium">+1</span>: Meets or exceeds criteria
+                • <span className="text-green-600 font-medium">+1</span>: Соответствует или превосходит критерии
               </li>
               <li>
-                • <span className="text-gray-600 font-medium">0</span>: Partially meets criteria
+                • <span className="text-gray-600 font-medium">0</span>: Частично соответствует критериям
               </li>
               <li>
-                • <span className="text-red-600 font-medium">-1</span>: Does not meet criteria
+                • <span className="text-red-600 font-medium">-1</span>: Не соответствует критериям
               </li>
             </ul>
           </div>

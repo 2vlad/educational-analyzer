@@ -37,19 +37,19 @@ export default function AddMetricForm({
     const newErrors: { name?: string; prompt?: string } = {}
 
     if (!name.trim()) {
-      newErrors.name = 'Metric name is required'
+      newErrors.name = 'Название метрики обязательно'
     } else if (name.length > nameCharLimit) {
-      newErrors.name = `Name must be ${nameCharLimit} characters or less`
+      newErrors.name = `Название должно быть не более ${nameCharLimit} символов`
     } else if (!isEdit && existingNames.includes(name.trim())) {
-      newErrors.name = 'A metric with this name already exists'
+      newErrors.name = 'Метрика с таким названием уже существует'
     }
 
     if (!promptText.trim()) {
-      newErrors.prompt = 'Prompt text is required'
+      newErrors.prompt = 'Описание метрики обязательно'
     } else if (promptText.length < 10) {
-      newErrors.prompt = 'Prompt must be at least 10 characters'
+      newErrors.prompt = 'Описание должно содержать минимум 10 символов'
     } else if (promptText.length > promptCharLimit) {
-      newErrors.prompt = `Prompt must be ${promptCharLimit} characters or less`
+      newErrors.prompt = `Описание должно быть не более ${promptCharLimit} символов`
     }
 
     setErrors(newErrors)
@@ -81,7 +81,7 @@ export default function AddMetricForm({
         <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold text-gray-900">
-              {isEdit ? 'Edit Metric' : 'Add New Metric'}
+              {isEdit ? 'Редактировать метрику' : 'Добавить новую метрику'}
             </h2>
             <button
               onClick={onCancel}
@@ -97,7 +97,7 @@ export default function AddMetricForm({
           {/* Name Field */}
           <div className="mb-6">
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Metric Name
+              Название метрики
             </label>
             <input
               id="name"
@@ -107,7 +107,7 @@ export default function AddMetricForm({
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="e.g., Clarity, Engagement, Technical Accuracy"
+              placeholder="Например: Ясность, Вовлечённость, Техническая точность"
               disabled={submitting}
             />
             <div className="mt-2 flex items-center justify-between">
@@ -116,7 +116,7 @@ export default function AddMetricForm({
                   name.length > nameCharLimit ? 'text-red-600' : 'text-gray-500'
                 }`}
               >
-                {name.length}/{nameCharLimit} characters
+                {name.length}/{nameCharLimit} символов
               </span>
               {errors.name && (
                 <span className="text-xs text-red-600 flex items-center gap-1">
@@ -130,9 +130,9 @@ export default function AddMetricForm({
           {/* Prompt Field */}
           <div className="mb-6">
             <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
-              Evaluation Prompt
+              Описание метрики
               <span className="ml-2 text-xs text-gray-500 font-normal">
-                (Describe what this metric should evaluate)
+                (Опишите, что должна оценивать эта метрика)
               </span>
             </label>
             <textarea
@@ -143,7 +143,7 @@ export default function AddMetricForm({
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
                 errors.prompt ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Enter the evaluation criteria for this metric. Be specific about what aspects should be assessed and how they should be scored."
+              placeholder="Введите критерии оценки для этой метрики. Укажите конкретно, какие аспекты следует оценивать и как."
               disabled={submitting}
             />
             <div className="mt-2 flex items-center justify-between">
@@ -152,7 +152,7 @@ export default function AddMetricForm({
                   promptText.length > promptCharLimit ? 'text-red-600' : 'text-gray-500'
                 }`}
               >
-                {promptText.length}/{promptCharLimit} characters
+                {promptText.length}/{promptCharLimit} символов
               </span>
               {errors.prompt && (
                 <span className="text-xs text-red-600 flex items-center gap-1">
@@ -174,9 +174,9 @@ export default function AddMetricForm({
                 disabled={submitting}
               />
               <div>
-                <span className="text-sm font-medium text-gray-700">Active</span>
+                <span className="text-sm font-medium text-gray-700">Активна</span>
                 <p className="text-xs text-gray-500">
-                  Active metrics will be used in analysis. Inactive metrics are saved but not used.
+                  Активные метрики будут использоваться при анализе. Неактивные сохраняются, но не используются.
                 </p>
               </div>
             </label>
@@ -185,13 +185,13 @@ export default function AddMetricForm({
           {/* Tips */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
             <h3 className="text-sm font-medium text-blue-900 mb-2">
-              Tips for writing good evaluation prompts:
+              Советы по написанию хороших метрик:
             </h3>
             <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Be specific about what aspects should be evaluated</li>
-              <li>• Include clear criteria for scoring (what makes it good/bad)</li>
-              <li>• Consider the context and target audience</li>
-              <li>• Keep the language clear and unambiguous</li>
+              <li>• Будьте конкретны в том, какие аспекты следует оценивать</li>
+              <li>• Включите чёткие критерии оценки (что хорошо/плохо)</li>
+              <li>• Учитывайте контекст и целевую аудиторию</li>
+              <li>• Используйте ясный и однозначный язык</li>
             </ul>
           </div>
 
@@ -203,14 +203,14 @@ export default function AddMetricForm({
               className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               disabled={submitting}
             >
-              Cancel
+              Отмена
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
-              {submitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Metric'}
+              {submitting ? 'Сохранение...' : isEdit ? 'Сохранить изменения' : 'Добавить метрику'}
             </button>
           </div>
         </form>

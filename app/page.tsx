@@ -142,11 +142,27 @@ export default function EducationalAnalyzer() {
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
+  const [maxTextLength, setMaxTextLength] = useState<number>(20000)
 
-  // Load available models on mount
+  // Load available models and config on mount
   useEffect(() => {
     loadModels()
+    fetchConfig()
   }, [])
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/config')
+      if (response.ok) {
+        const config = await response.json()
+        setMaxFileSizeMB(config.maxFileSizeMB)
+        setMaxTextLength(config.maxTextLength)
+      }
+    } catch (error) {
+      console.error('Failed to fetch config:', error)
+    }
+  }
 
   const loadModels = async () => {
     try {
@@ -170,9 +186,10 @@ export default function EducationalAnalyzer() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB')
+      // Check file size
+      const maxSizeBytes = maxFileSizeMB * 1024 * 1024
+      if (file.size > maxSizeBytes) {
+        setError(`Размер файла должен быть менее ${maxFileSizeMB}МБ`)
         return
       }
 
@@ -202,7 +219,7 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
           } else {
             setError(null)
           }
@@ -216,10 +233,10 @@ export default function EducationalAnalyzer() {
         const reader = new FileReader()
         reader.onload = (e) => {
           const text = e.target?.result as string
-          // Check text length (20000 chars limit)
-          if (text.length > 20000) {
-            setContent(text.substring(0, 20000))
-            setError('Content truncated to 20000 characters')
+          // Check text length
+          if (text.length > maxTextLength) {
+            setContent(text.substring(0, maxTextLength))
+            setError(`Содержимое обрезано до ${maxTextLength} символов`)
           } else {
             setContent(text)
             setError(null)
@@ -277,7 +294,7 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
           } else {
             setError(null)
           }
@@ -944,23 +961,23 @@ export default function EducationalAnalyzer() {
                     value={content}
                     onChange={(e) => {
                       const text = e.target.value
-                      if (text.length <= 20000) {
+                      if (text.length <= maxTextLength) {
                         setContent(text)
                         setError(null)
                       } else {
-                        setError('Content must be less than 20000 characters')
+                        setError(`Текст должен быть менее ${maxTextLength} символов`)
                       }
                     }}
                     className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
                               bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                    maxLength={20000}
+                    maxLength={maxTextLength}
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   />
 
                   {/* Character Counter */}
                   {content && (
                     <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                      {content.length} / 20000
+                      {content.length} / {maxTextLength}
                     </div>
                   )}
 
@@ -987,9 +1004,16 @@ export default function EducationalAnalyzer() {
             </div>
           </div>
 
+          {/* Helper text about file formats */}
+          <div className="mt-2 text-center">
+            <p className="text-[12px] text-gray-400">
+              Поддерживаемые форматы: PDF, TXT, MD (до {maxFileSizeMB}МБ)
+            </p>
+          </div>
+
           {/* Error Alert */}
           {error && (
-            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4">
+            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

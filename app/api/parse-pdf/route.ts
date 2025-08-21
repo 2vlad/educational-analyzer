@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { env } from '@/src/config/env'
 
 // Dynamic import to avoid build issues
 async function parsePDF(buffer: Buffer): Promise<{ text: string; pages: number }> {
@@ -42,10 +43,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File must be a PDF' }, { status: 400 })
     }
 
-    // Check file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      console.log('[PDF API] File too large:', file.size)
-      return NextResponse.json({ error: 'File size must be less than 10MB' }, { status: 400 })
+    // Check file size
+    const maxSizeMB = env.server?.MAX_FILE_SIZE_MB || 10
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      console.log('[PDF API] File too large:', file.size, 'Max:', maxSizeBytes)
+      return NextResponse.json({ error: `File size must be less than ${maxSizeMB}MB` }, { status: 400 })
     }
 
     // Convert file to buffer

@@ -4,6 +4,7 @@ import './globals.css'
 import type React from 'react'
 import { AuthProvider } from '@/src/providers/AuthProvider'
 import { QueryProvider } from '@/src/providers/QueryProvider'
+import { MetricModeProvider } from '@/src/providers/MetricModeProvider'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="font-sans">
         <AuthProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <MetricModeProvider>
+            <QueryProvider>{children}</QueryProvider>
+          </MetricModeProvider>
         </AuthProvider>
       </body>
     </html>

@@ -199,7 +199,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Metric List */}
           <div className="lg:col-span-2">
-            <div className="bg-[#F5F5F5] p-8" style={{ borderRadius: '40px' }}>
+            <div className="bg-white border border-gray-200 p-8" style={{ borderRadius: '40px' }}>
               <div className="mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-[24px] font-semibold text-black">Ваши метрики</h2>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
 
           {/* Sidebar - Preview */}
           <div className="lg:col-span-1">
-            <div className="bg-[#F5F5F5] p-8 sticky top-4" style={{ borderRadius: '40px' }}>
+            <div className="bg-white border border-gray-200 p-8 sticky top-4" style={{ borderRadius: '40px' }}>
               <div className="mb-6">
                 <h2 className="text-[24px] font-semibold text-black">Предпросмотр</h2>
                 <p className="text-[14px] text-black/70 mt-1">

@@ -172,7 +172,7 @@ export default function HistoryPage() {
         {!compareMode && (
           <>
             {analyses.length === 0 ? (
-              <div className="bg-[#F5F5F5] p-12" style={{ borderRadius: '40px' }}>
+              <div className="bg-white border border-gray-200 p-12" style={{ borderRadius: '40px' }}>
                 <div className="text-center">
                   <History className="w-12 h-12 text-black/40 mx-auto mb-4" />
                   <h3 className="text-[24px] font-medium text-black mb-2">Пока нет анализов</h3>

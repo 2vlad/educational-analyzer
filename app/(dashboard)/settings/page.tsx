@@ -196,45 +196,39 @@ export default function SettingsPage() {
           </button>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - Metric List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 p-8" style={{ borderRadius: '40px' }}>
-              <div className="mb-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[24px] font-semibold text-black">Ваши метрики</h2>
-                  <button
-                    onClick={() => setShowAddForm(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Добавить метрику
-                  </button>
-                </div>
-              </div>
-
-              <MetricListView
-                metrics={metrics}
-                onReorder={handleReorder}
-                onEdit={setEditingMetric}
-                onDelete={handleDeleteMetric}
-                onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-              />
+        {/* Main Content - Metric List */}
+        <div className="bg-white border border-gray-200 p-8 mb-6" style={{ borderRadius: '40px' }}>
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[24px] font-semibold text-black">Ваши метрики</h2>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Добавить метрику
+              </button>
             </div>
           </div>
 
-          {/* Sidebar - Preview */}
-          <div className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 p-8 sticky top-4" style={{ borderRadius: '40px' }}>
-              <div className="mb-6">
-                <h2 className="text-[24px] font-semibold text-black">Предпросмотр</h2>
-                <p className="text-[14px] text-black/70 mt-1">
-                  Так будут выглядеть метрики при анализе
-                </p>
-              </div>
-              <MetricPreview metrics={metrics.filter((m) => m.is_active)} />
-            </div>
+          <MetricListView
+            metrics={metrics}
+            onReorder={handleReorder}
+            onEdit={setEditingMetric}
+            onDelete={handleDeleteMetric}
+            onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+          />
+        </div>
+
+        {/* Preview Section */}
+        <div className="bg-white border border-gray-200 p-8" style={{ borderRadius: '40px' }}>
+          <div className="mb-6">
+            <h2 className="text-[24px] font-semibold text-black">Предпросмотр</h2>
+            <p className="text-[14px] text-black/70 mt-1">
+              Так будут выглядеть метрики при анализе
+            </p>
           </div>
+          <MetricPreview metrics={metrics.filter((m) => m.is_active)} />
         </div>
 
         {/* Add Metric Modal */}

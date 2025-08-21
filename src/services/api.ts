@@ -19,6 +19,7 @@ export interface AnalysisResult {
   results?: {
     lessonTitle?: string
     hotFixes?: string[]
+    quickWin?: string
     [metric: string]:
       | {
           score: number

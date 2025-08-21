@@ -458,7 +458,7 @@ export default function EducationalAnalyzer() {
     const overallScore = analysisResult.results
       ? Object.entries(analysisResult.results).reduce((sum: number, [key, data]: [string, any]) => {
           // Skip non-metric fields
-          if (key === 'lessonTitle' || key === 'hotFixes' || !data?.score) {
+          if (key === 'lessonTitle' || key === 'hotFixes' || key === 'quickWin' || !data?.score) {
             return sum
           }
           return sum + (data.score || 0)
@@ -704,15 +704,25 @@ export default function EducationalAnalyzer() {
             </div>
           </div>
 
-          {/* Quick Win Section */}
-          <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-            <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
+          {/* Quick Win Section - 20/80 Rule */}
+          <div className="bg-[#FFF8E1] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+            <h2 className="text-[20px] font-semibold text-black mb-2">⚡ Quick Win</h2>
+            <p className="text-[12px] text-gray-600 mb-3">20% усилий для 80% улучшения:</p>
             <p className="text-[14px] text-black leading-relaxed">
+              {analysisResult.results?.quickWin ||
+                'Добавьте конкретный пример кода в начале урока и метафору для сложной концепции в середине. Это сразу улучшит понимание материала новичками.'}
+            </p>
+          </div>
+
+          {/* Overall Score Info */}
+          <div className="bg-[#F5F5F5] p-4 mb-8" style={{ width: '660px', borderRadius: '20px' }}>
+            <p className="text-[13px] text-gray-600 text-center">
+              Контент набрал {Math.round((overallScore + 10) * 1.25)} баллов из 25.
               {overallScore > 0
-                ? `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал хорошо структурирован и будет полезен для изучения.`
+                ? ' Материал хорошо структурирован и будет полезен для изучения.'
                 : overallScore < 0
-                  ? `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал требует доработки для лучшего восприятия студентами.`
-                  : `Контент набрал ${Math.round((overallScore + 10) * 1.25)} баллов из 25. Материал имеет сбалансированные характеристики.`}
+                  ? ' Материал требует доработки для лучшего восприятия студентами.'
+                  : ' Материал имеет сбалансированные характеристики.'}
             </p>
           </div>
 
@@ -738,8 +748,14 @@ export default function EducationalAnalyzer() {
           <div className="space-y-8" style={{ width: '660px' }}>
             {analysisResult.results &&
               Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
-                // Skip lessonTitle and hotFixes as they're not metrics
-                if (!data || data.error || metric === 'lessonTitle' || metric === 'hotFixes')
+                // Skip non-metric fields
+                if (
+                  !data ||
+                  data.error ||
+                  metric === 'lessonTitle' ||
+                  metric === 'hotFixes' ||
+                  metric === 'quickWin'
+                )
                   return null
 
                 return (

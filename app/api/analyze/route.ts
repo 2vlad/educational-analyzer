@@ -386,6 +386,71 @@ ${content.substring(0, 1000)}...
 
     results.hotFixes = hotFixes
 
+    // Generate Quick Win - 20% effort for 80% improvement
+    let quickWin = ''
+    try {
+      const modelConfig = modelsManager.getModelConfig(finalModelId)
+      if (modelConfig) {
+        const provider = llmService.getProvider(finalModelId)
+
+        // Find the weakest areas and most impactful improvements
+        const weakPoints = Object.entries(results)
+          .filter(
+            ([key, value]: [string, any]) =>
+              key !== 'lessonTitle' &&
+              key !== 'hotFixes' &&
+              value?.score !== undefined &&
+              value.score <= 0,
+          )
+          .map(([key, value]: [string, any]) => ({
+            metric: key,
+            score: value.score,
+            comment: value.comment,
+          }))
+
+        const quickWinPrompt = `Ты опытный методист. Проанализируй слабые места учебного материала и предложи ОДНО конкретное улучшение по принципу 20/80 (минимум усилий - максимум эффекта).
+
+Слабые места:
+${weakPoints.map((p) => `${p.metric}: ${p.comment}`).join('\n')}
+
+Материал:
+${content.substring(0, 1500)}...
+
+Дай ОДНУ конкретную рекомендацию (30-50 слов), которая:
+1. Требует минимальных изменений (буквально 2-3 правки)
+2. Даст максимальный эффект для понимания
+3. Указывает КОНКРЕТНЫЕ места и что именно изменить
+
+Формат: "Поправьте [что конкретно] в [где именно], добавьте [что] после [чего]. Это сразу улучшит [какую метрику]."
+
+Ответ:`
+
+        const quickWinResult = await provider.generate(quickWinPrompt, '', {
+          model: modelConfig.model,
+          temperature: 0.6,
+          maxTokens: 150,
+          timeoutMs: 10000,
+        })
+
+        if (quickWinResult && quickWinResult.response) {
+          quickWin = quickWinResult.response
+            .trim()
+            .replace(/^["'`]/g, '')
+            .replace(/["'`]$/g, '')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate quick win:', error)
+    }
+
+    // Provide default quick win if generation failed
+    if (!quickWin) {
+      quickWin =
+        'Добавьте конкретный пример кода в начале урока и метафору для сложной концепции в середине. Это сразу улучшит понимание материала новичками.'
+    }
+
+    results.quickWin = quickWin
+
     // Update analysis with results
     const { error: updateError } = await supabaseAdmin
       .from('analyses')

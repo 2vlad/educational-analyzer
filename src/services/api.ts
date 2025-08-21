@@ -25,6 +25,7 @@ export interface AnalysisResult {
           comment: string
           examples: string[]
           detailed_analysis?: string
+          recommendations?: string
           durationMs: number
           model: string
         }

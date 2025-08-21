@@ -766,18 +766,44 @@ export default function EducationalAnalyzer() {
 
                     {/* Examples */}
                     {data.examples && data.examples.length > 0 && (
-                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
+                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
                           Примеры из текста
                         </h4>
                         <ul className="space-y-3">
-                          {data.examples.map((example: string, index: number) => (
-                            <li key={index} className="flex items-start">
-                              <span className="text-black mr-2">•</span>
-                              <span className="text-[14px] text-black italic">"{example}"</span>
-                            </li>
-                          ))}
+                          {data.examples.map((example: string, index: number) => {
+                            // Split example by arrow to separate quote from explanation
+                            const parts = example.split('->')
+                            const quote = parts[0]?.trim() || example
+                            const explanation = parts[1]?.trim()
+
+                            return (
+                              <li key={index} className="flex flex-col space-y-1">
+                                <div className="flex items-start">
+                                  <span className="text-black mr-2">•</span>
+                                  <span className="text-[14px] text-black italic">"{quote}"</span>
+                                </div>
+                                {explanation && (
+                                  <div className="ml-6 text-[13px] text-gray-600">
+                                    ↳ {explanation}
+                                  </div>
+                                )}
+                              </li>
+                            )
+                          })}
                         </ul>
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {data.recommendations && (
+                      <div className="bg-[#E8F5E9] p-6" style={{ borderRadius: '40px' }}>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">
+                          ✅ Рекомендации по улучшению
+                        </h4>
+                        <div className="text-[14px] text-black leading-relaxed whitespace-pre-line">
+                          {data.recommendations}
+                        </div>
                       </div>
                     )}
                   </div>

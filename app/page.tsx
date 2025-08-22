@@ -530,10 +530,6 @@ export default function EducationalAnalyzer() {
                 на основе LX-метрик
               </p>
             </div>
-            <p className="text-[14px] text-black mt-2">
-              {analysisResult.results?.lessonTitle ||
-                (content ? content.substring(0, 50) + '...' : 'Анализ контента')}
-            </p>
           </header>
 
           {/* Metrics Grid - 2x3 layout */}

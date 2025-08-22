@@ -929,7 +929,7 @@ export default function EducationalAnalyzer() {
               {progressMessage && progressMessage.includes('PDF') ? (
                 // Show loading state for PDF processing
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
+                  <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
                   <p className="text-[18px] text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {progressMessage}
                   </p>

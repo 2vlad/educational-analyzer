@@ -517,11 +517,6 @@ export default function EducationalAnalyzer() {
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
-          {/* Header */}
-          <header className="mb-8">
-            <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
-          </header>
-
           {/* Metrics Grid - 2x3 layout */}
           <div className="grid grid-cols-2 gap-4 mb-8">
             {/* Overall Result - Moved to first position */}

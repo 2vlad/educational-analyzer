@@ -16,8 +16,20 @@
     },
     "app/api/analysis/[id]/route.ts": {
       "maxDuration": 10
+    },
+    "app/api/worker/tick/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/program-runs/[id]/tick/route.ts": {
+      "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/worker/tick",
+      "schedule": "*/1 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

@@ -143,7 +143,7 @@ export class JobRunner {
       // Fetch content from source
       let content: string
       try {
-        const adapter = this.scraperService.getAdapter(program.source_type)
+        const adapter = ScraperService.getAdapter(program.source_type)
         const lessonContent = await adapter.fetchLessonContent(lesson.url, auth)
         content = lessonContent.text
         

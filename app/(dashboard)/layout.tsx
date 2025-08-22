@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="flex items-center bg-gray-100 rounded-full p-1">
                 <button
                   onClick={() => handleModeChange('lx')}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                     metricMode === 'lx' && !isSettingsActive && !isCustomActive
                       ? 'bg-white text-black shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 <button
                   onClick={() => handleModeChange('custom')}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                     isCustomActive || (metricMode === 'custom' && !isSettingsActive)
                       ? 'bg-white text-black shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 <button
                   onClick={handleSettingsClick}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                     isSettingsActive
                       ? 'bg-white text-black shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -110,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div className="flex items-center bg-gray-100 rounded-full p-1">
                         <button
                           onClick={() => handleModeChange('lx')}
-                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                             metricMode === 'lx' && !isSettingsActive && !isCustomActive
                               ? 'bg-white text-black shadow-sm'
                               : 'text-gray-600'
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </button>
                         <button
                           onClick={() => handleModeChange('custom')}
-                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                             isCustomActive || (metricMode === 'custom' && !isSettingsActive)
                               ? 'bg-white text-black shadow-sm'
                               : 'text-gray-600'
@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </button>
                         <button
                           onClick={handleSettingsClick}
-                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                             isSettingsActive
                               ? 'bg-white text-black shadow-sm'
                               : 'text-gray-600'

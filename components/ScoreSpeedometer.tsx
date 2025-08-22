@@ -80,16 +80,6 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
         <div style={{ fontSize: '50px', fontWeight: 400 }} className="text-black leading-none">
           {score}/{maxScore}
         </div>
-        <h3 
-          className="text-black mt-2"
-          style={{
-            fontWeight: 600,
-            fontSize: '24px',
-            lineHeight: '90%',
-          }}
-        >
-          Общий<br />результат
-        </h3>
       </div>
     </div>
   )

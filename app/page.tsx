@@ -998,13 +998,6 @@ export default function EducationalAnalyzer() {
             </div>
           </div>
 
-          {/* Helper text about file formats */}
-          <div className="mt-2 text-center">
-            <p className="text-[12px] text-gray-400">
-              Поддерживаемые форматы: PDF, TXT, MD (до {maxFileSizeMB}МБ)
-            </p>
-          </div>
-
           {/* Error Alert */}
           {error && (
             <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">

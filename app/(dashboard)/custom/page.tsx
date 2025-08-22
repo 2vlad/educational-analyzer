@@ -18,6 +18,8 @@ export default function CustomMetricsPage() {
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingMetric, setEditingMetric] = useState<MetricConfig | null>(null)
+  const [content, setContent] = useState('')
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -156,6 +158,43 @@ export default function CustomMetricsPage() {
     }
   }
 
+  const handleAnalyze = async () => {
+    if (!content.trim() || isAnalyzing) return
+
+    setIsAnalyzing(true)
+    try {
+      // Get selected model from localStorage
+      const selectedModel = localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
+      
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content.trim(),
+          metricMode: 'custom',
+          modelId: selectedModel,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Analysis failed')
+      }
+
+      const data = await response.json()
+      
+      // Store the analysis result and navigate to results
+      sessionStorage.setItem('analysisResult', JSON.stringify(data))
+      sessionStorage.setItem('analysisContent', content)
+      router.push('/')
+    } catch (error: any) {
+      console.error('Analysis error:', error)
+      toast.error(error.message || 'Failed to analyze content')
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
   if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -169,16 +208,22 @@ export default function CustomMetricsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-[1200px] mx-auto">
+    <div className="flex-1 flex justify-center p-6">
+      <div className="w-full max-w-[450px] mt-[50px]">
         <Toaster position="top-right" />
 
         {/* Header - Лёха AI style */}
-        <header className="mb-12">
+        <header className="mb-10">
           <div className="mb-4">
-            <h1 className="text-[48px] font-bold text-black mb-2">Мой сет</h1>
-            <p className="text-[16px] text-black/70">
-              Настройте критерии оценки контента под ваши потребности
+            <h1 className="text-[48px] font-bold text-black mb-3 leading-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Мой сет
+            </h1>
+            <p className="text-[20px] font-normal text-black" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}>
+              настройте критерии оценки
+              <br />
+              контента под ваши
+              <br />
+              потребности
             </p>
           </div>
           <button
@@ -189,17 +234,25 @@ export default function CustomMetricsPage() {
           </button>
         </header>
 
+        {/* Model Selector */}
+        <div className="mb-6">
+          <label className="block text-[15px] font-normal text-gray-500 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Модель
+          </label>
+          <ModelSelector />
+        </div>
+
         {/* Main Content - Metric List */}
-        <div className="bg-white border border-gray-200 p-8 mb-6" style={{ borderRadius: '40px' }}>
+        <div className="bg-white border border-gray-200 p-6 mb-6" style={{ borderRadius: '20px' }}>
           <div className="mb-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-[24px] font-semibold text-black">Ваши метрики</h2>
+              <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
               <button
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
-                Добавить метрику
+                Добавить
               </button>
             </div>
           </div>
@@ -213,26 +266,55 @@ export default function CustomMetricsPage() {
           />
         </div>
 
-        {/* Model Selector */}
-        <div className="bg-white border border-gray-200 p-8 mb-6" style={{ borderRadius: '40px' }}>
-          <div className="mb-6">
-            <h2 className="text-[24px] font-semibold text-black">Модель AI</h2>
-            <p className="text-[14px] text-black/70 mt-1">
-              Выберите модель для анализа контента
-            </p>
-          </div>
-          <ModelSelector />
-        </div>
+        {/* Content Analysis Section - matching LX page */}
+        <div className="mb-6">
+          <label className="block text-[15px] font-normal text-gray-500 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Контент
+          </label>
+          <div className="relative">
+            <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">
+              <textarea
+                placeholder="Текст урока"
+                value={content}
+                onChange={(e) => {
+                  const text = e.target.value
+                  if (text.length <= 25000) {
+                    setContent(text)
+                  }
+                }}
+                className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                          bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                maxLength={25000}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              />
 
-        {/* Preview Section */}
-        <div className="bg-white border border-gray-200 p-8" style={{ borderRadius: '40px' }}>
-          <div className="mb-6">
-            <h2 className="text-[24px] font-semibold text-black">Предпросмотр</h2>
-            <p className="text-[14px] text-black/70 mt-1">
-              Так будут выглядеть метрики при анализе
-            </p>
+              {/* Character Counter */}
+              {content && (
+                <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                  {content.length} / 25000
+                </div>
+              )}
+
+              {/* Analyze Button inside textarea */}
+              <button
+                onClick={handleAnalyze}
+                disabled={!content.trim() || isAnalyzing}
+                className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                         hover:opacity-80 disabled:opacity-50
+                         rounded-full transition-opacity duration-200 flex items-center justify-center"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Анализируем...
+                  </>
+                ) : (
+                  'Проанализировать'
+                )}
+              </button>
+            </div>
           </div>
-          <MetricPreview metrics={metrics.filter((m) => m.is_active)} />
         </div>
 
         {/* Add Metric Modal */}

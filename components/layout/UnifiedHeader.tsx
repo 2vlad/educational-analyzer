@@ -47,7 +47,7 @@ export default function UnifiedHeader() {
             <div className="flex items-center bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => handleModeChange('lx')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                   metricMode === 'lx' && !isSettingsActive
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -57,7 +57,7 @@ export default function UnifiedHeader() {
               </button>
               <button
                 onClick={() => handleModeChange('custom')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                   metricMode === 'custom' && !isSettingsActive
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -67,7 +67,7 @@ export default function UnifiedHeader() {
               </button>
               <button
                 onClick={handleSettingsClick}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                   isSettingsActive
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -107,7 +107,6 @@ export default function UnifiedHeader() {
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                       <div className="p-3 border-b border-gray-200">
                         <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-                        <p className="text-xs text-gray-500 mt-1">Бесплатный план</p>
                       </div>
 
                       {/* Toggle for Mobile with Settings */}
@@ -115,7 +114,7 @@ export default function UnifiedHeader() {
                         <div className="flex items-center bg-gray-100 rounded-full p-1">
                           <button
                             onClick={() => handleModeChange('lx')}
-                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                               metricMode === 'lx' && !isSettingsActive
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
@@ -125,7 +124,7 @@ export default function UnifiedHeader() {
                           </button>
                           <button
                             onClick={() => handleModeChange('custom')}
-                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                               metricMode === 'custom' && !isSettingsActive
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
@@ -135,7 +134,7 @@ export default function UnifiedHeader() {
                           </button>
                           <button
                             onClick={handleSettingsClick}
-                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                               isSettingsActive
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
@@ -153,7 +152,7 @@ export default function UnifiedHeader() {
                           onClick={() => setShowUserMenu(false)}
                           className={`flex items-center gap-3 px-4 py-2 text-sm ${
                             pathname.startsWith('/programs')
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'bg-gray-100 text-black font-medium'
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -167,7 +166,7 @@ export default function UnifiedHeader() {
                           onClick={() => setShowUserMenu(false)}
                           className={`flex items-center gap-3 px-4 py-2 text-sm ${
                             pathname === '/history'
-                              ? 'bg-blue-50 text-blue-600'
+                              ? 'bg-gray-100 text-black font-medium'
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >

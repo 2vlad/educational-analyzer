@@ -136,7 +136,7 @@ export default function ProgramLessons({ program, lessons }: ProgramLessonsProps
                 type="checkbox"
                 checked={selectedLessons.has(lesson.id)}
                 onChange={() => toggleLessonSelection(lesson.id)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-gray-300 text-black focus:ring-gray-800"
               />
 
               {/* Status icon */}
@@ -161,7 +161,7 @@ export default function ProgramLessons({ program, lessons }: ProgramLessonsProps
                   <Button
                     size="sm"
                     onClick={() => handleAnalyze(lesson)}
-                    className="bg-blue-500 text-white hover:bg-blue-600"
+                    className="bg-black text-white hover:bg-gray-800"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Анализировать

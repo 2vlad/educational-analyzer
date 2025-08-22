@@ -172,8 +172,8 @@ export async function runAnalysisInternal(
       // Analyze with retry
       console.log(`\n📊 Analyzing metric ${index + 1}/${metrics.length}: ${metric.name}`)
       const result = modelId
-        ? await llmService.analyzeWithModel(content, metric.name, modelId)
-        : await llmService.analyzeWithRetry(content, metric.name)
+        ? await llmService.analyzeWithModel(content, metric.name as any, modelId)
+        : await llmService.analyzeWithRetry(content, metric.name as any)
 
       // Clear the progress interval
       globalThis.clearInterval(progressInterval)

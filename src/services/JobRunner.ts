@@ -144,7 +144,11 @@ export class JobRunner {
       let content: string
       try {
         const adapter = ScraperService.getAdapter(program.source_type)
-        const lessonContent = await adapter.fetchLessonContent(lesson.url, auth)
+        if (!adapter) {
+          await this.jobQueue.updateJobStatus(job.id, 'failed', `Unknown source type: ${program.source_type}`)
+          return
+        }
+        const lessonContent = await adapter.fetchLessonContent(lesson.url, auth || {})
         content = lessonContent.text
         
         // Check content hash for changes

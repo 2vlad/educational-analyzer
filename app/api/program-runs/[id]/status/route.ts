@@ -143,8 +143,8 @@ export async function GET(
       recentErrors: recentErrors?.map(error => ({
         jobId: error.id,
         lessonId: error.lesson_id,
-        lessonTitle: error.lesson?.title,
-        lessonUrl: error.lesson?.url,
+        lessonTitle: (error.lesson as any)?.title,
+        lessonUrl: (error.lesson as any)?.url,
         error: error.last_error,
         timestamp: error.updated_at,
       })) || [],

@@ -141,7 +141,7 @@ export function decryptFromStorage(encryptedJson: string, password: string): str
  */
 export function validatePassword(password: string): boolean {
   // Ensure password is at least 32 characters (256 bits when base64 encoded)
-  return password && password.length >= 32
+  return Boolean(password && password.length >= 32)
 }
 
 /**

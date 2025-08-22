@@ -779,7 +779,7 @@ export default function EducationalAnalyzer() {
 
                     {/* Examples */}
                     {data.examples && data.examples.length > 0 && (
-                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
+                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
                           Примеры из текста
                         </h4>
@@ -788,6 +788,23 @@ export default function EducationalAnalyzer() {
                             <li key={index} className="flex items-start">
                               <span className="text-black mr-2">•</span>
                               <span className="text-[14px] text-black italic">"{example}"</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Suggestions - What to fix */}
+                    {data.suggestions && data.suggestions.length > 0 && (
+                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">
+                          Что поправить
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.suggestions.map((suggestion: string, index: number) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-black mr-2">→</span>
+                              <span className="text-[14px] text-black">{suggestion}</span>
                             </li>
                           ))}
                         </ul>

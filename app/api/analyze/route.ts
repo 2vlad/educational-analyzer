@@ -248,6 +248,7 @@ export async function POST(request: NextRequest) {
           comment: result.comment,
           examples: result.examples,
           detailed_analysis: result.detailed_analysis,
+          suggestions: result.suggestions,
           durationMs: result.durationMs,
           model: result.model,
         }

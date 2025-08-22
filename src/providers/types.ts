@@ -11,6 +11,7 @@ export interface GenerateResult {
   comment: string
   examples: string[]
   detailed_analysis?: string
+  suggestions?: string[]
   raw: unknown
   tokensUsed?: number
   durationMs: number

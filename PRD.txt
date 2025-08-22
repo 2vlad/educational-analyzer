@@ -1,103 +1,609 @@
-EDUCATIONAL CONTENT ANALYZER - PRODUCT REQUIREMENTS DOCUMENT
+Below is a single, self‑contained **Product Requirements Document (PRD)** for adding **Programs (batch lesson analysis)** to your existing app. It is written to fit your current stack and code organization, and to be implemented in a **separate Git branch**.
 
-## OVERVIEW
-Transform the existing mock UI into a functional educational content analyzer that uses AI to evaluate teaching materials on 5 key metrics.
+---
 
-## CORE FUNCTIONALITY
+# PRD — Programs (Batch Lesson Analysis with Yonote integration)
 
-### 1. Content Input
-- Accept text via file upload (txt, md, doc, docx)
-- Accept pasted text directly
-- Store submissions in Supabase
+**Owner:** You
+**Repo:** `2vlad/educational-analyzer`
+**Target branch:** `feature/programs-batch-analyzer` (created from latest `feature/multi-user-saas`)
+**Release vehicle:** Vercel (app + cron) + Supabase (Postgres + RLS)
+**MVP scope:** Sequential, reliable analysis of 10–100 lessons per program with authenticated scrape from **Yonote** via session cookie; storage of results; progress UI; pause/resume; retries.
 
-### 2. AI Analysis Engine
-- Use Claude/OpenAI API to analyze content
-- Evaluate 5 metrics (scale -2 to +2):
-  * Логика (Logic) - Content structure and flow
-  * Польза (Usefulness) - Practical applicability
-  * Уровень (Level) - Difficulty appropriateness
-  * Цепляет (Engagement) - How captivating it is
-  * С душой (Passion) - Personal touch and care
-- Generate comment and detailed feedback for each metric
-- Provide actionable improvement examples
+---
 
-### 3. Data Architecture (Supabase)
+## 1) Problem & Goals
 
-Tables:
-- analyses
-  * id (uuid, primary key)
-  * content (text)
-  * created_at (timestamp)
-  * user_id (text, nullable for MVP)
-  * status (pending/completed/failed)
+### Problem
 
-- analysis_results
-  * id (uuid, primary key)
-  * analysis_id (foreign key)
-  * metric (text)
-  * score (integer, -2 to 2)
-  * comment (text)
-  * details (text)
-  * examples (jsonb)
+The team currently analyzes content **lesson by lesson**. This is slow and error‑prone when reviewing full programs (e.g., 50+ lessons). Content often lives in **Yonote** under authentication, so public scraping is not enough.
 
-- logs
-  * id (uuid, primary key)
-  * timestamp (timestamp)
-  * level (info/warn/error)
-  * message (text)
-  * metadata (jsonb)
-  * request_id (text)
+### Goals
 
-### 4. API Design
+1. Create a **Program** from a single **root link** (Yonote), enumerate lessons, and analyze them **sequentially** with the **same metric system** as single‑lesson analysis.
+2. Provide **progress tracking**, **pause/resume/stop**, **retry**, and **incremental re‑runs** (only changed lessons).
+3. Store results and show **per‑program dashboards** and **per‑lesson details** (reusing the existing analysis UI).
+4. Do this **without breaking** the current single‑lesson flow, using small, reliable building blocks (queue + cron).
+5. Keep deployment simple for MVP (Vercel + Supabase). Optionally support an external worker later (Railway) without changing the UI or DB model.
 
-POST /api/analyze
-- Accept content
-- Create analysis record
-- Queue for AI processing
-- Return analysis_id
+### Success Metrics (MVP)
 
-GET /api/analysis/{id}
-- Return analysis status and results
+* 1 full program (≥ 30 lessons) runs to **100% completion** without manual babysitting.
+* ≥ 95% of lessons succeed on ≤ 2 attempts (excluding content-side errors).
+* A complete run finishes within an acceptable window (e.g., overnight), with **no data loss** and correct progress.
+* Team time saved: ≥ 50% vs. manual lesson-by-lesson analysis.
 
-GET /api/logs
-- Return logs (for Claude Code access)
-- Support filtering by level, timerange
+---
 
-### 5. Logging Requirements
-- Log every API request/response
-- Log LLM API calls with prompts and responses
-- Log errors with full context
-- Log user actions (uploads, views)
-- Make logs accessible via API for Claude Code
+## 2) In Scope / Out of Scope
 
-## MVP REQUIREMENTS
+**In scope (MVP):**
 
-### Must Have
-1. Working file upload and text input
-2. Real AI analysis (not mock data)
-3. Results display with speedometer visualization
-4. Supabase integration for data persistence
-5. Comprehensive logging system
-6. Environment variables for all configs
-7. Basic error handling
+* Programs CRUD, enumeration of lessons from Yonote root.
+* Authenticated access to Yonote via **session cookie** (no password stored).
+* Batch runner (queue in DB, cron tick on Vercel).
+* Incremental runs (content hash).
+* Program pages: list, detail, run detail, lesson detail (existing page reused).
+* Security (RLS), encryption for cookie, error handling & retries.
+* Minimal telemetry/metrics (progress, counts, average scores).
 
-### Nice to Have (Post-MVP)
-- User authentication
-- Analysis history
-- Export results as PDF
-- Batch analysis
-- Custom rubrics
+**Out of scope (MVP):**
 
-## TECHNICAL CONSTRAINTS
-- Use existing Next.js/React setup
-- Use existing shadcn/ui components
-- TDD approach - tests before implementation
-- Commit after each component completion
-- No hardcoded values (use env vars)
+* Playwright/headless browser, captcha/2FA flows.
+* Other sources (Notion, Drive, Dropbox) beyond a generic **manifest/urls.txt** fallback.
+* High parallelism; keep concurrency low (1–2).
+* Per‑tenant billing/quotas.
 
-## SUCCESS CRITERIA
-- Can analyze real educational content
-- Provides consistent, meaningful scores
-- All data persisted in Supabase
-- Claude Code can read logs via API
-- Zero runtime errors in happy path
+---
+
+## 3) Users & Primary Use Cases
+
+* **Content Author/Editor**
+
+  * Connect Yonote access (paste cookie once).
+  * Add Program → paste root URL → enumerate.
+  * Start run → watch progress → open failed lessons → re-run changed ones.
+
+* **Reviewer/Lead**
+
+  * Open Program dashboard → see aggregates and low‑scoring lessons.
+  * Drill into any lesson’s analysis (existing UI).
+
+---
+
+## 4) Assumptions
+
+* Yonote pages are accessible with a **valid session cookie** over HTTPS.
+* HTML contains the content or a JSON endpoint returns it with the same cookie (no headless browser needed for MVP).
+* Single lesson analysis already works and returns normalized metric results your UI expects.
+
+---
+
+## 5) High-Level Solution
+
+* Add a **Programs** area (under avatar dropdown) with isolated pages.
+* Introduce a **pluggable Source Adapter** for Yonote (cookie‑based authorized fetch).
+* Build a **DB-backed queue** of analysis jobs (`analysis_jobs`) and a **cron tick** endpoint (`/api/worker/tick`).
+* Reuse the **same LLMService** and parsing logic as single‑lesson analyze endpoint.
+* Persist results in the existing `analyses` table, linked to `program`, `run`, and `lesson`.
+* Ensure **idempotency** via `content_hash` and **robustness** via locks, TTL and retries.
+
+---
+
+## 6) Architecture & Data Flow
+
+```
+User → UI /programs → POST /api/programs
+           ↓
+    enumerateLessons (YonoteAdapter via cookie)
+           ↓
+     DB: program_lessons (tree/order)
+           ↓
+   Start run → create analysis_jobs (queued)
+           ↓        (cron tick every minute or page-driven tick)
+   Runner picks queued job (SKIP LOCKED, TTL)
+           ↓
+  fetchLessonContent → LLMService.analyze
+           ↓
+   Save analyses (link to program/run/lesson)
+           ↓
+  Update job + run counters → UI shows progress
+```
+
+**MVP runner**: Vercel serverless + Cron (no external worker).
+
+---
+
+## 7) Data Model (Supabase / Postgres)
+
+> Add tables; extend `analyses`. Keep RLS consistent with existing policies.
+
+### 7.1 Programs & Lessons
+
+```sql
+create table programs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles (id) on delete cascade,
+  name text not null,
+  source_type text not null check (source_type in ('yonote','generic_list')),
+  root_url text not null,
+  credential_id uuid references external_credentials (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index on programs (user_id);
+```
+
+```sql
+create table program_lessons (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references programs (id) on delete cascade,
+  parent_id uuid references program_lessons (id) on delete set null,
+  title text not null,
+  source_url text not null,
+  sort_order integer not null default 0,
+  content_hash text,
+  last_fetched_at timestamptz,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index on program_lessons (program_id, sort_order);
+```
+
+### 7.2 Runs & Jobs
+
+```sql
+create table program_runs (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references programs (id) on delete cascade,
+  user_id uuid not null references profiles (id) on delete cascade,
+  status text not null check (status in ('queued','running','paused','stopped','completed','failed')),
+  metrics_mode text not null check (metrics_mode in ('lx','custom')),
+  metric_configuration_id uuid references metric_configurations (id),
+  total_lessons integer not null default 0,
+  queued integer not null default 0,
+  processed integer not null default 0,
+  succeeded integer not null default 0,
+  failed integer not null default 0,
+  max_concurrency integer not null default 1,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz not null default now()
+);
+```
+
+```sql
+create table analysis_jobs (
+  id uuid primary key default gen_random_uuid(),
+  program_run_id uuid not null references program_runs (id) on delete cascade,
+  program_id uuid not null references programs (id) on delete cascade,
+  lesson_id uuid not null references program_lessons (id) on delete cascade,
+  status text not null check (status in ('queued','running','succeeded','failed','skipped')),
+  attempt_count integer not null default 0,
+  last_error text,
+  locked_by text,
+  locked_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index on analysis_jobs (program_run_id, status);
+create index on analysis_jobs (status, locked_at);
+```
+
+### 7.3 Yonote Credential (encrypted cookie)
+
+```sql
+create table external_credentials (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles (id) on delete cascade,
+  provider text not null check (provider in ('yonote')),
+  name text not null,
+  cookie_encrypted text not null,    -- AES-256-GCM (or libsodium) encrypted
+  cookie_expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+### 7.4 Extend existing `analyses`
+
+```sql
+alter table analyses
+  add column program_id uuid references programs (id) on delete set null,
+  add column program_run_id uuid references program_runs (id) on delete set null,
+  add column lesson_id uuid references program_lessons (id) on delete set null,
+  add column content_hash text;
+
+create index on analyses (program_id, program_run_id, lesson_id);
+```
+
+### 7.5 RLS
+
+* Enable RLS on all new tables.
+* Policies: user can `select/insert/update/delete` rows where `user_id = auth.uid()` (or via join to program).
+* **Runner** endpoints use a server role key to update queue safely (or policies allow system role).
+
+---
+
+## 8) Source Adapter (Yonote) — Technical Spec
+
+```ts
+export interface SourceAdapter {
+  validate(rootUrl: string): Promise<{ ok: boolean; reason?: string }>;
+  enumerateLessons(rootUrl: string, auth: AuthCtx): Promise<Array<{
+    title: string; url: string; order?: number; parentUrl?: string;
+  }>>;
+  fetchLessonContent(url: string, auth: AuthCtx): Promise<{
+    text: string; raw?: string; hash: string;
+  }>;
+}
+
+export type AuthCtx = { cookie: string };
+```
+
+**YonoteAdapter (MVP):**
+
+* **Auth**: pass `Cookie: <session_cookie>` header. Cookie value is read from `external_credentials` and **decrypted** on the server using `APP_SECRET_KEY`.
+* **Enumerate**: fetch the root page, parse HTML for lesson links within the same Yonote workspace/host; compute `order` from DOM if present; normalize titles.
+* **Fetch content**: authorized fetch of lesson page; extract main content (HTML→text); normalize (strip nav/ads); compute `hash = sha256(normalizedText)`.
+* **Errors**:
+
+  * `401/403` → mark run `paused` with reason “cookie expired”; UI prompts to refresh credential.
+  * Network, 5xx → retry with backoff.
+
+**GenericListAdapter (fallback, optional in MVP):**
+
+* If `root_url` points to a text file `urls.txt` or `manifest.json`, read list of lesson URLs directly.
+
+---
+
+## 9) Runner & Queue
+
+### Execution model
+
+* **Cron:** Vercel Cron calls `POST /api/worker/tick` every minute.
+* **Page tick:** when a Program Run page is open, UI calls `POST /api/program-runs/:id/tick` to speed up execution.
+* **Concurrency:** default `max_concurrency = 1` (safe for LLM quotas). Implementation can take up to N jobs per tick.
+
+### Picking a job (pseudocode)
+
+```sql
+-- choose and lock one job
+WITH c AS (
+  SELECT id
+  FROM analysis_jobs
+  WHERE status = 'queued'
+    AND (locked_at IS NULL OR locked_at < now() - interval '90 seconds')
+  ORDER BY created_at
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE analysis_jobs j
+SET status='running', locked_by=$1, locked_at=now()
+FROM c
+WHERE j.id = c.id
+RETURNING j.*;
+```
+
+### Job lifecycle
+
+1. Load `lesson`, decrypt cookie, pick adapter.
+2. `fetchLessonContent` → get `{text, hash}`.
+3. **Idempotency**: if there is a fresh record in `analyses` for `(lesson_id, metric_configuration_id)` with the **same `content_hash`**, mark job `skipped`.
+4. Otherwise call `LLMService.analyze(text, metrics)` (reuse existing orchestrator).
+5. Save to `analyses` with links (`program_id`, `program_run_id`, `lesson_id`, `content_hash`).
+6. Mark job `succeeded`. Update counters in `program_runs`.
+7. On error: increment `attempt_count`, set `status='queued'` with backoff (store timestamp via `locked_at` TTL), or mark `failed` after 3 attempts.
+8. If all jobs done: `program_runs.status = 'completed'` (or `failed` if any hard failures and policy dictates).
+
+### Time limits
+
+* Keep **per job processing** under \~60s (Vercel function timeout). If it won’t fit, do fewer steps or move to external worker (see §15).
+
+---
+
+## 10) API Endpoints (App Router, server-only)
+
+> All inputs validated with Zod. All endpoints enforce user access via RLS or server role + explicit checks.
+
+**Programs**
+
+* `POST /api/programs` → create program `{ name, sourceType, rootUrl, credentialId? }`
+* `GET /api/programs` → list user programs (with last run summary)
+* `GET /api/programs/:id` → program details
+* `POST /api/programs/:id/enumerate` → run adapter.enumerate → upsert `program_lessons`
+* `DELETE /api/programs/:id` → delete (soft or hard)
+
+**Credentials**
+
+* `POST /api/credentials/yonote` → save encrypted cookie (never return it afterwards)
+* `GET /api/credentials` → list names & provider only (no secret)
+
+**Runs**
+
+* `POST /api/programs/:id/runs` → create run `{ metricsMode, metricConfigurationId?, maxConcurrency? }` and corresponding `analysis_jobs` (only for missing/changed content via `content_hash`)
+* `POST /api/program-runs/:id/pause` / `resume` / `stop`
+* `GET /api/program-runs/:id/status` → `{ status, processed, succeeded, failed, queued, progress }`
+* `POST /api/program-runs/:id/tick` → process up to N jobs for this run (page-driven)
+
+**Worker**
+
+* `POST /api/worker/tick` → global cron tick (process up to M jobs)
+
+**Analysis (existing)**
+
+* No breaking changes. Extract internal `runAnalysisInternal()` to be callable both from single‑lesson API and runner.
+
+---
+
+## 11) UI/UX
+
+### Navigation
+
+* Avatar dropdown → **Programs** (isolated section).
+
+### Pages
+
+1. **Programs List** `/programs`
+
+   * Card per program: name, source, last run status & progress, buttons: **Open**, **Run**, **Delete**.
+   * **Add Program** button.
+
+2. **Program Detail** `/programs/:programId`
+
+   * Header: name, root URL (editable), source type & credential info.
+   * Actions: **Scan (Enumerate)**, **Run**, **Pause/Resume**, **Stop**, **Re-run Changed**.
+   * Progress bar and counters from current/last run.
+   * Lessons table: status icon per last run (`✅`, `❗️`, `⏳`, `⏸`, `⤼` skipped), title, link to source, order, last analyzed at.
+   * If cookie expired → banner “Session expired — update Yonote connection”.
+
+3. **Run Detail** `/programs/:programId/runs/:runId`
+
+   * Aggregates: average scores per metric, distribution, list of lowest‑scoring lessons.
+   * Filters: failed/low score/changed.
+   * Clicking a lesson opens the **existing analysis view**.
+
+4. **Yonote Connection Modal**
+
+   * Paste **session cookie** (how‑to hint), name credential.
+   * Save → encrypted at rest. Show last updated & (optional) expiry time.
+
+### UX behaviors
+
+* React Query polling 2–5s for run status; when page is visible, also call `/tick` to accelerate.
+* Toasts for state changes and errors.
+* Skeletons for loading tables/cards.
+
+---
+
+## 12) Security & Privacy
+
+* **Cookie storage:** never store username/password. Store only **session cookie**, encrypted with **AES‑256‑GCM** (Node `crypto`) using `APP_SECRET_KEY` env. Never log the raw cookie. Never send it back to client after save.
+* **Allow‑list** sources: `root_url` must match `https://*.yonote.ru/...` (or configured domain).
+* **RLS**: users can only see/update their own programs, runs, lessons, jobs, and credentials.
+* **Server-only** decrypt & fetch (no client-side requests to Yonote).
+* **Input size limits**: enforce same max text size and file limits as current single‑lesson analyze.
+* **SSRF protection**: reject `root_url` and lesson URLs outside allow‑listed host.
+
+---
+
+## 13) Non‑Functional Requirements
+
+* **Reliability:**
+
+  * DB queue, `FOR UPDATE SKIP LOCKED`, **TTL lock (90s)**, **retry with backoff** (10/30/60s), up to 3 attempts.
+  * Idempotency by `(lesson_id, metric_configuration_id, content_hash)`.
+
+* **Performance:**
+
+  * `max_concurrency=1` by default; configurable up to 2–3 if safe.
+  * Per job < 60s (Vercel timeout).
+
+* **Observability:**
+
+  * Store `analysis_jobs.last_error`, attempt counts, per-run counters and durations.
+  * Simple logs (without secrets).
+
+* **Scalability (later):**
+
+  * Seamless move to external worker without changing DB/UI (see §15).
+
+---
+
+## 14) Telemetry & Reporting
+
+* `program_runs`: computed `progress = processed / total_lessons`.
+* Aggregates on Run Detail: averages per metric; count of failed/low‑score lessons.
+* Minimal event logs: run started/paused/resumed/completed, cookie expired.
+
+---
+
+## 15) Future: External Worker (Railway/Render)
+
+Trigger when:
+
+* Yonote requires JS execution/headless browser, or
+* You want higher concurrency and long‑lived sessions.
+
+Plan:
+
+* Separate Node service with Playwright; same Supabase schema and queue.
+* Uses `SUPABASE_SERVICE_ROLE_KEY` to update jobs and write analyses.
+* Only the **fetch layer** changes; orchestration, UI, and DB remain intact.
+
+---
+
+## 16) Rollout Plan & Git
+
+### Branching
+
+* Create **`feature/programs-batch-analyzer`** from the tip of `feature/multi-user-saas`.
+* Protect branch with PR reviews.
+
+### Feature flags
+
+* `USE_YONOTE_ADAPTER=true` (MVP on).
+* `USE_HEADLESS_FETCH=false` (keep off for MVP).
+* `ENABLE_GENERIC_LIST_ADAPTER=false` (optional fallback).
+
+### Migrations (in order)
+
+1. `external_credentials` (+ RLS policy).
+2. `programs` (with `credential_id`).
+3. `program_lessons`.
+4. `program_runs`.
+5. `analysis_jobs`.
+6. `analyses` columns (`program_id`, `program_run_id`, `lesson_id`, `content_hash`).
+7. Indexes (see §7).
+
+### Infra
+
+* Add Vercel Cron:
+
+  ```json
+  { "crons": [ { "path": "/api/worker/tick", "schedule": "*/1 * * * *" } ] }
+  ```
+* Ensure server-side envs:
+
+  * `APP_SECRET_KEY` (32 bytes base64)
+  * Supabase keys (service role for cron/worker if needed)
+
+### PR Checklist
+
+* [ ] All new tables have RLS and tests.
+* [ ] Cookie encryption utility uses AES‑256‑GCM and zero logs of plaintext.
+* [ ] Runner honors TTL, retries, backoff, and idempotency.
+* [ ] UI hides secrets and never exposes cookie.
+* [ ] E2E happy path on demo program (10+ lessons).
+* [ ] No regressions in single‑lesson analysis.
+
+---
+
+## 17) Testing Strategy
+
+**Unit**
+
+* YonoteAdapter: enumerate (HTML fixtures), fetch & parse text, hash stability.
+* Crypto utils: encrypt/decrypt round‑trip, key mismatch behavior.
+* Job picker: SKIP LOCKED selection, TTL logic.
+
+**Integration**
+
+* Create program → enumerate → create run → jobs created correctly.
+* Runner processes jobs, writes `analyses`, updates counters.
+* 401/403 from Yonote pauses run and surfaces UI message.
+
+**E2E**
+
+* Full run (small program) from credentials to completion.
+* Pause/resume mid-run; stop; re-run changed lessons (hash diff).
+* Open lesson analysis view from run results.
+
+**Load/Resilience**
+
+* Simulate function crash mid-job → ensure TTL re-picks job.
+* Multiple concurrent ticks → only one executor processes a job.
+
+---
+
+## 18) Risks & Mitigations
+
+* **Expired/invalid cookie** → detect 401/403; pause run; prompt to refresh credential.
+* **HTML changes on Yonote** → keep parser tolerant; support `manifest/urls.txt` fallback.
+* **Vercel timeouts** → keep jobs small; if needed, reduce concurrency or move fetch layer to worker (Railway).
+* **LLM rate limits** → default concurrency=1; add jitter/backoff between calls.
+* **Data duplication** → idempotency by `content_hash` + lesson + metric configuration.
+
+---
+
+## 19) Acceptance Criteria (DoD)
+
+* User can connect Yonote (cookie), add a Program with a root URL, enumerate lessons, start a run, and see progress.
+* Each lesson results in an entry in `analyses` with links to program/run/lesson.
+* Pause/resume/stop work as expected; retries are visible in job counters.
+* Incremental run skips unchanged lessons (same `content_hash`).
+* Program and run pages load quickly and are protected by RLS.
+* No breaking changes to single‑lesson analysis.
+
+---
+
+## 20) Implementation Notes (fit to current code base)
+
+* **Folders**
+
+  * `/src/services/ScraperService.ts` (adapter registry)
+  * `/src/services/adapters/YonoteAdapter.ts`
+  * `/src/services/crypto/secretBox.ts` (AES‑256‑GCM helpers)
+  * `/app/api/programs/*` (REST endpoints)
+  * `/app/api/program-runs/*` (runs + tick)
+  * `/app/api/worker/tick/route.ts` (cron)
+  * `/app/(dashboard)/programs/*` (pages & components)
+
+* **Reuse analysis**
+  Extract internal `runAnalysisInternal({text, metricsMode, configurationId})` from existing `/api/analyze` path to call it from the runner.
+
+* **Hash**
+  `sha256(normalize(text))`, where normalize = trim, collapse whitespace, strip HTML artifacts.
+
+---
+
+## 21) Appendix — Minimal API Shapes (examples)
+
+**Create program**
+
+```http
+POST /api/programs
+{
+  "name": "Cybersecurity 101",
+  "sourceType": "yonote",
+  "rootUrl": "https://practicum.yonote.ru/.../root",
+  "credentialId": "uuid"
+}
+→ 200 { "programId": "uuid" }
+```
+
+**Enumerate lessons**
+
+```http
+POST /api/programs/:id/enumerate
+→ 200 { "count": 52 }
+```
+
+**Start run**
+
+```http
+POST /api/programs/:id/runs
+{
+  "metricsMode": "lx",
+  "metricConfigurationId": null,
+  "maxConcurrency": 1
+}
+→ 200 { "runId": "uuid" }
+```
+
+**Run status**
+
+```http
+GET /api/program-runs/:id/status
+→ 200 {
+  "status": "running",
+  "processed": 18, "succeeded": 17, "failed": 1, "queued": 34,
+  "progress": 0.346
+}
+```
+
+**Cron tick**
+
+```http
+POST /api/worker/tick
+→ 200 { "processedJobs": 1 }
+```
+
+---
+
+### Summary
+
+This PRD adds a **Programs** capability that batch‑analyzes authenticated Yonote lessons **reliably and simply**, reusing your current architecture (Next.js + Supabase + LLMService). It specifies the DB schema, adapters, APIs, runner logic, UI, security, rollout plan, and tests—so you can implement it in the dedicated branch **`feature/programs-batch-analyzer`** without breaking existing single‑lesson analysis.

@@ -6,10 +6,14 @@ import { logger } from '@/src/utils/logger'
 import { METRICS } from '@/src/utils/prompts'
 import { InsertAnalysis, InsertLLMRequest } from '@/src/types/database'
 import { progressService } from '@/src/services/ProgressService'
+import { env } from '@/src/config/env'
+
+// Get max text length from env or use default
+const maxTextLength = env.server?.MAX_TEXT_LENGTH || 20000
 
 // Request schema
 const analyzeRequestSchema = z.object({
-  content: z.string().min(1).max(20000),
+  content: z.string().min(1).max(maxTextLength),
   modelId: z.string().optional(),
   metricMode: z.enum(['lx', 'custom']).optional(),
 })

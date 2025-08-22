@@ -486,7 +486,7 @@
         "testStrategy": "Test drag-drop reordering saves correctly, verify edit changes persist after page refresh, test validation prevents empty prompts, ensure delete confirmation works, test optimistic updates and error rollback, validate responsive design",
         "priority": "low",
         "dependencies": [8, 9],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -494,7 +494,7 @@
             "description": "Set up the base settings page component with navigation routing and basic layout structure",
             "dependencies": [],
             "details": "Create SettingsPage component with proper routing configuration in the app router. Design responsive layout with sidebar/header navigation and main content area. Set up page title, breadcrumbs, and basic container structure. Ensure proper authentication checks and redirect logic for unauthenticated users. Add loading states and error boundaries.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -503,7 +503,7 @@
             "description": "Build the metric list component with drag-and-drop functionality using react-beautiful-dnd",
             "dependencies": ["10.1"],
             "details": "Install and configure react-beautiful-dnd library. Create MetricList component displaying all user metrics with draggable items. Implement onDragEnd handler to update display_order in state and persist to database. Add visual feedback during drag operations with smooth animations. Include grip/handle icons and hover states. Ensure keyboard accessibility for reordering.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -512,7 +512,7 @@
             "description": "Create modal and inline editing interfaces for modifying metric properties with validation",
             "dependencies": ["10.2"],
             "details": "Develop EditMetricModal component with form fields for metric name (50 char limit) and prompt text (500 char limit). Implement inline editing option with contentEditable or input switching. Add real-time character counters and validation messages. Create toggle switches for enabling/disabling metrics with immediate visual feedback. Include save/cancel buttons with proper focus management.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -521,7 +521,7 @@
             "description": "Implement the new metric creation form with comprehensive validation and error handling",
             "dependencies": ["10.3"],
             "details": "Build AddMetricForm component with fields for name, prompt, and initial active state. Implement client-side validation for required fields, character limits, and duplicate names. Add server-side validation handling with user-friendly error messages. Create 'Add New Metric' button with plus icon that opens form in modal or inline expansion. Include form reset on successful submission and loading states during API calls.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -530,7 +530,7 @@
             "description": "Add metric deletion with confirmation dialogs and proper cleanup handling",
             "dependencies": ["10.2"],
             "details": "Create DeleteConfirmationDialog component with metric name display and warning message. Implement delete buttons on each metric item with trash icon. Add two-step confirmation process to prevent accidental deletions. Handle cascade effects if metric was used in previous analyses. Show success toast notifications after deletion and remove item from list with animation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -539,7 +539,7 @@
             "description": "Build the preview component and implement optimistic update patterns with rollback capability",
             "dependencies": ["10.2", "10.3", "10.4", "10.5"],
             "details": "Develop MetricPreview component showing how metrics appear in analysis view. Implement optimistic updates for all CRUD operations with immediate UI feedback. Create rollback mechanism on API failures with error toast notifications. Add tooltips using a library like react-tooltip explaining each field's purpose. Ensure all state changes are batched efficiently and include proper loading/error states throughout.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -552,7 +552,7 @@
         "testStrategy": "Verify pagination works correctly, test configuration_snapshot renders historical metrics accurately, validate search filters work, test export generates valid files, ensure page handles users with no history gracefully, test performance with large history datasets",
         "priority": "low",
         "dependencies": [6, 8],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -560,7 +560,7 @@
             "description": "Build the base history page component with React Query or SWR configuration for data fetching and caching",
             "dependencies": [],
             "details": "Create AnalysisHistory.tsx component with React Query/SWR setup. Configure query client with appropriate cache time and stale time settings. Implement useAnalysisHistory custom hook to fetch paginated analysis data from Supabase. Set up error boundaries and loading states. Create route configuration and navigation link to history page.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -569,7 +569,7 @@
             "description": "Build the analysis list item components with date, preview, model info, and expandable full results view",
             "dependencies": ["11.1"],
             "details": "Create AnalysisListItem component displaying date (formatted), content preview (truncated to 100 chars), and model used. Implement expand/collapse functionality using state management. Build AnalysisDetail component to render full analysis results when expanded. Apply configuration_snapshot data to show historical metric configurations accurately. Add smooth expand/collapse animations.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -578,7 +578,7 @@
             "description": "Implement pagination controls and optional infinite scroll for the analysis history list",
             "dependencies": ["11.1", "11.2"],
             "details": "Implement server-side pagination with page size of 20 items. Create Pagination component with page numbers, previous/next buttons. Add infinite scroll option using Intersection Observer API. Implement scroll-to-top functionality. Ensure proper loading states during page transitions. Cache previously loaded pages to prevent refetching.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -587,7 +587,7 @@
             "description": "Create search bar and filter controls for date range and content keyword filtering",
             "dependencies": ["11.1", "11.2"],
             "details": "Implement SearchFilter component with text input for keyword search and date range picker. Add debounced search to minimize API calls. Create filter state management using URL query parameters for shareable filtered views. Implement server-side filtering in Supabase queries using full-text search for content and date range conditions. Add clear filters button and active filter indicators.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -596,7 +596,7 @@
             "description": "Add export capabilities for individual or bulk analyses in PDF and CSV formats",
             "dependencies": ["11.2"],
             "details": "Create ExportButton component with format selection dropdown (PDF/CSV). Implement PDF generation using libraries like jsPDF or react-pdf. Build CSV export using Papa Parse or native implementation. Add bulk export option with checkbox selection. Include all analysis data, metrics, and timestamps in exports. Implement progress indicator for large exports.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -605,7 +605,7 @@
             "description": "Build comparison interface to visualize how the same content was analyzed differently over time",
             "dependencies": ["11.2", "11.3"],
             "details": "Create ComparisonView component allowing selection of 2-3 analyses for side-by-side comparison. Implement content matching algorithm to identify analyses of similar/same content. Build diff visualization showing metric score changes over time using charts (line graph or bar chart). Add timeline view showing all analyses of similar content. Highlight configuration differences between analyses. Include export option for comparison results.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -613,7 +613,7 @@
     ],
     "metadata": {
       "created": "2025-08-20T19:16:29.028Z",
-      "updated": "2025-08-21T07:18:40.693Z",
+      "updated": "2025-08-22T02:30:00.000Z",
       "description": "Tasks for master context"
     }
   }

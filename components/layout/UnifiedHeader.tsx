@@ -17,8 +17,12 @@ export default function UnifiedHeader() {
 
   const handleModeChange = (mode: 'lx' | 'custom') => {
     setMetricMode(mode)
-    // Always redirect to main page when switching modes
-    router.push('/')
+    // Redirect to appropriate page based on mode
+    if (mode === 'custom') {
+      router.push('/custom')
+    } else {
+      router.push('/')
+    }
   }
 
   const handleSettingsClick = () => {

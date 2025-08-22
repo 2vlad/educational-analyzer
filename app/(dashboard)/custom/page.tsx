@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation'
 import { MetricConfig } from '@/src/types/metrics'
 import MetricListView from '@/components/settings/MetricListView'
 import AddMetricForm from '@/components/settings/AddMetricForm'
-import MetricPreview from '@/components/settings/MetricPreview'
 import { Toaster, toast } from 'react-hot-toast'
 import { Loader2, Plus } from 'lucide-react'
 import ModelSelector from '@/components/ModelSelector'
+import UnifiedHeader from '@/components/layout/UnifiedHeader'
 
 export default function CustomMetricsPage() {
   const { user, loading: authLoading } = useAuth()
@@ -208,9 +208,12 @@ export default function CustomMetricsPage() {
   }
 
   return (
-    <div className="flex-1 flex justify-center p-6">
-      <div className="w-full max-w-[450px] mt-[50px]">
-        <Toaster position="top-right" />
+    <div className="min-h-screen bg-white flex flex-col">
+      <UnifiedHeader />
+      
+      <div className="flex-1 flex justify-center p-6">
+        <div className="w-full max-w-[450px] mt-[50px]">
+          <Toaster position="top-right" />
 
         {/* Header - Лёха AI style */}
         <header className="mb-10">
@@ -335,6 +338,7 @@ export default function CustomMetricsPage() {
             existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
           />
         )}
+        </div>
       </div>
     </div>
   )

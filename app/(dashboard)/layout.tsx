@@ -16,8 +16,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleModeChange = (mode: 'lx' | 'custom') => {
     setMetricMode(mode)
-    // Always redirect to main page when switching modes
-    router.push('/')
+    // Redirect to appropriate page based on mode
+    if (mode === 'custom') {
+      router.push('/custom')
+    } else {
+      router.push('/')
+    }
   }
 
   const handleSettingsClick = () => {
@@ -26,6 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Determine which button is active
   const isSettingsActive = pathname === '/settings'
+  const isCustomActive = pathname === '/custom'
 
 
   return (
@@ -46,7 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   onClick={() => handleModeChange('lx')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    metricMode === 'lx' && !isSettingsActive
+                    metricMode === 'lx' && !isSettingsActive && !isCustomActive
                       ? 'bg-white text-black shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -56,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <button
                   onClick={() => handleModeChange('custom')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    metricMode === 'custom' && !isSettingsActive
+                    isCustomActive || (metricMode === 'custom' && !isSettingsActive)
                       ? 'bg-white text-black shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -106,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <button
                           onClick={() => handleModeChange('lx')}
                           className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
-                            metricMode === 'lx' && !isSettingsActive
+                            metricMode === 'lx' && !isSettingsActive && !isCustomActive
                               ? 'bg-white text-black shadow-sm'
                               : 'text-gray-600'
                           }`}
@@ -116,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <button
                           onClick={() => handleModeChange('custom')}
                           className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all ${
-                            metricMode === 'custom' && !isSettingsActive
+                            isCustomActive || (metricMode === 'custom' && !isSettingsActive)
                               ? 'bg-white text-black shadow-sm'
                               : 'text-gray-600'
                           }`}

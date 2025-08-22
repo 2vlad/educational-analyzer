@@ -2,618 +2,137 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
-        "title": "Database Schema Setup and Migration",
-        "description": "Create and configure the Supabase database tables (profiles, metric_configurations) and modify the existing analyses table to support multi-tenancy",
-        "details": "Execute SQL migrations to create profiles table linked to auth.users, create metric_configurations table for storing user-specific and default metrics, and modify analyses table to add user_id and configuration_snapshot columns. Use Supabase Migration feature to version control these changes. Implementation: 1) Create migration file with CREATE TABLE profiles statement, 2) Add metric_configurations table with proper foreign key constraints, 3) ALTER analyses table to add new columns, 4) Test migrations in local Supabase instance before production deployment",
-        "testStrategy": "Verify table creation using Supabase Studio, test foreign key constraints work correctly, ensure CASCADE delete operations function properly, validate JSONB storage for configuration_snapshot, test that existing analyses records remain intact after migration",
+        "id": 13,
+        "title": "Create database schema for programs feature",
+        "description": "Design and implement all database tables needed for batch lesson analysis including programs, lessons, runs, jobs, and credentials",
+        "details": "Create migration files for: 1) external_credentials table with encrypted cookie storage, 2) programs table with source_type and credential references, 3) program_lessons table with hierarchical structure and content hash, 4) program_runs table with status and counters, 5) analysis_jobs queue table with locking mechanism, 6) Extend analyses table with program/run/lesson references. Implement RLS policies for all tables ensuring users only access their own data. Add necessary indexes for performance.",
+        "testStrategy": "Verify tables created successfully with correct constraints and indexes. Test RLS policies ensure proper isolation. Validate foreign key relationships. Test trigger functions for updated_at timestamps. Ensure migration can be rolled back cleanly.",
         "priority": "high",
         "dependencies": [],
         "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create profiles table with auth.users integration",
-            "description": "Design and implement the profiles table schema with proper foreign key relationship to auth.users, including all necessary columns and constraints",
-            "dependencies": [],
-            "details": "Create a migration file that defines the profiles table with: 1) id as UUID primary key, 2) user_id as UUID foreign key to auth.users(id) with ON DELETE CASCADE, 3) created_at and updated_at timestamps with defaults, 4) any additional profile fields needed (display_name, avatar_url, etc.). Include proper indexing on user_id for query performance. Add UNIQUE constraint on user_id to ensure one profile per user. Test the foreign key constraint by creating a test user and verifying cascade deletion works correctly.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create metric_configurations table with JSONB support",
-            "description": "Implement the metric_configurations table schema with all required columns including JSONB for flexible metric storage and proper indexing",
-            "dependencies": [],
-            "details": "Define metric_configurations table with: 1) id as UUID primary key, 2) user_id as UUID nullable (NULL for defaults) with foreign key to auth.users(id), 3) name as VARCHAR(255) NOT NULL, 4) prompt_text as TEXT NOT NULL for storing the evaluation prompt, 5) display_order as INTEGER for ordering metrics, 6) is_active as BOOLEAN default TRUE, 7) created_at and updated_at timestamps. Create composite index on (user_id, is_active, display_order) for efficient queries. Add CHECK constraint to ensure display_order > 0. Include GIN index if storing additional config in JSONB column.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Modify analyses table for multi-tenancy support",
-            "description": "Alter the existing analyses table to add user_id and configuration_snapshot columns while preserving existing data",
-            "dependencies": ["1.1", "1.2"],
-            "details": "Create ALTER TABLE migration to add: 1) user_id as UUID nullable with foreign key to auth.users(id) - nullable to maintain backward compatibility with existing guest analyses, 2) configuration_snapshot as JSONB to store the exact metric configuration used at analysis time. Ensure migration doesn't break existing data by allowing NULL values initially. Add index on user_id for performance. Create a partial index on (user_id, created_at) WHERE user_id IS NOT NULL for efficient user history queries. Document migration rollback strategy using DROP COLUMN statements.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Create and test complete migration file with rollback",
-            "description": "Combine all schema changes into a single versioned migration file with proper transaction handling and rollback capabilities",
-            "dependencies": ["1.1", "1.2", "1.3"],
-            "details": "Create a single Supabase migration file (e.g., 20240101000000_add_multi_tenancy.sql) that: 1) Wraps all DDL statements in a transaction where possible, 2) Includes all three table operations in correct dependency order, 3) Adds comprehensive comments explaining each schema decision, 4) Includes a corresponding .down.sql file with proper rollback statements in reverse order. Test the migration on a local Supabase instance by: running supabase db reset, applying migration, verifying all tables and constraints, testing rollback, and re-applying. Validate foreign key cascades work correctly and that all indexes are properly created.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "subtasks": []
       },
       {
-        "id": 2,
-        "title": "Default Metrics Data Migration",
-        "description": "Migrate the existing 5 hardcoded metrics from the application code to the metric_configurations table as default system metrics",
-        "details": "Extract the current 5 metrics (Logic, Technical, Depth, Explanation, Overall) from the existing codebase and insert them into metric_configurations with user_id = NULL to serve as default configurations. Create a seed script that: 1) Reads current metric definitions from LLMService, 2) Formats them as SQL INSERT statements, 3) Assigns proper display_order values (1-5), 4) Sets is_active = TRUE for all default metrics. Ensure prompt_text accurately captures the existing analysis prompts",
-        "testStrategy": "Query metric_configurations table to verify 5 default metrics exist with NULL user_id, validate prompt_text matches original prompts, test that display_order is sequential, ensure metrics can be retrieved via Supabase client",
+        "id": 14,
+        "title": "Implement encryption utilities for credentials",
+        "description": "Create secure encryption/decryption utilities for storing Yonote session cookies using AES-256-GCM",
+        "details": "Create /src/services/crypto/secretBox.ts with functions: encrypt(plaintext: string, key: string): {ciphertext: string, iv: string, tag: string}, decrypt(encrypted: object, key: string): string. Use Node.js crypto module with AES-256-GCM. Derive encryption key from APP_SECRET_KEY environment variable using PBKDF2. Include proper error handling, input validation, and ensure no plaintext logging. Store encrypted data as JSON in database.",
+        "testStrategy": "Unit tests for round-trip encryption/decryption. Test with various input sizes. Verify different keys produce different ciphertexts. Test error cases: wrong key, corrupted data, missing fields. Ensure no sensitive data in error messages.",
         "priority": "high",
-        "dependencies": [1],
+        "dependencies": [],
         "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Extract and Document Default Metrics from LLMService",
-            "description": "Analyze the existing LLMService code to extract the 5 hardcoded metrics (Logic, Technical, Depth, Explanation, Overall) and document their exact prompt texts, evaluation criteria, and any additional metadata",
-            "dependencies": [],
-            "details": "Review the current LLMService implementation to identify and document: 1) The exact prompt text for each of the 5 metrics, 2) Any scoring criteria or evaluation guidelines embedded in the prompts, 3) The order in which metrics are currently processed, 4) Any special formatting or parameters used in the analysis. Create a documentation file listing each metric with its name, full prompt text, and intended purpose. This documentation will serve as the source of truth for the seed script creation",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create SQL Seed Script for Default Metrics",
-            "description": "Develop a SQL seed script that inserts the 5 default metrics into the metric_configurations table with proper structure and NULL user_id to indicate system-wide defaults",
-            "dependencies": ["2.1"],
-            "details": "Create a seed.sql file containing INSERT statements for the 5 default metrics. Each INSERT should include: 1) user_id = NULL to mark as system default, 2) metric_name matching existing names (Logic, Technical, Depth, Explanation, Overall), 3) prompt_text with the exact analysis prompts extracted from the codebase, 4) display_order values from 1 to 5 in logical sequence, 5) is_active = TRUE for all metrics, 6) proper timestamps using NOW() for created_at/updated_at. Include transaction wrapping and duplicate prevention logic using ON CONFLICT clauses. Add comments explaining each metric's purpose",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Verification and Testing Queries",
-            "description": "Create verification queries and test procedures to validate that default metrics are correctly inserted and retrievable through the Supabase client",
-            "dependencies": ["2.2"],
-            "details": "Develop a test suite including: 1) SELECT query to verify exactly 5 records exist with user_id IS NULL, 2) Query to validate display_order is sequential (1,2,3,4,5) with no gaps, 3) Test that all prompt_text fields contain non-empty values matching the original prompts, 4) Verify is_active = TRUE for all default metrics, 5) Create a JavaScript test file using the Supabase client to ensure metrics can be fetched programmatically, 6) Include rollback script to remove default metrics if needed for re-seeding. Document expected query results and create assertions for automated testing",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "subtasks": []
       },
       {
-        "id": 3,
-        "title": "Database Triggers and Functions Implementation",
-        "description": "Implement Supabase database triggers and functions for automated user onboarding and metric copying",
-        "details": "Create handle_new_user() PL/pgSQL function that: 1) Automatically creates a profile entry when new user registers, 2) Copies all default metrics (user_id IS NULL) to the new user with their user_id, 3) Maintains display_order and is_active status. Implement CREATE TRIGGER on_auth_user_created on auth.users table. Use SECURITY DEFINER to ensure function has necessary permissions. Test trigger firing on user registration",
-        "testStrategy": "Create test user via Supabase Auth, verify profile is auto-created, confirm 5 metric_configurations are copied with correct user_id, test that modifications to user metrics don't affect defaults, validate trigger doesn't fire on user updates",
+        "id": 15,
+        "title": "Build Yonote adapter for content scraping",
+        "description": "Implement source adapter system with Yonote-specific adapter for authenticated content fetching",
+        "details": "Create /src/services/ScraperService.ts with SourceAdapter interface. Implement /src/services/adapters/YonoteAdapter.ts with methods: validate(rootUrl) to check URL format, enumerateLessons(rootUrl, auth) to parse lesson tree from HTML, fetchLessonContent(url, auth) to get lesson text with cookie auth. Parse HTML to extract clean text content, compute SHA-256 hash. Handle auth errors (401/403) distinctly from network errors. Validate URLs against yonote.ru domain.",
+        "testStrategy": "Mock Yonote HTML responses for testing enumeration logic. Test content extraction and normalization. Verify cookie headers passed correctly. Test error handling for expired sessions, network failures. Validate content hash consistency.",
         "priority": "high",
-        "dependencies": [1, 2],
+        "dependencies": [
+          14
+        ],
         "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create handle_new_user() PL/pgSQL Function",
-            "description": "Develop the core PL/pgSQL function that handles new user registration events with profile creation logic",
-            "dependencies": [],
-            "details": "Create a PL/pgSQL function handle_new_user() that: 1) Accepts NEW record from auth.users trigger context, 2) Creates a profile entry in the profiles table using the user's auth.uid() and metadata (email, display_name), 3) Returns NEW to allow trigger completion, 4) Uses SECURITY DEFINER to ensure proper permissions, 5) Includes error handling with EXCEPTION blocks for duplicate profile scenarios, 6) Add logging statements for debugging trigger execution",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Metric Copying Logic",
-            "description": "Add metric duplication functionality within the handle_new_user() function to copy default metrics to new users",
-            "dependencies": ["3.1"],
-            "details": "Extend handle_new_user() function to: 1) Query all default metrics WHERE user_id IS NULL from metric_configurations, 2) Use INSERT INTO ... SELECT to bulk copy metrics with the new user's ID, 3) Preserve display_order, is_active, prompt_text, and weight fields exactly, 4) Generate new UUIDs for copied metric records, 5) Implement idempotency check to prevent duplicate copying if function is called multiple times, 6) Use a single transaction to ensure atomicity of profile + metrics creation",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Create and Bind Database Trigger",
-            "description": "Create the on_auth_user_created trigger and bind it to the auth.users table for automatic execution",
-            "dependencies": ["3.2"],
-            "details": "Implement trigger creation: 1) CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users, 2) FOR EACH ROW EXECUTE FUNCTION handle_new_user(), 3) Ensure trigger is created in the correct schema with proper permissions, 4) Add IF NOT EXISTS checks for both function and trigger creation, 5) Create a rollback script to DROP TRIGGER and FUNCTION if needed, 6) Document the trigger in migration file with clear comments about its purpose and behavior",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Test Trigger Behavior and Edge Cases",
-            "description": "Create comprehensive test suite to validate trigger functionality across various scenarios",
-            "dependencies": ["3.3"],
-            "details": "Develop test scenarios: 1) Create test user via Supabase Auth API and verify profile auto-creation with correct fields, 2) Confirm exactly 5 metric_configurations are copied with proper user_id assignment, 3) Test idempotency by attempting to manually call handle_new_user() for existing user, 4) Verify trigger doesn't fire on UPDATE operations to auth.users, 5) Test CASCADE delete behavior when user is deleted, 6) Validate performance with concurrent user registrations, 7) Test error scenarios like database constraints violations, 8) Create SQL script with test assertions using RAISE EXCEPTION for automated testing",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "subtasks": []
       },
       {
-        "id": 4,
-        "title": "Row Level Security (RLS) Configuration",
-        "description": "Enable and configure Row Level Security policies on all user-data tables to ensure proper data isolation",
-        "details": "Enable RLS on profiles, metric_configurations, and analyses tables. Create policies: 1) 'Users can manage their own configurations' - allows authenticated users full CRUD on their metrics, 2) 'Anyone can read default configurations' - allows both anon and authenticated to read system defaults, 3) 'Users can view their own analyses' - restricts analysis history to owner. Use auth.uid() function for user identification. Test with different user contexts to ensure isolation",
-        "testStrategy": "Test unauthorized access attempts between users, verify guests can read default configs but not user configs, ensure authenticated users can only CRUD their own data, validate that RLS doesn't break existing guest functionality, test policy evaluation performance",
+        "id": 16,
+        "title": "Create programs API endpoints",
+        "description": "Implement REST API for programs CRUD operations and lesson enumeration",
+        "details": "Create endpoints in /app/api/programs/: POST to create program with Zod validation, GET to list user's programs with run summaries, GET /:id for program details, POST /:id/enumerate to scan lessons via adapter, DELETE /:id for soft delete. Add /app/api/credentials/yonote POST endpoint to save encrypted cookie. Use server-side Supabase client with proper auth checks. Return appropriate HTTP status codes and error messages.",
+        "testStrategy": "Integration tests for each endpoint with valid/invalid data. Test authentication and authorization. Verify RLS policies enforced. Test enumeration with mocked adapter. Validate response formats match expected schemas.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement job queue and runner logic",
+        "description": "Build database-backed queue system with reliable job processing using SKIP LOCKED pattern",
+        "details": "Create job picker logic using FOR UPDATE SKIP LOCKED to prevent race conditions. Implement TTL-based lock release (90 seconds). Add retry logic with exponential backoff (10/30/60s) up to 3 attempts. Create idempotency check using content_hash before processing. Extract runAnalysisInternal from existing /api/analyze to reuse LLMService. Update job status and run counters atomically. Handle pause/resume/stop signals. Implement proper error capture and logging.",
+        "testStrategy": "Test concurrent job picking ensures no duplicates. Verify TTL releases stuck jobs. Test retry backoff timing. Validate idempotency with same content hash. Test status transitions and counter updates. Simulate crashes and verify recovery.",
         "priority": "high",
-        "dependencies": [1],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Enable RLS on all user-data tables",
-            "description": "Activate Row Level Security on profiles, metric_configurations, and analyses tables in Supabase",
-            "dependencies": [],
-            "details": "Execute ALTER TABLE commands to enable RLS on profiles, metric_configurations, and analyses tables. Verify RLS is active using Supabase dashboard or SQL queries. Document the current state of each table before enabling RLS. Ensure database connection has sufficient privileges to alter table security settings.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create user data isolation policies",
-            "description": "Implement RLS policies that allow authenticated users to manage only their own data",
-            "dependencies": ["4.1"],
-            "details": "Create policies using auth.uid() for user identification: 1) 'Users can manage their own profiles' - CRUD operations on profiles where auth.uid() = user_id, 2) 'Users can manage their own configurations' - full access to metric_configurations where auth.uid() = user_id, 3) 'Users can view their own analyses' - SELECT/INSERT/UPDATE/DELETE on analyses where auth.uid() = user_id. Use USING and WITH CHECK clauses appropriately for each operation type.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Create public read policy for default configurations",
-            "description": "Implement RLS policy allowing both anonymous and authenticated users to read system default configurations",
-            "dependencies": ["4.1"],
-            "details": "Create policy 'Anyone can read default configurations' on metric_configurations table with USING clause (user_id IS NULL). This allows both anon and authenticated roles to SELECT default metrics. Ensure policy doesn't accidentally grant write access to defaults. Consider adding a separate policy for system admins to manage default configurations if needed.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Test RLS policies and document security boundaries",
-            "description": "Thoroughly test all RLS policies with different user contexts and document the security model",
-            "dependencies": ["4.2", "4.3"],
-            "details": "Create test scenarios: 1) Test as anonymous user - verify can only read default configs, 2) Test as authenticated user A - verify full CRUD on own data only, 3) Test as authenticated user B - verify cannot access user A's data, 4) Test cross-table isolation between profiles, configurations, and analyses. Document security boundaries, permission matrix, and any edge cases discovered. Verify RLS doesn't break existing guest functionality. Test policy evaluation performance with sample data.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
       },
       {
-        "id": 5,
-        "title": "LLMService Refactoring for Dynamic Configurations",
-        "description": "Refactor LLMService to accept dynamic metric configurations instead of using hardcoded metrics",
-        "details": "Modify /src/services/LLMService to: 1) Define MetricConfig interface with id, name, prompt_text properties, 2) Update analyze() method signature to accept configurations array parameter, 3) Replace hardcoded metric logic with dynamic iteration over configurations, 4) Maintain backward compatibility by providing default configs if none passed, 5) Ensure proper error handling for invalid configurations. Update response format to maintain consistency with existing UI expectations",
-        "testStrategy": "Unit test analyze() with various configuration arrays, test with empty configs array, validate response structure matches existing format, performance test with 5, 10, and 20 metrics, test prompt injection prevention",
-        "priority": "high",
-        "dependencies": [2],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Define TypeScript Interfaces and Types",
-            "description": "Create comprehensive TypeScript interfaces for MetricConfig, AnalysisResponse, and related types to ensure type safety throughout the refactoring",
-            "dependencies": [],
-            "details": "Define MetricConfig interface with properties: id (string), name (string), prompt_text (string), is_active (boolean), display_order (number). Create AnalysisResponse interface matching existing UI expectations. Define ValidationError type for configuration validation errors. Add type guards for runtime validation. Document interfaces with JSDoc comments explaining each property's purpose and constraints.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Extract and Preserve Default Configurations",
-            "description": "Extract the existing 5 hardcoded metrics from current LLMService implementation and convert them into a default configuration constant",
-            "dependencies": ["5.1"],
-            "details": "Locate and extract Logic, Technical, Depth, Explanation, and Overall metric definitions from existing code. Create DEFAULT_METRIC_CONFIGS constant array with proper MetricConfig structure. Preserve exact prompt text and analysis logic. Assign sequential display_order values (1-5). Mark all as is_active: true. Store in separate constants file for reusability across service and migration scripts.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Dynamic Analysis Method",
-            "description": "Create new analyze() method that accepts MetricConfig array and processes configurations dynamically while maintaining API compatibility",
-            "dependencies": ["5.1", "5.2"],
-            "details": "Implement analyze(text: string, configs?: MetricConfig[]) method signature. Use provided configs or fall back to DEFAULT_METRIC_CONFIGS. Filter configs by is_active status. Sort by display_order before processing. Iterate through configurations to generate prompts dynamically. Integrate with existing LLM API calls. Map responses to maintain current response structure. Handle partial failures gracefully.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Add Configuration Validation and Error Handling",
-            "description": "Implement robust validation logic for metric configurations with comprehensive error handling and security measures",
-            "dependencies": ["5.3"],
-            "details": "Validate configuration array is not empty (minimum 1 active metric). Check required fields: id, name, prompt_text are present and non-empty. Implement prompt injection prevention by sanitizing prompt_text. Set reasonable limits: max 20 metrics, name max 50 chars, prompt_text max 500 chars. Return specific validation errors with field-level details. Log validation failures for monitoring. Implement try-catch blocks around LLM calls with fallback behavior.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Create Comprehensive Test Suite",
-            "description": "Develop unit tests covering all aspects of the refactored LLMService including edge cases and performance scenarios",
-            "dependencies": ["5.4"],
-            "details": "Test analyze() with valid configurations array (1-20 metrics). Test with empty array triggers default configs. Test with null/undefined uses defaults. Validate malformed configs throw appropriate errors. Test prompt injection attempts are sanitized. Mock LLM API responses for consistent testing. Test performance with 5, 10, 20 metrics configurations. Verify response structure matches UI expectations. Test concurrent analyze() calls handle properly. Add integration tests with actual LLM service.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "id": 18,
+        "title": "Create worker tick endpoints",
+        "description": "Implement cron and page-driven tick endpoints for job processing",
+        "details": "Create /api/worker/tick/route.ts for Vercel Cron (every minute). Implement /api/program-runs/:id/tick for page-driven acceleration. Both endpoints: 1) Pick jobs respecting max_concurrency, 2) Decrypt credentials from external_credentials, 3) Fetch content via adapter, 4) Check content hash for skip logic, 5) Call runAnalysisInternal, 6) Save to analyses table with program/run/lesson links, 7) Update job and run status. Keep processing under 60s Vercel limit. Use service role for cron, user auth for page tick.",
+        "testStrategy": "Test cron endpoint processes correct number of jobs. Verify page tick only processes jobs for specific run. Test timeout handling. Validate proper credential decryption. Test skip logic for unchanged content.",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
       },
       {
-        "id": 6,
-        "title": "Analyze API Endpoint Enhancement",
-        "description": "Update /api/analyze endpoint to support authenticated users, load user-specific or default configurations, and save configuration snapshots",
-        "details": "Enhance /app/api/analyze/route.ts to: 1) Use @supabase/ssr to retrieve session server-side, 2) Extract user_id from session if authenticated, 3) Query metric_configurations with user_id or NULL for defaults, 4) Pass configurations to refactored LLMService, 5) Save analysis with user_id and configuration_snapshot JSONB, 6) Maintain guest mode functionality when no session exists. Implement proper error handling and rate limiting per user",
-        "testStrategy": "Test endpoint with authenticated and guest users, verify correct configurations are loaded, validate configuration_snapshot is properly stored, test rate limiting works per user, ensure backward compatibility for existing frontend",
-        "priority": "high",
-        "dependencies": [4, 5],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Configure Supabase SSR Authentication",
-            "description": "Set up @supabase/ssr package and configure server-side authentication helpers for the API route",
-            "dependencies": [],
-            "details": "Install @supabase/ssr package, create server-side Supabase client factory function in /app/lib/supabase-server.ts, configure cookies handling for session management, implement createServerClient with proper cookie configuration for Next.js App Router, ensure proper TypeScript types are exported",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Session Retrieval and User Extraction",
-            "description": "Add session retrieval logic to extract user_id from authenticated requests in the analyze endpoint",
-            "dependencies": ["6.1"],
-            "details": "Modify /app/api/analyze/route.ts to create server-side Supabase client, implement getUser() call to retrieve session, extract user_id from session data if authenticated, handle null session for guest mode, add proper TypeScript types for session handling, implement early return patterns for auth errors",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Create Configuration Query Logic",
-            "description": "Implement database queries to fetch user-specific or default metric configurations",
-            "dependencies": ["6.2"],
-            "details": "Build SQL query to fetch from metric_configurations table with user_id OR NULL condition, implement fallback to default configurations when user has none, ensure proper ordering by display_order, filter only active metrics (is_active = true), handle database connection errors gracefully, return configurations in format expected by LLMService",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Integrate LLMService with Dynamic Configurations",
-            "description": "Update analyze endpoint to pass fetched configurations to refactored LLMService",
-            "dependencies": ["6.3"],
-            "details": "Modify LLMService instantiation to accept dynamic configurations, transform database configuration format to LLMService expected format, ensure backward compatibility with existing API contract, validate configurations before passing to service, implement proper error handling for invalid configurations, maintain existing response structure",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement Analysis Storage with Snapshot",
-            "description": "Save analysis results with user_id and configuration_snapshot to analyses table",
-            "dependencies": ["6.4"],
-            "details": "Modify database insert to include user_id field (null for guests), serialize current configurations as JSONB for configuration_snapshot column, ensure atomic transaction for analysis save operation, implement retry logic for transient failures, validate JSONB structure before storage, add proper indexes for user_id queries",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Add Rate Limiting and Error Handling",
-            "description": "Implement per-user rate limiting and comprehensive error handling with proper HTTP status codes",
-            "dependencies": ["6.5"],
-            "details": "Implement rate limiting using user_id as key (IP for guests), configure appropriate limits (e.g., 10 requests per minute), return 429 status for rate limit exceeded, implement 401 for auth failures, 500 for server errors, 400 for validation errors, add detailed error messages for debugging, implement request logging for monitoring, ensure all errors are properly caught and handled",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "id": 19,
+        "title": "Build program runs management API",
+        "description": "Create endpoints for starting, monitoring, and controlling batch analysis runs",
+        "details": "Implement /api/programs/:id/runs POST to create run and queue jobs (only for new/changed content). Add /api/program-runs/:id/status GET for progress polling. Create /api/program-runs/:id/pause, /resume, /stop POST endpoints to control execution. When creating run: snapshot current metric configuration, create analysis_jobs for lessons needing update based on content_hash comparison. Return run ID and initial status. Handle metric mode selection (lx vs custom).",
+        "testStrategy": "Test run creation generates correct jobs. Verify incremental runs skip unchanged content. Test pause/resume/stop state transitions. Validate progress calculation accuracy. Test with different metric configurations.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
       },
       {
-        "id": 7,
-        "title": "Supabase Authentication Integration",
-        "description": "Implement Supabase Auth with Next.js including session management, middleware, and auth helpers",
-        "details": "Install and configure @supabase/ssr and @supabase/auth-helpers-nextjs. Create: 1) Auth context provider wrapping the app, 2) Middleware for protecting routes requiring authentication, 3) Server-side auth utilities for API routes, 4) Client-side hooks (useUser, useSession), 5) Configure auth redirect URLs in Supabase dashboard. Implement email/password and optionally OAuth providers (Google, GitHub). Setup proper CORS and cookie settings for production",
-        "testStrategy": "Test signup/login flow, verify session persistence across page refreshes, test protected route redirects, validate OAuth flow if implemented, test logout clears session properly, verify auth state syncs between tabs",
+        "id": 20,
+        "title": "Create Programs UI pages and components",
+        "description": "Build user interface for programs list, detail, and run management pages",
+        "details": "Create /app/(dashboard)/programs/page.tsx with program cards showing name, source, last run status. Build /app/(dashboard)/programs/[id]/page.tsx with lessons table, run controls, progress bar. Add /app/(dashboard)/programs/[id]/runs/[runId]/page.tsx for run details and results. Create YonoteConnectionModal component for cookie input. Use React Query for data fetching and 2-5s polling during runs. Add loading skeletons, error states, and toast notifications. Integrate with existing UnifiedHeader navigation.",
+        "testStrategy": "Test navigation between pages. Verify real-time progress updates via polling. Test modal flow for credential management. Validate error states display correctly. Test responsive design on mobile/desktop.",
         "priority": "medium",
         "dependencies": [],
         "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Install and Configure Supabase Auth Packages",
-            "description": "Install @supabase/ssr and @supabase/auth-helpers-nextjs packages, configure environment variables, and create Supabase client instances",
-            "dependencies": [],
-            "details": "Install required packages: npm install @supabase/ssr @supabase/auth-helpers-nextjs. Create lib/supabase/client.ts for browser client using createBrowserClient, lib/supabase/server.ts for server client using createServerClient with cookie handling. Set up environment variables in .env.local: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY. Configure proper TypeScript types for Supabase client. Ensure clients handle cookie-based sessions correctly for SSR",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create Auth Context Provider and Wrap Application",
-            "description": "Implement AuthProvider context component with user state management and wrap the Next.js application root",
-            "dependencies": ["7.1"],
-            "details": "Create contexts/AuthContext.tsx with createContext for auth state. Implement AuthProvider component that: fetches initial session using supabase.auth.getSession(), subscribes to auth state changes with onAuthStateChange, provides user object and session to children components. Wrap _app.tsx or root layout with AuthProvider. Include loading state while checking authentication. Handle session refresh and token rotation automatically",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Middleware for Route Protection",
-            "description": "Create Next.js middleware to protect authenticated routes and handle session management",
-            "dependencies": ["7.1"],
-            "details": "Create middleware.ts in project root using createServerClient from @supabase/ssr. Implement session verification for protected routes (/dashboard, /settings, /analysis). Handle cookie refresh using supabase.auth.getSession(). Set up proper redirect logic: unauthenticated users to /login, authenticated users away from auth pages. Configure matcher for middleware to run on specific paths. Ensure middleware handles session refresh tokens properly",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Create Client-Side Auth Hooks",
-            "description": "Develop reusable React hooks for authentication state management including useUser and useSession",
-            "dependencies": ["7.2"],
-            "details": "Create hooks/useUser.ts that returns current user object from AuthContext with proper TypeScript typing. Implement hooks/useSession.ts for session data and authentication status. Add hooks/useAuth.ts combining user, session, signIn, signUp, signOut methods. Include loading and error states in hooks. Implement useRequireAuth hook for components that need authentication with automatic redirect. Add proper memoization to prevent unnecessary re-renders",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Configure Supabase Dashboard and OAuth Providers",
-            "description": "Set up authentication settings in Supabase dashboard including redirect URLs, email templates, and OAuth providers",
-            "dependencies": [],
-            "details": "Access Supabase dashboard Authentication settings. Configure Site URL and Redirect URLs for localhost and production domains. Set up email templates for confirmation, password reset, and magic links. Enable email/password authentication with appropriate settings. Configure OAuth providers (Google, GitHub) if needed: obtain client IDs/secrets, add to Supabase, configure scopes. Set up CORS configuration for production domain. Configure JWT expiry and refresh token settings. Test email delivery and OAuth flow",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "subtasks": []
       },
       {
-        "id": 8,
-        "title": "Authentication UI Components",
-        "description": "Create login, registration, and authentication management UI components using Next.js and existing design system",
-        "details": "Build responsive auth components: 1) Login form with email/password fields and OAuth buttons, 2) Registration form with email validation and password requirements, 3) Password reset flow with email verification, 4) User menu dropdown showing email and logout option, 5) Auth modal/page layouts matching existing design. Use react-hook-form for form management, implement proper loading states, error handling with user-friendly messages. Add guest mode CTA for users who want to try without signup",
-        "testStrategy": "Test form validation rules, verify error messages display correctly, test responsive design on mobile/tablet/desktop, validate accessibility with screen readers, test OAuth provider buttons, ensure smooth transitions between auth states",
-        "priority": "medium",
-        "dependencies": [7],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create Login Form Component",
-            "description": "Build a reusable login form component with email/password fields, validation, and OAuth provider buttons",
-            "dependencies": [],
-            "details": "Implement LoginForm component using react-hook-form with: 1) Email input with validation rules (required, valid email format), 2) Password input with show/hide toggle, 3) Remember me checkbox for session persistence, 4) Submit button with loading state, 5) OAuth buttons for Google/GitHub if configured, 6) Links to registration and password reset, 7) Error message display area. Use existing design system components for inputs and buttons. Include proper ARIA labels and form accessibility attributes",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Build Registration Form Component",
-            "description": "Create registration form with comprehensive validation, password requirements display, and email verification flow",
-            "dependencies": [],
-            "details": "Develop RegistrationForm component with: 1) Email field with uniqueness validation, 2) Password field with strength meter and requirements checklist (min 8 chars, uppercase, lowercase, number, special char), 3) Confirm password field with match validation, 4) Optional name/username fields, 5) Terms of service checkbox, 6) Real-time validation feedback, 7) Success message for email verification sent. Implement password strength visualization and dynamic requirement indicators that update as user types",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Implement Password Reset Flow",
-            "description": "Create password reset request and confirmation components with email-based verification",
-            "dependencies": [],
-            "details": "Build password reset flow with two components: 1) PasswordResetRequest with email input and submit to trigger reset email, 2) PasswordResetConfirm with new password and confirm password fields (accessed via token link), 3) Success/error messaging for each step, 4) Rate limiting awareness (show appropriate messages if too many attempts), 5) Expiration handling for reset tokens, 6) Auto-redirect to login after successful reset. Include loading states and clear user feedback throughout the process",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Create User Menu Dropdown Component",
-            "description": "Build user menu dropdown showing current session info with logout and profile management options",
-            "dependencies": ["8.1", "8.2"],
-            "details": "Implement UserMenu component featuring: 1) Avatar/initial display with user email or name, 2) Dropdown menu triggered on click/hover, 3) Display user email and account type, 4) Settings/profile link, 5) Theme toggle if applicable, 6) Logout button with confirmation, 7) Loading state during logout process, 8) Smooth animations for menu open/close. Use Radix UI or Headless UI for accessible dropdown implementation. Handle click-outside to close and keyboard navigation support",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Build Auth Modal/Page Layouts with Guest Mode",
-            "description": "Create flexible auth container components supporting both modal and full-page layouts with guest mode CTA",
-            "dependencies": ["8.1", "8.2", "8.3"],
-            "details": "Develop AuthContainer wrapper that: 1) Supports rendering as modal overlay or standalone page based on props, 2) Implements tab navigation between login/register/reset forms, 3) Adds prominent 'Try as Guest' CTA button that bypasses auth, 4) Handles loading states with skeleton screens or spinners, 5) Displays global auth errors (network issues, rate limits), 6) Implements smooth transitions between auth states, 7) Responsive design with mobile-first approach, 8) Close button for modal mode with ESC key support. Include guest mode explanation tooltip",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 9,
-        "title": "Configuration Management API",
-        "description": "Implement CRUD API endpoints for managing user metric configurations",
-        "details": "Create /api/configuration routes: 1) GET - fetch user's active configurations ordered by display_order, 2) POST - create new metric with validation for name/prompt_text, 3) PUT - update existing metric (name, prompt, order, active status), 4) DELETE - soft delete by setting is_active=false or hard delete, 5) PATCH /reorder - bulk update display_order for drag-drop reordering. Leverage RLS for automatic user scoping. Implement request validation, rate limiting, and audit logging",
-        "testStrategy": "Test each CRUD operation with valid/invalid data, verify RLS prevents cross-user access, test concurrent updates handle properly, validate display_order reordering logic, test rate limiting per user, ensure proper HTTP status codes",
-        "priority": "medium",
-        "dependencies": [4, 6],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement GET endpoint for fetching configurations",
-            "description": "Create GET /api/configuration endpoint to fetch user's active metric configurations",
-            "dependencies": [],
-            "details": "Implement GET endpoint that fetches all active configurations for the authenticated user, ordered by display_order. Use Supabase client with RLS to automatically scope to current user. Return array of configurations with all fields. Handle authentication errors with 401 status. Include proper TypeScript types for response data.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Create POST endpoint for adding new metrics",
-            "description": "Build POST /api/configuration endpoint for creating new metric configurations with validation",
-            "dependencies": [],
-            "details": "Implement POST endpoint that validates required fields (name, prompt_text) using zod or similar validation library. Auto-assign display_order as max + 1 for user. Set is_active to true by default. Return created configuration with 201 status. Validate prompt_text length limits and name uniqueness per user. Include rate limiting middleware to prevent spam.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Build PUT endpoint for updating metrics",
-            "description": "Implement PUT /api/configuration/:id endpoint for updating existing metric configurations",
-            "dependencies": [],
-            "details": "Create PUT endpoint that allows updating name, prompt_text, display_order, and is_active fields. Validate that configuration belongs to authenticated user before update. Use partial updates to only modify provided fields. Return updated configuration with 200 status. Handle non-existent IDs with 404. Implement optimistic locking to prevent concurrent update conflicts.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Implement DELETE endpoint with soft/hard delete",
-            "description": "Create DELETE /api/configuration/:id endpoint supporting both soft and hard delete options",
-            "dependencies": [],
-            "details": "Implement DELETE endpoint that defaults to soft delete (setting is_active=false) but accepts query parameter ?hard=true for permanent deletion. Verify ownership before deletion. Return 204 No Content on success. For soft delete, optionally reorder remaining active configs. Add audit logging to track deletions with timestamp and user ID.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Create PATCH /reorder endpoint for bulk updates",
-            "description": "Build PATCH /api/configuration/reorder endpoint for bulk updating display_order values",
-            "dependencies": ["9.1", "9.2", "9.3"],
-            "details": "Implement PATCH endpoint accepting array of {id, display_order} pairs for drag-drop reordering. Validate all IDs belong to current user in single query. Use database transaction to ensure atomic updates. Prevent gaps in display_order sequence. Return updated configurations array. Handle race conditions with optimistic locking. Include request size limits to prevent abuse.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
-      },
-      {
-        "id": 10,
-        "title": "Settings Interface Implementation",
-        "description": "Build the metric configuration settings UI allowing users to customize their analysis metrics",
-        "details": "Create settings page with: 1) List view of user's metrics with drag-drop reordering using react-beautiful-dnd or similar, 2) Edit modal/inline editing for metric name and prompt text with character limits, 3) Toggle switches for enabling/disabling metrics, 4) Add new metric button with form validation, 5) Delete confirmation dialogs, 6) Preview section showing how metrics will appear in analysis. Implement optimistic updates with rollback on API failure. Add tooltips explaining each field's purpose",
-        "testStrategy": "Test drag-drop reordering saves correctly, verify edit changes persist after page refresh, test validation prevents empty prompts, ensure delete confirmation works, test optimistic updates and error rollback, validate responsive design",
+        "id": 21,
+        "title": "Configure Vercel Cron and deployment",
+        "description": "Set up Vercel Cron job and update deployment configuration",
+        "details": "Update vercel.json to add cron configuration: {\"crons\": [{\"path\": \"/api/worker/tick\", \"schedule\": \"*/1 * * * *\"}]}. Add APP_SECRET_KEY environment variable (32 bytes base64) to Vercel project settings. Create feature flags in env: USE_YONOTE_ADAPTER=true, ENABLE_PROGRAMS=true. Update middleware.ts to protect /programs routes with authentication. Document cron monitoring in Vercel dashboard.",
+        "testStrategy": "Verify cron triggers every minute in Vercel logs. Test APP_SECRET_KEY properly set and accessible. Validate feature flags control access. Test middleware redirects unauthenticated users. Monitor cron execution times stay under limits.",
         "priority": "low",
-        "dependencies": [8, 9],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create Settings Page Layout and Routing",
-            "description": "Set up the base settings page component with navigation routing and basic layout structure",
-            "dependencies": [],
-            "details": "Create SettingsPage component with proper routing configuration in the app router. Design responsive layout with sidebar/header navigation and main content area. Set up page title, breadcrumbs, and basic container structure. Ensure proper authentication checks and redirect logic for unauthenticated users. Add loading states and error boundaries.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Metric List View with Drag-Drop Reordering",
-            "description": "Build the metric list component with drag-and-drop functionality using react-beautiful-dnd",
-            "dependencies": ["10.1"],
-            "details": "Install and configure react-beautiful-dnd library. Create MetricList component displaying all user metrics with draggable items. Implement onDragEnd handler to update display_order in state and persist to database. Add visual feedback during drag operations with smooth animations. Include grip/handle icons and hover states. Ensure keyboard accessibility for reordering.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Build Edit Modal and Inline Editing Components",
-            "description": "Create modal and inline editing interfaces for modifying metric properties with validation",
-            "dependencies": ["10.2"],
-            "details": "Develop EditMetricModal component with form fields for metric name (50 char limit) and prompt text (500 char limit). Implement inline editing option with contentEditable or input switching. Add real-time character counters and validation messages. Create toggle switches for enabling/disabling metrics with immediate visual feedback. Include save/cancel buttons with proper focus management.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Create Add Metric Form with Validation",
-            "description": "Implement the new metric creation form with comprehensive validation and error handling",
-            "dependencies": ["10.3"],
-            "details": "Build AddMetricForm component with fields for name, prompt, and initial active state. Implement client-side validation for required fields, character limits, and duplicate names. Add server-side validation handling with user-friendly error messages. Create 'Add New Metric' button with plus icon that opens form in modal or inline expansion. Include form reset on successful submission and loading states during API calls.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement Delete Functionality with Confirmation",
-            "description": "Add metric deletion with confirmation dialogs and proper cleanup handling",
-            "dependencies": ["10.2"],
-            "details": "Create DeleteConfirmationDialog component with metric name display and warning message. Implement delete buttons on each metric item with trash icon. Add two-step confirmation process to prevent accidental deletions. Handle cascade effects if metric was used in previous analyses. Show success toast notifications after deletion and remove item from list with animation.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Create Preview Section and Optimistic Updates",
-            "description": "Build the preview component and implement optimistic update patterns with rollback capability",
-            "dependencies": ["10.2", "10.3", "10.4", "10.5"],
-            "details": "Develop MetricPreview component showing how metrics appear in analysis view. Implement optimistic updates for all CRUD operations with immediate UI feedback. Create rollback mechanism on API failures with error toast notifications. Add tooltips using a library like react-tooltip explaining each field's purpose. Ensure all state changes are batched efficiently and include proper loading/error states throughout.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "dependencies": [
+          18
+        ],
+        "status": "pending",
+        "subtasks": []
       },
       {
-        "id": 11,
-        "title": "Analysis History Page",
-        "description": "Implement user analysis history page displaying past analyses with their configuration snapshots",
-        "details": "Build history page featuring: 1) Paginated list of user's past analyses sorted by date, 2) Each item shows analysis date, content preview, and model used, 3) Click to expand showing full analysis results using configuration_snapshot for accurate historical display, 4) Search/filter by date range or content keywords, 5) Export functionality for analyses (PDF/CSV), 6) Comparison view to see how same content analyzed differently over time. Use React Query or SWR for data fetching with proper caching",
-        "testStrategy": "Verify pagination works correctly, test configuration_snapshot renders historical metrics accurately, validate search filters work, test export generates valid files, ensure page handles users with no history gracefully, test performance with large history datasets",
+        "id": 22,
+        "title": "Implement comprehensive test suite",
+        "description": "Create unit, integration, and E2E tests for the programs feature",
+        "details": "Write unit tests for: YonoteAdapter HTML parsing, encryption utilities, job picker logic, content hash generation. Create integration tests for: API endpoints with auth, database operations with RLS, runner job processing flow. Build E2E tests with Playwright for: full program creation to completion flow, pause/resume functionality, incremental re-runs. Add fixtures for Yonote HTML responses. Test error scenarios: expired cookies, network failures, LLM timeouts.",
+        "testStrategy": "Achieve >80% code coverage for new code. All tests pass in CI pipeline. E2E tests run against test database. Performance tests verify 50+ lesson programs complete successfully. Load tests confirm no race conditions with concurrent operations.",
         "priority": "low",
-        "dependencies": [6, 8],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Create History Page Component with React Query Setup",
-            "description": "Build the base history page component with React Query or SWR configuration for data fetching and caching",
-            "dependencies": [],
-            "details": "Create AnalysisHistory.tsx component with React Query/SWR setup. Configure query client with appropriate cache time and stale time settings. Implement useAnalysisHistory custom hook to fetch paginated analysis data from Supabase. Set up error boundaries and loading states. Create route configuration and navigation link to history page.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 2,
-            "title": "Implement Analysis List Items with Expandable Details",
-            "description": "Build the analysis list item components with date, preview, model info, and expandable full results view",
-            "dependencies": ["11.1"],
-            "details": "Create AnalysisListItem component displaying date (formatted), content preview (truncated to 100 chars), and model used. Implement expand/collapse functionality using state management. Build AnalysisDetail component to render full analysis results when expanded. Apply configuration_snapshot data to show historical metric configurations accurately. Add smooth expand/collapse animations.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 3,
-            "title": "Add Pagination and Infinite Scroll",
-            "description": "Implement pagination controls and optional infinite scroll for the analysis history list",
-            "dependencies": ["11.1", "11.2"],
-            "details": "Implement server-side pagination with page size of 20 items. Create Pagination component with page numbers, previous/next buttons. Add infinite scroll option using Intersection Observer API. Implement scroll-to-top functionality. Ensure proper loading states during page transitions. Cache previously loaded pages to prevent refetching.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 4,
-            "title": "Build Search and Filter Functionality",
-            "description": "Create search bar and filter controls for date range and content keyword filtering",
-            "dependencies": ["11.1", "11.2"],
-            "details": "Implement SearchFilter component with text input for keyword search and date range picker. Add debounced search to minimize API calls. Create filter state management using URL query parameters for shareable filtered views. Implement server-side filtering in Supabase queries using full-text search for content and date range conditions. Add clear filters button and active filter indicators.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 5,
-            "title": "Implement Export Functionality",
-            "description": "Add export capabilities for individual or bulk analyses in PDF and CSV formats",
-            "dependencies": ["11.2"],
-            "details": "Create ExportButton component with format selection dropdown (PDF/CSV). Implement PDF generation using libraries like jsPDF or react-pdf. Build CSV export using Papa Parse or native implementation. Add bulk export option with checkbox selection. Include all analysis data, metrics, and timestamps in exports. Implement progress indicator for large exports.",
-            "status": "done",
-            "testStrategy": ""
-          },
-          {
-            "id": 6,
-            "title": "Create Comparison View for Content Evolution",
-            "description": "Build comparison interface to visualize how the same content was analyzed differently over time",
-            "dependencies": ["11.2", "11.3"],
-            "details": "Create ComparisonView component allowing selection of 2-3 analyses for side-by-side comparison. Implement content matching algorithm to identify analyses of similar/same content. Build diff visualization showing metric score changes over time using charts (line graph or bar chart). Add timeline view showing all analyses of similar content. Highlight configuration differences between analyses. Include export option for comparison results.",
-            "status": "done",
-            "testStrategy": ""
-          }
-        ]
+        "dependencies": [
+          16,
+          18,
+          20
+        ],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
-      "created": "2025-08-20T19:16:29.028Z",
-      "updated": "2025-08-22T02:30:00.000Z",
+      "created": "2025-08-22T05:39:03.328Z",
+      "updated": "2025-08-22T08:59:38.644Z",
       "description": "Tasks for master context"
     }
   }

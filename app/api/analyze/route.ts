@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/src/lib/supabaseServer'
 import { runAnalysisInternal } from '@/src/services/AnalysisRunner'
 import { env } from '@/src/config/env'
+import { createClient } from '@/src/lib/supabase/server'
 
 // Get max text length from env or use default
 const maxTextLength = env.server?.MAX_TEXT_LENGTH || 20000
@@ -89,13 +90,44 @@ export async function POST(request: NextRequest) {
     console.log('Final model to use:', finalModelId)
     console.log('====================')
 
+    // Get user's custom metrics if in custom mode
+    let metricConfiguration = undefined
+    if (metricMode === 'custom') {
+      try {
+        // Try to get authenticated user
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (user) {
+          // Fetch user's custom metrics
+          const { data: configs, error } = await supabaseAdmin
+            .from('metric_configurations')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .order('display_order')
+          
+          if (!error && configs && configs.length > 0) {
+            metricConfiguration = configs
+            console.log(`Loaded ${configs.length} custom metrics for user`)
+          } else {
+            console.log('No custom metrics found, using defaults')
+          }
+        } else {
+          console.log('No authenticated user, using default metrics for custom mode')
+        }
+      } catch (error) {
+        console.error('Error fetching custom metrics:', error)
+        // Will fall back to default metrics
+      }
+    }
+
     // Run the analysis using the extracted function
     const result = await runAnalysisInternal(supabaseAdmin, {
       content,
       modelId: finalModelId,
       metricMode: metricMode || 'lx',
-      // For now, we'll use default metrics
-      // In the future, this will fetch from user's configuration
+      metricConfiguration,
     })
 
     // Return analysis ID for polling

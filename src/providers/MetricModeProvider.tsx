@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 type MetricMode = 'lx' | 'custom'
 
@@ -13,14 +14,24 @@ const MetricModeContext = createContext<MetricModeContextType | undefined>(undef
 
 export function MetricModeProvider({ children }: { children: React.ReactNode }) {
   const [metricMode, setMetricMode] = useState<MetricMode>('lx')
+  const pathname = usePathname()
 
-  // Load metric mode from localStorage on mount
+  // Set metric mode based on current path
   useEffect(() => {
-    const savedMode = localStorage.getItem('metricMode') as MetricMode | null
-    if (savedMode) {
-      setMetricMode(savedMode)
+    // Set mode based on current pathname
+    if (pathname === '/custom') {
+      setMetricMode('custom')
+    } else if (pathname === '/settings') {
+      // Keep the current mode for settings page
+      const savedMode = localStorage.getItem('metricMode') as MetricMode | null
+      if (savedMode) {
+        setMetricMode(savedMode)
+      }
+    } else {
+      // For all other pages (including /, /programs, /history, etc.), default to 'lx'
+      setMetricMode('lx')
     }
-  }, [])
+  }, [pathname])
 
   const handleSetMetricMode = (mode: MetricMode) => {
     setMetricMode(mode)

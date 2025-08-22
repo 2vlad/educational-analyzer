@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { CloudUpload, Loader2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useMetricMode } from '@/src/providers/MetricModeProvider'
+import ScoreSpeedometer from '@/components/ScoreSpeedometer'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import {
   Select,
@@ -537,6 +538,24 @@ export default function EducationalAnalyzer() {
 
           {/* Metrics Grid - 2x3 layout */}
           <div className="grid grid-cols-2 gap-4 mb-8">
+            {/* Overall Result - Moved to first position */}
+            <div
+              className="p-6 flex flex-col items-center justify-center"
+              style={{ 
+                minWidth: '320px', 
+                minHeight: '320px', 
+                borderRadius: '40px',
+                backgroundColor: (() => {
+                  const percentage = ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100;
+                  if (percentage < 40) return '#FFE5E5'; // Light pink
+                  if (percentage < 70) return '#FFF9E5'; // Light yellow
+                  return '#E5FFE5'; // Light green
+                })()
+              }}
+            >
+              <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+            </div>
+
             {/* Logic */}
             <div
               className="bg-[#F5F5F5] p-6 flex flex-col"
@@ -707,29 +726,6 @@ export default function EducationalAnalyzer() {
               </p>
             </div>
 
-            {/* Overall Result */}
-            <div
-              className="bg-[#C8E6C9] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div className="flex-grow flex items-center justify-center">
-                <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
-                  {adjustedScore}/{totalPossibleScore}
-                </div>
-              </div>
-              <h3
-                className="text-black"
-                style={{
-                  fontWeight: 600,
-                  fontSize: '32px',
-                  lineHeight: '90%',
-                }}
-              >
-                Общий
-                <br />
-                результат
-              </h3>
-            </div>
           </div>
 
           {/* Quick Win Section */}

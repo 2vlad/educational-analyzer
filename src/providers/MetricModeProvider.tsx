@@ -21,12 +21,6 @@ export function MetricModeProvider({ children }: { children: React.ReactNode }) 
     // Set mode based on current pathname
     if (pathname === '/custom') {
       setMetricMode('custom')
-    } else if (pathname === '/settings') {
-      // Keep the current mode for settings page
-      const savedMode = localStorage.getItem('metricMode') as MetricMode | null
-      if (savedMode) {
-        setMetricMode(savedMode)
-      }
     } else {
       // For all other pages (including /, /programs, /history, etc.), default to 'lx'
       setMetricMode('lx')

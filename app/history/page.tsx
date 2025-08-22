@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/src/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
+import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import AnalysisListItem from '@/components/history/AnalysisListItem'
 import SearchFilter from '@/components/history/SearchFilter'
 import Pagination from '@/components/history/Pagination'
@@ -113,16 +114,19 @@ export default function HistoryPage() {
   const pagination = data?.pagination
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-[1200px] mx-auto">
-        {/* Header - Лёха AI style */}
-        <header className="mb-12">
-          <div className="mb-4">
-            <h1 className="text-[48px] font-bold text-black mb-2">История анализов</h1>
-            <p className="text-[16px] text-black/70">
-              Просматривайте и управляйте вашими прошлыми анализами контента
-            </p>
-          </div>
+    <div className="min-h-screen bg-white">
+      <UnifiedHeader />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto">
+          {/* Header - Лёха AI style */}
+          <header className="mb-12">
+            <div className="mb-4">
+              <h1 className="text-[48px] font-bold text-black mb-2">История анализов</h1>
+              <p className="text-[16px] text-black/70">
+                Просматривайте и управляйте вашими прошлыми анализами контента
+              </p>
+            </div>
           <div className="flex items-center gap-3">
             {selectedAnalyses.length > 0 && (
               <button
@@ -218,6 +222,7 @@ export default function HistoryPage() {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   )

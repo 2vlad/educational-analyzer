@@ -25,13 +25,6 @@ export default function UnifiedHeader() {
     }
   }
 
-  const handleSettingsClick = () => {
-    router.push('/settings')
-  }
-
-  // Determine which button is active
-  const isSettingsActive = pathname === '/settings'
-
   return (
     <header className="bg-white">
       <div className="container mx-auto px-4">
@@ -43,12 +36,12 @@ export default function UnifiedHeader() {
 
           {/* Centered Toggle */}
           <div className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
-            {/* Metric Mode Toggle with Settings */}
+            {/* Metric Mode Toggle */}
             <div className="flex items-center bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => handleModeChange('lx')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
-                  metricMode === 'lx' && !isSettingsActive
+                  metricMode === 'lx'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -58,22 +51,12 @@ export default function UnifiedHeader() {
               <button
                 onClick={() => handleModeChange('custom')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
-                  metricMode === 'custom' && !isSettingsActive
+                  metricMode === 'custom'
                     ? 'bg-white text-black shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 Мой сет
-              </button>
-              <button
-                onClick={handleSettingsClick}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
-                  isSettingsActive
-                    ? 'bg-white text-black shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Настроить
               </button>
             </div>
           </div>
@@ -109,13 +92,13 @@ export default function UnifiedHeader() {
                         <p className="text-sm font-medium text-gray-900">{user?.email}</p>
                       </div>
 
-                      {/* Toggle for Mobile with Settings */}
+                      {/* Toggle for Mobile */}
                       <div className="p-3 border-b border-gray-200 md:hidden">
                         <div className="flex items-center bg-gray-100 rounded-full p-1">
                           <button
                             onClick={() => handleModeChange('lx')}
                             className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                              metricMode === 'lx' && !isSettingsActive
+                              metricMode === 'lx'
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
                             }`}
@@ -125,22 +108,12 @@ export default function UnifiedHeader() {
                           <button
                             onClick={() => handleModeChange('custom')}
                             className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                              metricMode === 'custom' && !isSettingsActive
+                              metricMode === 'custom'
                                 ? 'bg-white text-black shadow-sm'
                                 : 'text-gray-600'
                             }`}
                           >
                             Мой сет
-                          </button>
-                          <button
-                            onClick={handleSettingsClick}
-                            className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                              isSettingsActive
-                                ? 'bg-white text-black shadow-sm'
-                                : 'text-gray-600'
-                            }`}
-                          >
-                            Настроить
                           </button>
                         </div>
                       </div>

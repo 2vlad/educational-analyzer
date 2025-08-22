@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/src/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
+import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import ModelSelector from '@/components/ModelSelector'
@@ -30,9 +31,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-[1200px] mx-auto">
-        <Toaster position="top-right" />
+    <div className="min-h-screen bg-white">
+      <UnifiedHeader />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto">
+          <Toaster position="top-right" />
 
         {/* Header - Лёха AI style */}
         <header className="mb-12">
@@ -53,6 +57,7 @@ export default function SettingsPage() {
             </p>
           </div>
           <ModelSelector />
+          </div>
         </div>
       </div>
     </div>

@@ -128,28 +128,9 @@ export async function POST(request: NextRequest) {
     // Generate lesson title first
     let lessonTitle = ''
     try {
-      const titlePrompt = `Проанализируй этот учебный материал и дай ему конкретное техническое название (3-6 слов), которое точно отражает тему. 
-Избегай общих слов типа "Основы", "Введение", "Учебный материал". 
-Используй конкретные технологии, методы или концепции из текста.
-Ответь только названием, без объяснений.
-
-Материал:
-${content.substring(0, 1500)}...
-
-Название:`
-
-      const titleResult = await llmService.analyze(titlePrompt, content.substring(0, 1000), {
-        model: finalModelId,
-        maxTokens: 50,
-        temperature: 0.3,
-      })
-
-      if (titleResult) {
-        // Use the comment field which contains the parsed title
-        lessonTitle = titleResult.comment || 'Учебный материал'
-        // Clean up the title
-        lessonTitle = lessonTitle.trim().replace(/["'`]/g, '').substring(0, 100)
-      }
+      const titleResult = await llmService.generateTitle(content, finalModelId)
+      lessonTitle = titleResult.comment || 'Учебный материал'
+      console.log('Generated lesson title:', lessonTitle)
     } catch (error) {
       console.error('Failed to generate title:', error)
       lessonTitle = 'Учебный материал'

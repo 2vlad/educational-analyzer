@@ -22,26 +22,38 @@ export default function CustomMetricsPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [authLoading, user, router])
-
-  useEffect(() => {
-    if (user) {
-      fetchMetrics()
-    }
+    // Fetch metrics when component mounts or user changes
+    fetchMetrics()
   }, [user])
 
   const fetchMetrics = async () => {
     try {
-      const response = await fetch('/api/configuration')
-      if (!response.ok) throw new Error('Failed to fetch metrics')
-      const data = await response.json()
-      setMetrics(data.configurations || [])
+      // Only fetch user metrics if authenticated
+      if (user) {
+        const response = await fetch('/api/configuration')
+        if (!response.ok) throw new Error('Failed to fetch metrics')
+        const data = await response.json()
+        setMetrics(data.configurations || [])
+      } else {
+        // Use default LX metrics for non-authenticated users
+        setMetrics([
+          { id: 'logic', name: 'Логика', prompt_text: 'Оцените логическую структуру и аргументацию', display_order: 1, is_active: true },
+          { id: 'practical', name: 'Польза', prompt_text: 'Оцените практическую применимость', display_order: 2, is_active: true },
+          { id: 'complexity', name: 'Сложность', prompt_text: 'Оцените глубину и сложность содержания', display_order: 3, is_active: true },
+          { id: 'interest', name: 'Интерес', prompt_text: 'Оцените вовлеченность и уровень интереса', display_order: 4, is_active: true },
+          { id: 'care', name: 'Забота', prompt_text: 'Оцените внимание к деталям и качество', display_order: 5, is_active: true }
+        ])
+      }
     } catch (error) {
       console.error('Error fetching metrics:', error)
-      toast.error('Failed to load metrics')
+      // Use default metrics as fallback
+      setMetrics([
+        { id: 'logic', name: 'Логика', prompt_text: 'Оцените логическую структуру и аргументацию', display_order: 1, is_active: true },
+        { id: 'practical', name: 'Польза', prompt_text: 'Оцените практическую применимость', display_order: 2, is_active: true },
+        { id: 'complexity', name: 'Сложность', prompt_text: 'Оцените глубину и сложность содержания', display_order: 3, is_active: true },
+        { id: 'interest', name: 'Интерес', prompt_text: 'Оцените вовлеченность и уровень интереса', display_order: 4, is_active: true },
+        { id: 'care', name: 'Забота', prompt_text: 'Оцените внимание к деталям и качество', display_order: 5, is_active: true }
+      ])
     } finally {
       setLoading(false)
     }
@@ -195,16 +207,12 @@ export default function CustomMetricsPage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-black" />
       </div>
     )
-  }
-
-  if (!user) {
-    return null
   }
 
   return (
@@ -246,28 +254,36 @@ export default function CustomMetricsPage() {
         </div>
 
         {/* Main Content - Metric List */}
-        <div className="bg-white border border-gray-200 p-6 mb-6" style={{ borderRadius: '20px' }}>
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Добавить
-              </button>
+        {user ? (
+          <div className="bg-white border border-gray-200 p-6 mb-6" style={{ borderRadius: '20px' }}>
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить
+                </button>
+              </div>
             </div>
-          </div>
 
-          <MetricListView
-            metrics={metrics}
-            onReorder={handleReorder}
-            onEdit={setEditingMetric}
-            onDelete={handleDeleteMetric}
-            onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-          />
-        </div>
+            <MetricListView
+              metrics={metrics}
+              onReorder={handleReorder}
+              onEdit={setEditingMetric}
+              onDelete={handleDeleteMetric}
+              onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+            />
+          </div>
+        ) : (
+          <div className="bg-[#F5F5F5] p-6 mb-6" style={{ borderRadius: '20px' }}>
+            <p className="text-center text-gray-600">
+              Войдите в систему, чтобы настроить собственные метрики
+            </p>
+          </div>
+        )}
 
         {/* Content Analysis Section - matching LX page */}
         <div className="mb-6">

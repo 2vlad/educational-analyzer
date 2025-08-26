@@ -7,7 +7,7 @@ import { createClient } from '@/src/lib/supabase/server'
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check authentication
     const {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse query parameters
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new globalThis.URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
     const search = searchParams.get('search') || ''
@@ -106,7 +106,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { analysisId, contentSimilarityThreshold = 0.8 } = body
+    const { analysisId } = body
+    // contentSimilarityThreshold could be used for future vector similarity implementation
 
     // Get the reference analysis
     const { data: referenceAnalysis, error: refError } = await supabase

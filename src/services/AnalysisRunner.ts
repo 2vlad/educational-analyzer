@@ -39,22 +39,54 @@ export interface AnalysisResult {
 /**
  * Get metrics based on mode and configuration
  */
-function getMetrics(metricMode: 'lx' | 'custom' = 'lx', configuration?: MetricConfig[]): MetricConfig[] {
+function getMetrics(
+  metricMode: 'lx' | 'custom' = 'lx',
+  configuration?: MetricConfig[],
+): MetricConfig[] {
+  // Default LX metrics
+  const defaultMetrics = [
+    {
+      id: 'logic',
+      name: 'logic',
+      prompt_text: 'Оцените логическую структуру и аргументацию',
+      display_order: 1,
+    },
+    {
+      id: 'practical',
+      name: 'practical',
+      prompt_text: 'Оцените практическую применимость',
+      display_order: 2,
+    },
+    {
+      id: 'complexity',
+      name: 'complexity',
+      prompt_text: 'Оцените глубину и сложность содержания',
+      display_order: 3,
+    },
+    {
+      id: 'interest',
+      name: 'interest',
+      prompt_text: 'Оцените вовлеченность и уровень интереса',
+      display_order: 4,
+    },
+    {
+      id: 'care',
+      name: 'care',
+      prompt_text: 'Оцените внимание к деталям и качество',
+      display_order: 5,
+    },
+  ]
+
   if (metricMode === 'lx') {
-    // Default LX metrics
-    return [
-      { id: 'logic', name: 'logic', prompt_text: 'Оцените логическую структуру и аргументацию', display_order: 1 },
-      { id: 'practical', name: 'practical', prompt_text: 'Оцените практическую применимость', display_order: 2 },
-      { id: 'complexity', name: 'complexity', prompt_text: 'Оцените глубину и сложность содержания', display_order: 3 },
-      { id: 'interest', name: 'interest', prompt_text: 'Оцените вовлеченность и уровень интереса', display_order: 4 },
-      { id: 'care', name: 'care', prompt_text: 'Оцените внимание к деталям и качество', display_order: 5 }
-    ]
+    return defaultMetrics
   }
-  
+
+  // For custom mode, use configuration if available, otherwise fall back to defaults
   if (!configuration || configuration.length === 0) {
-    throw new Error('Custom metrics mode requires metric configuration')
+    console.log('No custom metrics found, using default metrics for custom mode')
+    return defaultMetrics
   }
-  
+
   return configuration
 }
 
@@ -63,14 +95,9 @@ function getMetrics(metricMode: 'lx' | 'custom' = 'lx', configuration?: MetricCo
  */
 export function createContentHash(text: string): string {
   // Normalize text: trim, collapse whitespace
-  const normalized = text
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLowerCase()
+  const normalized = text.trim().replace(/\s+/g, ' ').toLowerCase()
 
-  return createHash('sha256')
-    .update(normalized)
-    .digest('hex')
+  return createHash('sha256').update(normalized).digest('hex')
 }
 
 /**
@@ -78,7 +105,7 @@ export function createContentHash(text: string): string {
  */
 export async function runAnalysisInternal(
   supabase: SupabaseClient,
-  input: AnalysisInput
+  input: AnalysisInput,
 ): Promise<AnalysisResult> {
   const {
     content,
@@ -86,35 +113,32 @@ export async function runAnalysisInternal(
     metricMode = 'lx',
     metricConfiguration,
     userId,
-    programId,
-    programRunId,
-    lessonId
+    // programId, programRunId, lessonId - will be used when database migration is applied
   } = input
 
   // Get metrics based on mode
   const metrics = getMetrics(metricMode, metricConfiguration)
-  
+
   // Create content hash
   const contentHash = createContentHash(content)
-  
+
   // Create analysis record
   const analysisId = globalThis.crypto.randomUUID()
-  const analysisRecord: any = {
+  const analysisRecord: Record<string, unknown> = {
     id: analysisId,
     content,
     status: 'running',
     model_used: modelId || llmService.getCurrentModel(),
-    content_hash: contentHash,
+    // Temporarily disabled columns until database migration is applied:
+    // content_hash: contentHash,
+    // program_id: programId || null,
+    // program_run_id: programRunId || null,
+    // lesson_id: lessonId || null,
     user_id: userId || null,
-    program_id: programId || null,
-    program_run_id: programRunId || null,
-    lesson_id: lessonId || null,
-    configuration_snapshot: metricMode === 'custom' ? { metrics } : null
+    configuration_snapshot: metricMode === 'custom' ? { metrics } : null,
   }
 
-  const { error: insertError } = await supabase
-    .from('analyses')
-    .insert(analysisRecord)
+  const { error: insertError } = await supabase.from('analyses').insert(analysisRecord)
 
   if (insertError) {
     logger.error('Failed to create analysis', { error: insertError })
@@ -122,13 +146,16 @@ export async function runAnalysisInternal(
   }
 
   // Initialize progress tracking
-  await progressService.initializeProgress(analysisId, metrics.map(m => m.name))
+  await progressService.initializeProgress(
+    analysisId,
+    metrics.map((m) => m.name),
+  )
 
   // Log analysis start
   logger.analysisStart({
     analysisId,
     contentLength: content.length,
-    model: analysisRecord.model_used,
+    model: analysisRecord.model_used as string,
     metricsCount: metrics.length,
   })
 
@@ -321,6 +348,6 @@ export async function runAnalysisInternal(
     results,
     contentHash,
     totalDuration,
-    model: analysisRecord.model_used
+    model: analysisRecord.model_used,
   }
 }

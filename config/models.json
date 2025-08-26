@@ -1,5 +1,5 @@
 {
-  "default": "claude-haiku",
+  "default": "yandex-gpt-pro",
   "models": {
     "claude-haiku": {
       "provider": "anthropic",

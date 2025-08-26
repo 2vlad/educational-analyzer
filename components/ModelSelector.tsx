@@ -23,9 +23,11 @@ export default function ModelSelector() {
   useEffect(() => {
     fetchModels()
     // Load saved model preference
-    const savedModel = localStorage.getItem('selectedModel')
-    if (savedModel) {
-      setSelectedModel(savedModel)
+    if (typeof window !== 'undefined') {
+      const savedModel = window.localStorage.getItem('selectedModel')
+      if (savedModel) {
+        setSelectedModel(savedModel)
+      }
     }
   }, [])
 
@@ -35,29 +37,46 @@ export default function ModelSelector() {
       if (!response.ok) throw new Error('Failed to fetch models')
       const data = await response.json()
       setModels(data.models || [])
-      
+
       // Set default model if none selected
-      if (!selectedModel && data.models?.length > 0) {
+      if (!selectedModel && data.defaultModel) {
+        setSelectedModel(data.defaultModel)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('selectedModel', data.defaultModel)
+        }
+      } else if (!selectedModel && data.models?.length > 0) {
+        // Fallback to first available model if no default
         const defaultModel = data.models[0].id
         setSelectedModel(defaultModel)
-        localStorage.setItem('selectedModel', defaultModel)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('selectedModel', defaultModel)
+        }
       }
     } catch (error) {
       console.error('Error fetching models:', error)
       // Set default models if API fails
       setModels([
+        { id: 'yandex-gpt-pro', name: 'YandexGPT' },
         { id: 'claude-haiku', name: 'Claude Haiku' },
         { id: 'claude-sonnet-4', name: 'Claude Sonnet' },
         { id: 'gpt-4o', name: 'GPT-4o' },
         { id: 'gemini-pro', name: 'Gemini Pro' },
-        { id: 'yandex-gpt-pro', name: 'YandexGPT' },
       ])
+      // Set default to yandex-gpt-pro on API failure
+      if (!selectedModel) {
+        setSelectedModel('yandex-gpt-pro')
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('selectedModel', 'yandex-gpt-pro')
+        }
+      }
     }
   }
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value)
-    localStorage.setItem('selectedModel', value)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('selectedModel', value)
+    }
   }
 
   if (models.length === 0) {
@@ -86,11 +105,7 @@ export default function ModelSelector() {
       </SelectTrigger>
       <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
         {models.map((model) => (
-          <SelectItem
-            key={model.id}
-            value={model.id}
-            className="text-[20px] text-black py-2"
-          >
+          <SelectItem key={model.id} value={model.id} className="text-[20px] text-black py-2">
             {model.name}
           </SelectItem>
         ))}

@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "generatedAt": "2025-08-20T19:19:51.127Z",
+    "tasksAnalyzed": 11,
+    "totalTasks": 11,
+    "analysisCount": 11,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": false
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Database Schema Setup and Migration",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the database schema setup into: 1) Create profiles table with proper foreign key to auth.users and test constraints, 2) Create metric_configurations table with all required columns and indexes, 3) Modify analyses table to add user_id and configuration_snapshot columns with proper migrations, 4) Create and test the complete migration file with rollback capabilities",
+      "reasoning": "Straightforward SQL schema creation with 3 tables. Complexity comes from proper foreign key constraints, JSONB column handling, and ensuring migration compatibility. Since this is greenfield, no data migration complexity exists."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Default Metrics Data Migration",
+      "complexityScore": 3,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Split the default metrics migration into: 1) Define and document the 5 default metrics (Logic, Technical, Depth, Explanation, Overall) with their exact prompt texts, 2) Create SQL seed script to insert default metrics with NULL user_id and proper display_order, 3) Create verification queries and test the default metrics retrieval",
+      "reasoning": "Simple data insertion task with predefined metrics. The main work is documenting the prompt texts and creating clean seed data. No complex transformation logic required."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Database Triggers and Functions Implementation",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide trigger implementation into: 1) Create handle_new_user() PL/pgSQL function with profile creation logic, 2) Implement metric copying logic within the function to duplicate default metrics, 3) Create and bind the on_auth_user_created trigger to auth.users table, 4) Create comprehensive test scenarios for trigger behavior including edge cases",
+      "reasoning": "Moderate complexity due to PL/pgSQL syntax, proper trigger binding to auth.users, and the need for SECURITY DEFINER. Requires careful testing of the cascade effect and ensuring idempotency."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Row Level Security (RLS) Configuration",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Structure RLS implementation as: 1) Enable RLS on profiles, metric_configurations, and analyses tables, 2) Create user data isolation policies for authenticated users, 3) Create public read policy for default configurations (user_id IS NULL), 4) Test all policies with different user contexts and document security boundaries",
+      "reasoning": "RLS policies are conceptually simple but require careful implementation to avoid security holes. Testing different permission scenarios adds complexity."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "LLMService Refactoring for Dynamic Configurations",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Refactor LLMService in stages: 1) Define TypeScript interfaces for MetricConfig and analysis response structure, 2) Create new analyze method accepting dynamic configurations array, 3) Implement configuration validation and error handling logic, 4) Add backward compatibility layer with default configurations, 5) Create comprehensive unit tests for various configuration scenarios",
+      "reasoning": "Since this is greenfield, this involves creating the service from scratch with dynamic configuration support. Complexity comes from proper TypeScript typing, error handling, and ensuring the LLM integration works correctly with variable prompts."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Analyze API Endpoint Enhancement",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Implement API endpoint enhancements: 1) Set up @supabase/ssr and configure server-side auth helpers, 2) Implement session retrieval and user_id extraction logic, 3) Create database queries to fetch user-specific or default configurations, 4) Integrate with refactored LLMService passing dynamic configurations, 5) Implement configuration_snapshot storage in analyses table, 6) Add rate limiting and error handling with proper status codes",
+      "reasoning": "This is the most complex backend task, integrating auth, database queries, LLM service, and proper data persistence. Requires careful handling of authenticated vs guest users and proper error boundaries."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Supabase Authentication Integration",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Set up authentication infrastructure: 1) Install and configure @supabase/ssr and auth-helpers-nextjs packages, 2) Create auth context provider and wrap application root, 3) Implement middleware for route protection and session management, 4) Create client-side hooks (useUser, useSession) for auth state, 5) Configure Supabase dashboard settings for auth providers and redirect URLs",
+      "reasoning": "Authentication setup involves multiple layers (middleware, context, hooks) and proper Next.js integration. Complexity comes from session management, proper cookie configuration, and coordinating client/server auth state."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Authentication UI Components",
+      "complexityScore": 5,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Build auth UI components: 1) Create login form component with email/password validation, 2) Build registration form with password requirements and email verification, 3) Implement password reset flow with email confirmation, 4) Create user menu dropdown with session display and logout, 5) Add loading states, error handling, and guest mode CTA throughout",
+      "reasoning": "Standard auth UI implementation with moderate complexity from form validation, error handling, and responsive design requirements. react-hook-form simplifies some complexity."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Configuration Management API",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Create CRUD API endpoints: 1) Implement GET endpoint for fetching user's active configurations, 2) Create POST endpoint for adding new metrics with validation, 3) Build PUT endpoint for updating existing metrics, 4) Implement DELETE endpoint with soft/hard delete options, 5) Create PATCH /reorder endpoint for bulk display_order updates",
+      "reasoning": "Full CRUD implementation with additional complexity from reordering logic, validation, and proper HTTP semantics. RLS simplifies some auth concerns but adds testing complexity."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Settings Interface Implementation",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Build settings UI in phases: 1) Create base settings page layout and routing, 2) Implement metric list view with drag-drop reordering using react-beautiful-dnd, 3) Build edit modal/inline editing for metric properties, 4) Add metric creation form with validation, 5) Implement delete functionality with confirmation dialogs, 6) Create preview section and optimistic updates with error rollback",
+      "reasoning": "Complex UI with drag-drop, modals, optimistic updates, and multiple interaction patterns. Requires state management, API integration, and polished UX with proper error handling."
+    },
+    {
+      "taskId": 11,
+      "taskTitle": "Analysis History Page",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Implement history page features: 1) Create base history page with paginated data fetching using React Query/SWR, 2) Build analysis list items with date, preview, and expandable details, 3) Implement configuration_snapshot rendering for historical accuracy, 4) Add search and filter functionality by date/content, 5) Create export functionality for PDF/CSV formats, 6) Build comparison view for analyzing content evolution over time",
+      "reasoning": "Complex feature requiring pagination, caching, search/filter, export functionality, and special handling of configuration snapshots. The comparison view adds significant UI complexity."
+    }
+  ]
+}

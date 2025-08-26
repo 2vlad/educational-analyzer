@@ -1,0 +1,139 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 13,
+        "title": "Create database schema for programs feature",
+        "description": "Design and implement all database tables needed for batch lesson analysis including programs, lessons, runs, jobs, and credentials",
+        "details": "Create migration files for: 1) external_credentials table with encrypted cookie storage, 2) programs table with source_type and credential references, 3) program_lessons table with hierarchical structure and content hash, 4) program_runs table with status and counters, 5) analysis_jobs queue table with locking mechanism, 6) Extend analyses table with program/run/lesson references. Implement RLS policies for all tables ensuring users only access their own data. Add necessary indexes for performance.",
+        "testStrategy": "Verify tables created successfully with correct constraints and indexes. Test RLS policies ensure proper isolation. Validate foreign key relationships. Test trigger functions for updated_at timestamps. Ensure migration can be rolled back cleanly.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Implement encryption utilities for credentials",
+        "description": "Create secure encryption/decryption utilities for storing Yonote session cookies using AES-256-GCM",
+        "details": "Create /src/services/crypto/secretBox.ts with functions: encrypt(plaintext: string, key: string): {ciphertext: string, iv: string, tag: string}, decrypt(encrypted: object, key: string): string. Use Node.js crypto module with AES-256-GCM. Derive encryption key from APP_SECRET_KEY environment variable using PBKDF2. Include proper error handling, input validation, and ensure no plaintext logging. Store encrypted data as JSON in database.",
+        "testStrategy": "Unit tests for round-trip encryption/decryption. Test with various input sizes. Verify different keys produce different ciphertexts. Test error cases: wrong key, corrupted data, missing fields. Ensure no sensitive data in error messages.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Build Yonote adapter for content scraping",
+        "description": "Implement source adapter system with Yonote-specific adapter for authenticated content fetching",
+        "details": "Create /src/services/ScraperService.ts with SourceAdapter interface. Implement /src/services/adapters/YonoteAdapter.ts with methods: validate(rootUrl) to check URL format, enumerateLessons(rootUrl, auth) to parse lesson tree from HTML, fetchLessonContent(url, auth) to get lesson text with cookie auth. Parse HTML to extract clean text content, compute SHA-256 hash. Handle auth errors (401/403) distinctly from network errors. Validate URLs against yonote.ru domain.",
+        "testStrategy": "Mock Yonote HTML responses for testing enumeration logic. Test content extraction and normalization. Verify cookie headers passed correctly. Test error handling for expired sessions, network failures. Validate content hash consistency.",
+        "priority": "high",
+        "dependencies": [
+          14
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Create programs API endpoints",
+        "description": "Implement REST API for programs CRUD operations and lesson enumeration",
+        "details": "Create endpoints in /app/api/programs/: POST to create program with Zod validation, GET to list user's programs with run summaries, GET /:id for program details, POST /:id/enumerate to scan lessons via adapter, DELETE /:id for soft delete. Add /app/api/credentials/yonote POST endpoint to save encrypted cookie. Use server-side Supabase client with proper auth checks. Return appropriate HTTP status codes and error messages.",
+        "testStrategy": "Integration tests for each endpoint with valid/invalid data. Test authentication and authorization. Verify RLS policies enforced. Test enumeration with mocked adapter. Validate response formats match expected schemas.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          15
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement job queue and runner logic",
+        "description": "Build database-backed queue system with reliable job processing using SKIP LOCKED pattern",
+        "details": "Create job picker logic using FOR UPDATE SKIP LOCKED to prevent race conditions. Implement TTL-based lock release (90 seconds). Add retry logic with exponential backoff (10/30/60s) up to 3 attempts. Create idempotency check using content_hash before processing. Extract runAnalysisInternal from existing /api/analyze to reuse LLMService. Update job status and run counters atomically. Handle pause/resume/stop signals. Implement proper error capture and logging.",
+        "testStrategy": "Test concurrent job picking ensures no duplicates. Verify TTL releases stuck jobs. Test retry backoff timing. Validate idempotency with same content hash. Test status transitions and counter updates. Simulate crashes and verify recovery.",
+        "priority": "high",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Create worker tick endpoints",
+        "description": "Implement cron and page-driven tick endpoints for job processing",
+        "details": "Create /api/worker/tick/route.ts for Vercel Cron (every minute). Implement /api/program-runs/:id/tick for page-driven acceleration. Both endpoints: 1) Pick jobs respecting max_concurrency, 2) Decrypt credentials from external_credentials, 3) Fetch content via adapter, 4) Check content hash for skip logic, 5) Call runAnalysisInternal, 6) Save to analyses table with program/run/lesson links, 7) Update job and run status. Keep processing under 60s Vercel limit. Use service role for cron, user auth for page tick.",
+        "testStrategy": "Test cron endpoint processes correct number of jobs. Verify page tick only processes jobs for specific run. Test timeout handling. Validate proper credential decryption. Test skip logic for unchanged content.",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Build program runs management API",
+        "description": "Create endpoints for starting, monitoring, and controlling batch analysis runs",
+        "details": "Implement /api/programs/:id/runs POST to create run and queue jobs (only for new/changed content). Add /api/program-runs/:id/status GET for progress polling. Create /api/program-runs/:id/pause, /resume, /stop POST endpoints to control execution. When creating run: snapshot current metric configuration, create analysis_jobs for lessons needing update based on content_hash comparison. Return run ID and initial status. Handle metric mode selection (lx vs custom).",
+        "testStrategy": "Test run creation generates correct jobs. Verify incremental runs skip unchanged content. Test pause/resume/stop state transitions. Validate progress calculation accuracy. Test with different metric configurations.",
+        "priority": "medium",
+        "dependencies": [
+          13,
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Create Programs UI pages and components",
+        "description": "Build user interface for programs list, detail, and run management pages",
+        "details": "Create /app/(dashboard)/programs/page.tsx with program cards showing name, source, last run status. Build /app/(dashboard)/programs/[id]/page.tsx with lessons table, run controls, progress bar. Add /app/(dashboard)/programs/[id]/runs/[runId]/page.tsx for run details and results. Create YonoteConnectionModal component for cookie input. Use React Query for data fetching and 2-5s polling during runs. Add loading skeletons, error states, and toast notifications. Integrate with existing UnifiedHeader navigation.",
+        "testStrategy": "Test navigation between pages. Verify real-time progress updates via polling. Test modal flow for credential management. Validate error states display correctly. Test responsive design on mobile/desktop.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Configure Vercel Cron and deployment",
+        "description": "Set up Vercel Cron job and update deployment configuration",
+        "details": "Update vercel.json to add cron configuration: {\"crons\": [{\"path\": \"/api/worker/tick\", \"schedule\": \"*/1 * * * *\"}]}. Add APP_SECRET_KEY environment variable (32 bytes base64) to Vercel project settings. Create feature flags in env: USE_YONOTE_ADAPTER=true, ENABLE_PROGRAMS=true. Update middleware.ts to protect /programs routes with authentication. Document cron monitoring in Vercel dashboard.",
+        "testStrategy": "Verify cron triggers every minute in Vercel logs. Test APP_SECRET_KEY properly set and accessible. Validate feature flags control access. Test middleware redirects unauthenticated users. Monitor cron execution times stay under limits.",
+        "priority": "low",
+        "dependencies": [
+          18
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Implement comprehensive test suite",
+        "description": "Create unit, integration, and E2E tests for the programs feature",
+        "details": "Write unit tests for: YonoteAdapter HTML parsing, encryption utilities, job picker logic, content hash generation. Create integration tests for: API endpoints with auth, database operations with RLS, runner job processing flow. Build E2E tests with Playwright for: full program creation to completion flow, pause/resume functionality, incremental re-runs. Add fixtures for Yonote HTML responses. Test error scenarios: expired cookies, network failures, LLM timeouts.",
+        "testStrategy": "Achieve >80% code coverage for new code. All tests pass in CI pipeline. E2E tests run against test database. Performance tests verify 50+ lesson programs complete successfully. Load tests confirm no race conditions with concurrent operations.",
+        "priority": "low",
+        "dependencies": [
+          16,
+          18,
+          20
+        ],
+        "status": "done",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-22T05:39:03.328Z",
+      "updated": "2025-08-22T11:15:02.022Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

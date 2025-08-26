@@ -4,6 +4,9 @@ import type React from 'react'
 import { useState, useEffect } from 'react'
 import { CloudUpload, Loader2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useMetricMode } from '@/src/providers/MetricModeProvider'
+import ScoreSpeedometer from '@/components/ScoreSpeedometer'
+import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import {
   Select,
   SelectContent,
@@ -28,6 +31,7 @@ const METRIC_NAMES: Record<string, string> = {
   interest: 'Интерес',
   care: 'Забота',
 }
+
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Speedometer = ({ score }: { score: number | undefined | null }) => {
@@ -128,6 +132,7 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
 }
 
 export default function EducationalAnalyzer() {
+  const { metricMode } = useMetricMode()
   const [currentScreen, setCurrentScreen] = useState<'upload' | 'loading' | 'results'>('upload')
   const [content, setContent] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -138,11 +143,27 @@ export default function EducationalAnalyzer() {
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
+  const [maxTextLength, setMaxTextLength] = useState<number>(20000)
 
-  // Load available models on mount
+  // Load available models and config on mount
   useEffect(() => {
     loadModels()
+    fetchConfig()
   }, [])
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/config')
+      if (response.ok) {
+        const config = await response.json()
+        setMaxFileSizeMB(config.maxFileSizeMB)
+        setMaxTextLength(config.maxTextLength)
+      }
+    } catch (error) {
+      console.error('Failed to fetch config:', error)
+    }
+  }
 
   const loadModels = async () => {
     try {
@@ -159,16 +180,17 @@ export default function EducationalAnalyzer() {
       console.error('Failed to load models:', error)
       // Continue with default model
       // Set a fallback model if API fails
-      setSelectedModel('yandex-gpt-pro')
+      setSelectedModel('claude-haiku')
     }
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB')
+      // Check file size
+      const maxSizeBytes = maxFileSizeMB * 1024 * 1024
+      if (file.size > maxSizeBytes) {
+        setError(`Размер файла должен быть менее ${maxFileSizeMB}МБ`)
         return
       }
 
@@ -198,7 +220,7 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
           } else {
             setError(null)
           }
@@ -212,10 +234,10 @@ export default function EducationalAnalyzer() {
         const reader = new FileReader()
         reader.onload = (e) => {
           const text = e.target?.result as string
-          // Check text length (20000 chars limit)
-          if (text.length > 20000) {
-            setContent(text.substring(0, 20000))
-            setError('Content truncated to 20000 characters')
+          // Check text length
+          if (text.length > maxTextLength) {
+            setContent(text.substring(0, maxTextLength))
+            setError(`Содержимое обрезано до ${maxTextLength} символов`)
           } else {
             setContent(text)
             setError(null)
@@ -273,7 +295,7 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до 20000 символов`)
+            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
           } else {
             setError(null)
           }
@@ -336,7 +358,7 @@ export default function EducationalAnalyzer() {
     if (selectedModel && !validModelIds.includes(selectedModel)) {
       console.warn('Invalid model ID detected:', selectedModel)
       console.log('Falling back to default model')
-      modelToUse = 'yandex-gpt-pro'
+      modelToUse = 'claude-haiku'
     }
 
     setIsAnalyzing(true)
@@ -352,9 +374,11 @@ export default function EducationalAnalyzer() {
       console.log('First 100 chars:', content.substring(0, 100))
 
       console.log('Calling apiService.analyze...')
+      console.log('Using metric mode:', metricMode)
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: modelToUse || undefined,
+        metricMode: metricMode,
       })
       console.log('✅ Analysis started successfully!')
       console.log('Analysis ID:', analysisId)
@@ -454,20 +478,23 @@ export default function EducationalAnalyzer() {
   }
 
   if (currentScreen === 'results' && analysisResult) {
-    // Calculate overall score (exclude non-metric fields)
-    const overallScore = analysisResult.results
-      ? Object.entries(analysisResult.results).reduce((sum: number, [key, data]: [string, any]) => {
-          // Skip non-metric fields
-          if (key === 'lessonTitle' || key === 'hotFixes' || key === 'quickWin' || !data?.score) {
-            return sum
-          }
-          return sum + (data.score || 0)
-        }, 0)
-      : 0
-
-    // Log for debugging
-    console.log('Overall score:', overallScore)
-    console.log('Adjusted score (out of 25):', Math.round((overallScore + 10) * 1.25))
+    // Calculate overall score and count metrics
+    let overallScore = 0
+    let metricCount = 0
+    
+    if (analysisResult.results) {
+      Object.entries(analysisResult.results).forEach(([key, data]: [string, any]) => {
+        // Skip non-metric fields like lessonTitle
+        if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
+          overallScore += (data.score || 0)
+          metricCount++
+        }
+      })
+    }
+    
+    // Calculate total possible score based on number of metrics
+    const totalPossibleScore = metricCount * 5 // Range is -2 to +2, total spread is 5
+    const adjustedScore = overallScore + (metricCount * 2) // Shift from -2..+2 to 0..4 per metric
 
     // Get shortened comment for metric cards (max 150 chars)
     const getShortComment = (comment: string | undefined) => {
@@ -486,29 +513,30 @@ export default function EducationalAnalyzer() {
     }
 
     return (
-      <div className="min-h-screen bg-white p-6">
-        <div className="max-w-[660px] mx-auto">
-          {/* Header */}
-          <header className="mb-8 relative">
-            <div className="mb-2 relative">
-              <h1 className="text-[48px] font-bold text-black">Лёха AI</h1>
-              <p
-                className="text-[16px] text-black absolute right-0 text-right"
-                style={{ top: '0px', maxWidth: '300px', marginTop: '20px' }}
-              >
-                оценивает качество контента
-                <br />
-                на основе LX-метрик
-              </p>
-            </div>
-            <p className="text-[14px] text-black mt-2">
-              {analysisResult.results?.lessonTitle ||
-                (content ? content.substring(0, 50) + '...' : 'Анализ контента')}
-            </p>
-          </header>
-
+      <div className="min-h-screen bg-white flex flex-col">
+        <UnifiedHeader />
+        <div className="flex-1 p-6">
+          <div className="max-w-[660px] mx-auto">
           {/* Metrics Grid - 2x3 layout */}
           <div className="grid grid-cols-2 gap-4 mb-8">
+            {/* Overall Result - Moved to first position */}
+            <div
+              className="p-6 flex flex-col items-center justify-center"
+              style={{ 
+                minWidth: '320px', 
+                minHeight: '320px', 
+                borderRadius: '40px',
+                backgroundColor: (() => {
+                  const percentage = ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100;
+                  if (percentage < 40) return '#FFE5E5'; // Light pink
+                  if (percentage < 70) return '#FFF9E5'; // Light yellow
+                  return '#E5FFE5'; // Light green
+                })()
+              }}
+            >
+              <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+            </div>
+
             {/* Logic */}
             <div
               className="bg-[#F5F5F5] p-6 flex flex-col"
@@ -679,84 +707,26 @@ export default function EducationalAnalyzer() {
               </p>
             </div>
 
-            {/* Overall Result */}
-            <div
-              className="bg-[#C8E6C9] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div className="flex-grow flex items-center justify-center">
-                <div style={{ fontWeight: 400, fontSize: '50px' }} className="text-black">
-                  {Math.round((overallScore + 10) * 1.25)}/25
-                </div>
-              </div>
-              <h3
-                className="text-black"
-                style={{
-                  fontWeight: 600,
-                  fontSize: '32px',
-                  lineHeight: '90%',
-                }}
-              >
-                Общий
-                <br />
-                результат
-              </h3>
-            </div>
           </div>
 
-          {/* Quick Win Section - 20/80 Rule */}
-          <div className="bg-[#FFF8E1] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-            <h2 className="text-[20px] font-semibold text-black mb-2">⚡ Quick Win</h2>
-            <p className="text-[12px] text-gray-600 mb-3">20% усилий для 80% улучшения:</p>
+          {/* Quick Win Section */}
+          <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+            <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
             <p className="text-[14px] text-black leading-relaxed">
-              {analysisResult.results?.quickWin ||
-                'Добавьте конкретный пример кода в начале урока и метафору для сложной концепции в середине. Это сразу улучшит понимание материала новичками.'}
-            </p>
-          </div>
-
-          {/* Overall Score Info */}
-          <div className="bg-[#F5F5F5] p-4 mb-8" style={{ width: '660px', borderRadius: '20px' }}>
-            <p className="text-[13px] text-gray-600 text-center">
-              Контент набрал {Math.round((overallScore + 10) * 1.25)} баллов из 25.
               {overallScore > 0
-                ? ' Материал хорошо структурирован и будет полезен для изучения.'
+                ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
                 : overallScore < 0
-                  ? ' Материал требует доработки для лучшего восприятия студентами.'
-                  : ' Материал имеет сбалансированные характеристики.'}
+                  ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
+                  : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
             </p>
           </div>
-
-          {/* Hot Fixes Section */}
-          {analysisResult.results?.hotFixes && (
-            <div className="bg-[#FFE5B4] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-              <h2 className="text-[20px] font-semibold text-black mb-4">🔥 Hot Fixes</h2>
-              <p className="text-[12px] text-gray-600 mb-4">
-                3 быстрых улучшения, которые максимально повлияют на качество урока:
-              </p>
-              <ol className="space-y-3">
-                {analysisResult.results.hotFixes.map((fix, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-[16px] font-bold text-orange-600 mr-3">{index + 1}.</span>
-                    <span className="text-[14px] text-black flex-1">{fix}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
 
           {/* Detailed Analysis Sections */}
           <div className="space-y-8" style={{ width: '660px' }}>
             {analysisResult.results &&
               Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
-                // Skip non-metric fields
-                if (
-                  !data ||
-                  data.error ||
-                  metric === 'lessonTitle' ||
-                  metric === 'hotFixes' ||
-                  metric === 'quickWin'
-                )
-                  return null
+                // Skip lessonTitle as it's not a metric
+                if (!data || data.error || metric === 'lessonTitle') return null
 
                 return (
                   <div key={metric} className="bg-white rounded-lg">
@@ -795,39 +765,30 @@ export default function EducationalAnalyzer() {
                           Примеры из текста
                         </h4>
                         <ul className="space-y-3">
-                          {data.examples.map((example: string, index: number) => {
-                            // Split example by arrow to separate quote from explanation
-                            const parts = example.split('->')
-                            const quote = parts[0]?.trim() || example
-                            const explanation = parts[1]?.trim()
-
-                            return (
-                              <li key={index} className="flex flex-col space-y-1">
-                                <div className="flex items-start">
-                                  <span className="text-black mr-2">•</span>
-                                  <span className="text-[14px] text-black italic">"{quote}"</span>
-                                </div>
-                                {explanation && (
-                                  <div className="ml-6 text-[13px] text-gray-600">
-                                    ↳ {explanation}
-                                  </div>
-                                )}
-                              </li>
-                            )
-                          })}
+                          {data.examples.map((example: string, index: number) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-black mr-2">•</span>
+                              <span className="text-[14px] text-black italic">"{example}"</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
 
-                    {/* Recommendations */}
-                    {data.recommendations && (
-                      <div className="bg-[#E8F5E9] p-6" style={{ borderRadius: '40px' }}>
+                    {/* Suggestions - What to fix */}
+                    {data.suggestions && data.suggestions.length > 0 && (
+                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
-                          ✅ Рекомендации по улучшению
+                          Что поправить
                         </h4>
-                        <div className="text-[14px] text-black leading-relaxed whitespace-pre-line">
-                          {data.recommendations}
-                        </div>
+                        <ul className="space-y-3">
+                          {data.suggestions.map((suggestion: string, index: number) => (
+                            <li key={index} className="flex items-start">
+                              <span className="text-black mr-2">→</span>
+                              <span className="text-[14px] text-black">{suggestion}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </div>
@@ -851,14 +812,19 @@ export default function EducationalAnalyzer() {
             </Button>
           </div>
         </div>
+        </div>
       </div>
     )
   }
 
   // Upload screen - New design based on Figma
   return (
-    <div className="min-h-screen bg-white flex justify-center p-6">
-      <div className="w-full max-w-[450px] mt-[50px]">
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Unified Header with Toggle */}
+      <UnifiedHeader />
+      
+      <div className="flex-1 flex justify-center p-6">
+        <div className="w-full max-w-[450px] mt-[50px]">
         {/* Header with title, subtitle and image */}
         <div className="flex justify-between mb-10">
           <div>
@@ -957,7 +923,7 @@ export default function EducationalAnalyzer() {
               {progressMessage && progressMessage.includes('PDF') ? (
                 // Show loading state for PDF processing
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
+                  <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
                   <p className="text-[18px] text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {progressMessage}
                   </p>
@@ -989,23 +955,23 @@ export default function EducationalAnalyzer() {
                     value={content}
                     onChange={(e) => {
                       const text = e.target.value
-                      if (text.length <= 20000) {
+                      if (text.length <= maxTextLength) {
                         setContent(text)
                         setError(null)
                       } else {
-                        setError('Content must be less than 20000 characters')
+                        setError(`Текст должен быть менее ${maxTextLength} символов`)
                       }
                     }}
                     className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
                               bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                    maxLength={20000}
+                    maxLength={maxTextLength}
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   />
 
                   {/* Character Counter */}
                   {content && (
                     <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                      {content.length} / 20000
+                      {content.length} / {maxTextLength}
                     </div>
                   )}
 
@@ -1034,7 +1000,7 @@ export default function EducationalAnalyzer() {
 
           {/* Error Alert */}
           {error && (
-            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4">
+            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -1051,6 +1017,7 @@ export default function EducationalAnalyzer() {
             pinterest.com/miapasfield/
           </p>
         </div>
+      </div>
       </div>
     </div>
   )

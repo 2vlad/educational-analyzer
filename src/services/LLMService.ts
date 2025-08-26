@@ -195,6 +195,52 @@ export class LLMService {
     throw lastError || new Error('Max retries reached')
   }
 
+  async generateTitle(
+    content: string,
+    providerId?: string,
+  ): Promise<GenerateResult> {
+    const modelId = providerId || this.currentProviderId
+    const modelConfig = modelsManager.getModelConfig(modelId)
+    if (!modelConfig) {
+      throw new Error(`Model configuration not found: ${modelId}`)
+    }
+
+    const titlePrompt = `Проанализируй этот учебный материал и дай ему конкретное техническое название (3-6 слов), которое точно отражает тему. 
+Избегай общих слов типа "Основы", "Введение", "Учебный материал". 
+Используй конкретные технологии, методы или концепции из текста.
+Ответь только названием, без объяснений.
+
+Материал:
+${content.substring(0, 1500)}...
+
+Название:`
+
+    try {
+      const provider = this.getProvider(modelId)
+      const result = await provider.generate(titlePrompt, '', {
+        model: modelConfig.model,
+        temperature: 0.3,
+        maxTokens: 50,
+        timeoutMs: 5000,
+      })
+
+      // Clean up the title
+      if (result.comment) {
+        result.comment = result.comment.trim().replace(/["`']/g, '').substring(0, 100)
+      }
+      
+      return result
+    } catch (error) {
+      console.error('Failed to generate title:', error)
+      return {
+        score: 0,
+        comment: 'Учебный материал',
+        model: modelId,
+        durationMs: 0,
+      }
+    }
+  }
+
   async analyzeWithModel(
     content: string,
     metric: Metric,

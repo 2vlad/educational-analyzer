@@ -5,6 +5,7 @@ export interface ParsedOutput {
   comment: string
   examples: string[]
   detailed_analysis?: string
+  suggestions?: string[]
 }
 
 /**
@@ -90,6 +91,9 @@ function tryParseJSON(text: string): ParsedOutput | null {
         ? parsed.examples.slice(0, 2).map((e) => String(e).substring(0, 200))
         : [],
       detailed_analysis: parsed.detailed_analysis || undefined,
+      suggestions: Array.isArray(parsed.suggestions)
+        ? parsed.suggestions.slice(0, 3).map((s) => String(s).substring(0, 200))
+        : undefined,
     }
   } catch {
     // JSON parsing failed, will try regex
@@ -194,6 +198,7 @@ function parseWithRegex(text: string): ParsedOutput {
     comment: comment || 'Оценка без комментария',
     examples: finalExamples,
     detailed_analysis: undefined, // Regex parsing doesn't extract detailed analysis
+    suggestions: undefined, // Regex parsing doesn't extract suggestions
   }
 }
 

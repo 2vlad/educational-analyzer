@@ -55,7 +55,11 @@ export class LLMService {
     return provider
   }
 
-  async analyze(content: string, metric: Metric): Promise<GenerateResult> {
+  async analyze(
+    content: string,
+    metric: Metric,
+    customPromptText?: string,
+  ): Promise<GenerateResult> {
     const modelConfig = modelsManager.getModelConfig(this.currentProviderId)
     if (!modelConfig) {
       throw new Error(`Model configuration not found: ${this.currentProviderId}`)
@@ -63,7 +67,8 @@ export class LLMService {
 
     // Get prompt for the provider family
     const providerFamily = getProviderFamily(this.currentProviderId)
-    const prompt = getPrompt(providerFamily, metric)
+    // Use custom prompt text if provided, otherwise load from file
+    const prompt = customPromptText || getPrompt(providerFamily, metric)
     const filledPrompt = fillPromptTemplate(prompt, content)
 
     console.log('\n📝 LLMService.analyze()')
@@ -123,13 +128,14 @@ export class LLMService {
     content: string,
     metric: Metric,
     maxRetries?: number,
+    customPromptText?: string,
   ): Promise<GenerateResult> {
     const retries = maxRetries || env.server?.MAX_RETRIES || 3
     let lastError: Error | undefined
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        const result = await this.analyze(content, metric)
+        const result = await this.analyze(content, metric, customPromptText)
 
         if (attempt > 1) {
           logger.llmSuccess({ metric, attempt })
@@ -175,7 +181,7 @@ export class LLMService {
             })
 
             try {
-              return await this.analyze(content, metric)
+              return await this.analyze(content, metric, customPromptText)
             } catch (fallbackError) {
               // Restore original model
               this.currentProviderId = oldModel
@@ -195,10 +201,7 @@ export class LLMService {
     throw lastError || new Error('Max retries reached')
   }
 
-  async generateTitle(
-    content: string,
-    providerId?: string,
-  ): Promise<GenerateResult> {
+  async generateTitle(content: string, providerId?: string): Promise<GenerateResult> {
     const modelId = providerId || this.currentProviderId
     const modelConfig = modelsManager.getModelConfig(modelId)
     if (!modelConfig) {
@@ -228,7 +231,7 @@ ${content.substring(0, 1500)}...
       if (result.comment) {
         result.comment = result.comment.trim().replace(/["`']/g, '').substring(0, 100)
       }
-      
+
       return result
     } catch (error) {
       console.error('Failed to generate title:', error)
@@ -245,6 +248,7 @@ ${content.substring(0, 1500)}...
     content: string,
     metric: Metric,
     providerId: string,
+    customPromptText?: string,
   ): Promise<GenerateResult> {
     const oldModel = this.currentProviderId
     this.currentProviderId = providerId
@@ -256,7 +260,7 @@ ${content.substring(0, 1500)}...
         reason: 'Explicit model selection',
       })
 
-      return await this.analyze(content, metric)
+      return await this.analyze(content, metric, customPromptText)
     } finally {
       this.currentProviderId = oldModel
     }

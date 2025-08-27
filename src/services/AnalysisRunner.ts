@@ -198,9 +198,31 @@ export async function runAnalysisInternal(
 
       // Analyze with retry
       console.log(`\n📊 Analyzing metric ${index + 1}/${metrics.length}: ${metric.name}`)
+
+      // Determine if we should use custom prompt text
+      // Standard metrics (logic, practical, complexity, interest, care) use prompt files
+      // Custom metrics use prompt_text from database
+      const standardMetrics = ['logic', 'practical', 'complexity', 'interest', 'care']
+      const isStandardMetric = standardMetrics.includes(metric.name)
+      const customPromptText =
+        !isStandardMetric && metric.prompt_text ? metric.prompt_text : undefined
+
+      // Debug logging
+      if (metric.name === 'ярость' || (!isStandardMetric && !metric.prompt_text)) {
+        console.log(`📌 Metric ${metric.name}:`)
+        console.log(`  Is standard: ${isStandardMetric}`)
+        console.log(`  Has prompt_text: ${!!metric.prompt_text}`)
+        console.log(`  Using custom prompt: ${!!customPromptText}`)
+      }
+
       const result = modelId
-        ? await llmService.analyzeWithModel(content, metric.name as any, modelId)
-        : await llmService.analyzeWithRetry(content, metric.name as any)
+        ? await llmService.analyzeWithModel(content, metric.name as any, modelId, customPromptText)
+        : await llmService.analyzeWithRetry(
+            content,
+            metric.name as any,
+            undefined,
+            customPromptText,
+          )
 
       // Clear the progress interval
       globalThis.clearInterval(progressInterval)

@@ -96,8 +96,10 @@ export async function POST(request: NextRequest) {
       try {
         // Try to get authenticated user
         const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
         if (user) {
           // Fetch user's custom metrics
           const { data: configs, error } = await supabaseAdmin
@@ -106,10 +108,14 @@ export async function POST(request: NextRequest) {
             .eq('user_id', user.id)
             .eq('is_active', true)
             .order('display_order')
-          
+
           if (!error && configs && configs.length > 0) {
             metricConfiguration = configs
             console.log(`Loaded ${configs.length} custom metrics for user`)
+            // Debug: Log the metrics to see if they have prompt_text
+            configs.forEach((config) => {
+              console.log(`Metric: ${config.name}, has prompt_text: ${!!config.prompt_text}`)
+            })
           } else {
             console.log('No custom metrics found, using defaults')
           }

@@ -13,6 +13,7 @@ import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ScoreSpeedometer from '@/components/ScoreSpeedometer'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import { apiService, type AnalysisResult as ApiAnalysisResult } from '@/src/services/api'
+import PromptGuide from '@/components/settings/PromptGuide'
 
 export default function CustomMetricsPage() {
   const { user } = useAuth()
@@ -363,8 +364,96 @@ export default function CustomMetricsPage() {
               ))}
             </div>
             
+            {/* Quick Win Section */}
+            <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+              <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
+              <p className="text-[14px] text-black leading-relaxed">
+                {overallScore > 0
+                  ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
+                  : overallScore < 0
+                    ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
+                    : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
+              </p>
+            </div>
+            
+            {/* Detailed Analysis Sections */}
+            <div className="space-y-8" style={{ width: '660px' }}>
+              {metricResults.map((result, index) => {
+                if (!result || !result.name) return null
+                
+                const data = analysisResult.results?.[result.name]
+                if (!data || typeof data !== 'object' || !('score' in data)) return null
+                
+                return (
+                  <div key={index} className="bg-white rounded-lg">
+                    <div className="flex items-start gap-4 mb-4">
+                      <h3 className="text-[24px] font-bold text-black">
+                        {getMetricDisplayName(result.name)} ({data.score > 0 ? '+' : ''}
+                        {data.score})
+                      </h3>
+                    </div>
+                    
+                    {/* Analysis Text */}
+                    {'detailed_analysis' in data && data.detailed_analysis && (
+                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
+                        {typeof data.detailed_analysis === 'string' ? (
+                          <p className="text-[14px] text-black leading-relaxed">
+                            {data.detailed_analysis}
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {Object.entries(data.detailed_analysis).map(([key, value]) => (
+                              <div key={key}>
+                                <h5 className="text-[14px] font-medium text-black mb-1">{key}:</h5>
+                                <p className="text-[14px] text-black ml-4">{String(value)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Examples */}
+                    {'examples' in data && Array.isArray(data.examples) && data.examples.length > 0 && (
+                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">
+                          Примеры из текста
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.examples.map((example: string, idx: number) => (
+                            <li key={idx} className="flex items-start">
+                              <span className="text-black mr-2">•</span>
+                              <span className="text-[14px] text-black italic">"{example}"</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Suggestions */}
+                    {'suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0 && (
+                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">
+                          Что поправить
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.suggestions.map((suggestion: string, idx: number) => (
+                            <li key={idx} className="flex items-start">
+                              <span className="text-black mr-2">→</span>
+                              <span className="text-[14px] text-black">{suggestion}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
             <button onClick={() => { setCurrentScreen('input'); setContent(''); setAnalysisResult(null); }}
-              className="px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">
+              className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">
               Новый анализ
             </button>
           </div>
@@ -422,7 +511,7 @@ export default function CustomMetricsPage() {
         {user ? (
           <div className="bg-white border border-gray-200 p-6 mb-6" style={{ borderRadius: '20px' }}>
             <div className="mb-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
                 <button
                   onClick={() => setShowAddForm(true)}
@@ -432,6 +521,7 @@ export default function CustomMetricsPage() {
                   Добавить
                 </button>
               </div>
+              <PromptGuide />
             </div>
 
             <MetricListView

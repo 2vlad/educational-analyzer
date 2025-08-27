@@ -572,11 +572,14 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.logic?.comment)}
                 </p>
-                {analysisResult.results?.logic?.suggestions && analysisResult.results.logic.suggestions.length > 0 && (
+                {analysisResult.results?.logic && 
+                 typeof analysisResult.results.logic === 'object' && 
+                 'recommendations' in analysisResult.results.logic && 
+                 typeof analysisResult.results.logic.recommendations === 'string' && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.logic.suggestions[0]}
+                      → {analysisResult.results.logic.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.logic.recommendations.substring(0, 150)}
                     </p>
                   </div>
                 )}
@@ -616,11 +619,14 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.practical?.comment)}
                 </p>
-                {analysisResult.results?.practical?.suggestions && analysisResult.results.practical.suggestions.length > 0 && (
+                {analysisResult.results?.practical && 
+                 typeof analysisResult.results.practical === 'object' && 
+                 'recommendations' in analysisResult.results.practical && 
+                 typeof analysisResult.results.practical.recommendations === 'string' && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.practical.suggestions[0]}
+                      → {analysisResult.results.practical.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.practical.recommendations.substring(0, 150)}
                     </p>
                   </div>
                 )}
@@ -660,11 +666,14 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.interest?.comment)}
                 </p>
-                {analysisResult.results?.interest?.suggestions && analysisResult.results.interest.suggestions.length > 0 && (
+                {analysisResult.results?.interest && 
+                 typeof analysisResult.results.interest === 'object' && 
+                 'recommendations' in analysisResult.results.interest && 
+                 typeof analysisResult.results.interest.recommendations === 'string' && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.interest.suggestions[0]}
+                      → {analysisResult.results.interest.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.interest.recommendations.substring(0, 150)}
                     </p>
                   </div>
                 )}
@@ -704,11 +713,14 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.care?.comment)}
                 </p>
-                {analysisResult.results?.care?.suggestions && analysisResult.results.care.suggestions.length > 0 && (
+                {analysisResult.results?.care && 
+                 typeof analysisResult.results.care === 'object' && 
+                 'recommendations' in analysisResult.results.care && 
+                 typeof analysisResult.results.care.recommendations === 'string' && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.care.suggestions[0]}
+                      → {analysisResult.results.care.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.care.recommendations.substring(0, 150)}
                     </p>
                   </div>
                 )}
@@ -748,11 +760,14 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.complexity?.comment)}
                 </p>
-                {analysisResult.results?.complexity?.suggestions && analysisResult.results.complexity.suggestions.length > 0 && (
+                {analysisResult.results?.complexity && 
+                 typeof analysisResult.results.complexity === 'object' && 
+                 'recommendations' in analysisResult.results.complexity && 
+                 typeof analysisResult.results.complexity.recommendations === 'string' && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.complexity.suggestions[0]}
+                      → {analysisResult.results.complexity.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.complexity.recommendations.substring(0, 150)}
                     </p>
                   </div>
                 )}
@@ -793,7 +808,11 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.cognitive_load?.comment)}
                 </p>
-                {analysisResult.results?.cognitive_load?.suggestions && analysisResult.results.cognitive_load.suggestions.length > 0 && (
+                {analysisResult.results?.cognitive_load && 
+                 typeof analysisResult.results.cognitive_load === 'object' && 
+                 'suggestions' in analysisResult.results.cognitive_load && 
+                 Array.isArray(analysisResult.results.cognitive_load.suggestions) && 
+                 analysisResult.results.cognitive_load.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
@@ -874,18 +893,26 @@ export default function EducationalAnalyzer() {
                     )}
 
                     {/* Suggestions - What to fix */}
-                    {data.suggestions && data.suggestions.length > 0 && (
+                    {((data.suggestions && data.suggestions.length > 0) || data.recommendations) && (
                       <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
                           Что поправить
                         </h4>
                         <ul className="space-y-3">
-                          {data.suggestions.map((suggestion: string, index: number) => (
-                            <li key={index} className="flex items-start">
-                              <span className="text-black mr-2">→</span>
-                              <span className="text-[14px] text-black">{suggestion}</span>
-                            </li>
-                          ))}
+                          {data.suggestions ? 
+                            data.suggestions.map((suggestion: string, index: number) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-black mr-2">→</span>
+                                <span className="text-[14px] text-black">{suggestion}</span>
+                              </li>
+                            )) :
+                            data.recommendations?.split(/\d+\)/).filter(Boolean).map((rec: string, index: number) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-black mr-2">→</span>
+                                <span className="text-[14px] text-black">{rec.trim()}</span>
+                              </li>
+                            ))
+                          }
                         </ul>
                       </div>
                     )}

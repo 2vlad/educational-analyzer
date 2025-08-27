@@ -371,11 +371,16 @@ export default function CustomMetricsPage() {
                       <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                         {getShortComment(data.comment)}
                       </p>
-                      {'suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0 && (
+                      {(('suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0) || 
+                        ('recommendations' in data && typeof data.recommendations === 'string')) && (
                         <div>
                           <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                           <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                            → {data.suggestions[0]}
+                            → {('suggestions' in data && Array.isArray(data.suggestions)) ? 
+                                data.suggestions[0] : 
+                                ('recommendations' in data && typeof data.recommendations === 'string' ? 
+                                  data.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || data.recommendations.substring(0, 150) : 
+                                  '')}
                           </p>
                         </div>
                       )}
@@ -453,18 +458,28 @@ export default function CustomMetricsPage() {
                     )}
                     
                     {/* Suggestions */}
-                    {'suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0 && (
+                    {(('suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0) || 
+                      ('recommendations' in data && typeof data.recommendations === 'string')) && (
                       <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
                         <h4 className="text-[16px] font-semibold text-black mb-3">
                           Что поправить
                         </h4>
                         <ul className="space-y-3">
-                          {data.suggestions.map((suggestion: string, idx: number) => (
-                            <li key={idx} className="flex items-start">
-                              <span className="text-black mr-2">→</span>
-                              <span className="text-[14px] text-black">{suggestion}</span>
-                            </li>
-                          ))}
+                          {'suggestions' in data && Array.isArray(data.suggestions) ? 
+                            data.suggestions.map((suggestion: string, idx: number) => (
+                              <li key={idx} className="flex items-start">
+                                <span className="text-black mr-2">→</span>
+                                <span className="text-[14px] text-black">{suggestion}</span>
+                              </li>
+                            )) :
+                            'recommendations' in data && typeof data.recommendations === 'string' ?
+                              data.recommendations.split(/\d+\)/).filter(Boolean).map((rec: string, idx: number) => (
+                                <li key={idx} className="flex items-start">
+                                  <span className="text-black mr-2">→</span>
+                                  <span className="text-[14px] text-black">{rec.trim()}</span>
+                                </li>
+                              )) : null
+                          }
                         </ul>
                       </div>
                     )}

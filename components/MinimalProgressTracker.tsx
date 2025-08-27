@@ -11,6 +11,7 @@ const METRIC_NAMES: Record<string, string> = {
   complexity: 'Уровень',
   interest: 'Интерес',
   care: 'Качество',
+  cognitive_load: 'Когнитивная нагрузка',
 }
 
 interface MinimalProgressTrackerProps {

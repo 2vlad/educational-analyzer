@@ -18,6 +18,10 @@ const serverEnvSchema = z.object({
     .string()
     .transform((val) => val === 'true')
     .default('true'),
+  ENABLE_COGNITIVE_LOAD: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('true'),
   MAX_RETRIES: z.string().transform(Number).default('3'),
   REQUEST_TIMEOUT: z.string().transform(Number).default('30000'),
 
@@ -28,6 +32,13 @@ const serverEnvSchema = z.object({
 
   // Security
   RATE_LIMIT_SALT: z.string().min(1, 'RATE_LIMIT_SALT is required'),
+
+  // Debug/Logging
+  DEBUG: z
+    .string()
+    .transform((val) => val === 'true')
+    .default('false'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
   // Railway
   RAILWAY_STATIC_URL: z.string().optional(),

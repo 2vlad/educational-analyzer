@@ -134,7 +134,7 @@ export class JobRunner {
             this.appSecretKey
           )
           auth = { cookie: decryptedCookie }
-        } catch (error) {
+        } catch {
           await this.jobQueue.updateJobStatus(job.id, 'failed', 'Failed to decrypt credentials')
           return
         }
@@ -148,7 +148,7 @@ export class JobRunner {
           await this.jobQueue.updateJobStatus(job.id, 'failed', `Unknown source type: ${program.source_type}`)
           return
         }
-        const lessonContent = await adapter.fetchLessonContent(lesson.url, auth || {})
+        const lessonContent = await adapter.fetchLessonContent(lesson.source_url, auth || {})
         content = lessonContent.text
         
         // Check content hash for changes
@@ -212,7 +212,7 @@ export class JobRunner {
       try {
         console.log(`🤖 Running analysis for lesson ${lesson.title}`)
         
-        const result = await runAnalysisInternal(this.supabase, {
+        await runAnalysisInternal(this.supabase, {
           content,
           modelId: program.model_id,
           metricMode: run.metrics_mode,

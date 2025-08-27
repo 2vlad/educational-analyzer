@@ -49,46 +49,46 @@ export class JobQueueService {
   }
 
   /**
-   * Pick and lock a job from the queue using SKIP LOCKED
+   * Pick and lock a job from the queue using atomic FOR UPDATE SKIP LOCKED
    */
   async pickJob(runId?: string): Promise<AnalysisJob | null> {
     try {
-      // Build the query to find and lock a job
-      let query = this.supabase
-        .from('analysis_jobs')
-        .update({
-          status: 'running',
-          locked_by: this.workerId,
-          locked_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+      // Use the atomic RPC function to pick and lock a job
+      const { data, error } = await this.supabase
+        .rpc('pick_next_analysis_job', {
+          worker_id_param: this.workerId,
+          run_id_param: runId || null
         })
-        .eq('status', 'queued')
-
-      // If runId is specified, only pick jobs for that run
-      if (runId) {
-        query = query.eq('program_run_id', runId)
-      }
-
-      // Add TTL check - unlock jobs that have been locked for too long
-      const ttlTimestamp = new Date(Date.now() - this.lockTTLSeconds * 1000).toISOString()
-      query = query.or(`locked_at.is.null,locked_at.lt.${ttlTimestamp}`)
-
-      // Use SKIP LOCKED pattern (simulated with limit 1 and proper ordering)
-      const { data, error } = await query
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .select()
         .single()
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        if (error.code === 'PGRST116' || error.message?.includes('no rows')) {
           // No jobs available
           return null
         }
-        throw error
+        console.error('Error calling pick_next_analysis_job:', error)
+        return null
       }
 
-      return data as AnalysisJob
+      if (!data) {
+        return null
+      }
+
+      // Map the RPC result to AnalysisJob format
+      const job: AnalysisJob = {
+        id: data.job_id,
+        program_run_id: data.job_program_run_id,
+        program_id: data.job_payload?.program_id || '',
+        lesson_id: data.job_lesson_id,
+        status: 'running',
+        attempt_count: data.job_retry_count || 0,
+        locked_by: this.workerId,
+        locked_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      return job
     } catch (error) {
       console.error('Error picking job:', error)
       return null

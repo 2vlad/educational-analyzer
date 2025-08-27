@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           id,
           status,
           total_lessons,
-          processed_lessons,
+          processed,
           succeeded,
           failed,
           created_at,

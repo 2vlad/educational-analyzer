@@ -189,12 +189,6 @@ export class LLMService {
             }
           }
         }
-
-        // Add exponential backoff between retries
-        if (attempt < retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000)
-          await new Promise((resolve) => globalThis.setTimeout(resolve, delay))
-        }
       }
     }
 

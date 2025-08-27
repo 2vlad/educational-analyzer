@@ -2,6 +2,7 @@ import { env } from '@/src/config/env'
 import { modelsManager } from '@/src/config/models'
 import { LLMProvider, GenerateOptions, GenerateResult, ProviderError, ERROR_CODES } from './types'
 import { parseLLMOutput } from '@/src/utils/parseLLMOutput'
+import { debug } from '@/src/utils/debug'
 
 interface YandexGPTMessage {
   role: 'system' | 'user' | 'assistant'
@@ -116,11 +117,12 @@ export class YandexProvider implements LLMProvider {
         ],
       }
 
-      console.log('\n=== YANDEX GPT REQUEST ===')
-      console.log('Model URI:', requestBody.modelUri)
-      console.log('Temperature:', requestBody.completionOptions.temperature)
-      console.log('Max tokens:', requestBody.completionOptions.maxTokens)
-      console.log('====================\n')
+      debug.debug('\n=== YANDEX GPT REQUEST ===')
+      debug.debug('Model URI:', requestBody.modelUri)
+      debug.debug('Temperature:', requestBody.completionOptions.temperature)
+      debug.debug('Max tokens:', requestBody.completionOptions.maxTokens)
+      debug.payload('Request messages', requestBody.messages)
+      debug.debug('====================\n')
 
       // Make the API request
       const response = await fetch(this.apiEndpoint, {
@@ -170,25 +172,16 @@ export class YandexProvider implements LLMProvider {
       // Extract the response text
       const responseText = data.result.alternatives[0]?.message?.text || ''
 
-      console.log('\n=== YANDEX RESPONSE ===')
-      console.log('Model version:', data.result.modelVersion)
-      console.log('Usage:', {
+      debug.debug('\n=== YANDEX RESPONSE ===')
+      debug.debug('Model version:', data.result.modelVersion)
+      debug.debug('Usage:', {
         input: data.result.usage.inputTextTokens,
         output: data.result.usage.completionTokens,
         total: data.result.usage.totalTokens,
       })
-      console.log('Raw text length:', responseText.length)
-
-      try {
-        const jsonResponse = JSON.parse(responseText)
-        console.log('Parsed JSON response:', JSON.stringify(jsonResponse, null, 2))
-      } catch {
-        console.log(
-          'Raw text (not valid JSON):',
-          responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''),
-        )
-      }
-      console.log('====================\n')
+      debug.debug('Raw text length:', responseText.length)
+      debug.payload('Response text', responseText)
+      debug.debug('====================\n')
 
       // Parse the response
       const parsed = parseLLMOutput(responseText)

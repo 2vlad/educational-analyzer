@@ -1,4 +1,5 @@
 import { ProviderError, ERROR_CODES } from '@/src/providers/types'
+import { debug } from '@/src/utils/debug'
 
 export interface ParsedOutput {
   score: number
@@ -12,24 +13,24 @@ export interface ParsedOutput {
  * Parse LLM output to extract score, comment, and examples
  */
 export function parseLLMOutput(text: string): ParsedOutput {
-  console.log('\n=== PARSING LLM OUTPUT ===')
-  console.log('Input text length:', text.length)
-  console.log('First 200 chars:', text.substring(0, 200))
+  debug.debug('\n=== PARSING LLM OUTPUT ===')
+  debug.debug('Input text length:', text.length)
+  debug.payload('Input text', text)
 
   // Try to parse as JSON first
   const jsonResult = tryParseJSON(text)
   if (jsonResult) {
-    console.log('✅ Successfully parsed as JSON')
-    console.log('Parsed result:', JSON.stringify(jsonResult, null, 2))
-    console.log('========================\n')
+    debug.debug('✅ Successfully parsed as JSON')
+    debug.payload('Parsed result', jsonResult)
+    debug.debug('========================\n')
     return jsonResult
   }
 
-  console.log('⚠️ JSON parsing failed, trying regex...')
+  debug.debug('⚠️ JSON parsing failed, trying regex...')
   // Fallback to regex parsing
   const regexResult = parseWithRegex(text)
-  console.log('Regex parsed result:', JSON.stringify(regexResult, null, 2))
-  console.log('========================\n')
+  debug.payload('Regex parsed result', regexResult)
+  debug.debug('========================\n')
   return regexResult
 }
 

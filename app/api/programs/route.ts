@@ -28,7 +28,7 @@ export async function GET() {
           id,
           status,
           total_lessons,
-          processed_lessons,
+          processed,
           succeeded,
           failed,
           created_at
@@ -51,10 +51,10 @@ export async function GET() {
           id: lastRun.id,
           status: lastRun.status,
           progress: lastRun.total_lessons > 0 
-            ? (lastRun.processed_lessons / lastRun.total_lessons) * 100 
+            ? (lastRun.processed / lastRun.total_lessons) * 100 
             : 0,
           totalLessons: lastRun.total_lessons,
-          processedLessons: lastRun.processed_lessons,
+          processedLessons: lastRun.processed,
           succeeded: lastRun.succeeded,
           failed: lastRun.failed,
           createdAt: lastRun.created_at
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Validate URL based on source type
     if (sourceType === 'yonote') {
-      const url = new URL(rootUrl)
+      const url = new globalThis.URL(rootUrl)
       const allowedHosts = ['yonote.ru', 'practicum.yandex.ru', 'praktikum.yandex.ru']
       if (!allowedHosts.some(host => url.hostname.includes(host))) {
         return NextResponse.json(

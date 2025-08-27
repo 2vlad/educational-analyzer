@@ -170,6 +170,7 @@ export class ProgressService {
       complexity: 'Complexity Level',
       interest: 'Engagement Factor',
       care: 'Quality of Care',
+      cognitive_load: 'Cognitive Load',
     }
     return names[metric] || metric
   }

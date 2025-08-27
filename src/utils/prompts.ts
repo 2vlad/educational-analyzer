@@ -5,7 +5,14 @@ import { join } from 'path'
 const promptCache = new Map<string, string>()
 
 // Available metrics
-export const METRICS = ['logic', 'practical', 'complexity', 'interest', 'care'] as const
+export const METRICS = [
+  'logic',
+  'practical',
+  'complexity',
+  'interest',
+  'care',
+  'cognitive_load',
+] as const
 export type Metric = (typeof METRICS)[number]
 
 // Provider types

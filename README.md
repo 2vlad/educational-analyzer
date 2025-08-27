@@ -5,7 +5,7 @@ An AI-powered educational content analyzer that evaluates IT learning materials 
 ## Features
 
 - 📚 Analyzes educational content for IT/programming materials
-- 🎯 Evaluates 5 key metrics: Logic, Practical Value, Complexity, Interest, and Care
+- 🎯 Evaluates 6 key metrics: Logic, Practical Value, Complexity, Interest, Care, and Cognitive Load
 - 📄 Supports text input and PDF file uploads
 - 🤖 Multiple LLM providers (Claude, GPT-4, Gemini, Yandex)
 - 📊 Beautiful visual results with detailed analysis

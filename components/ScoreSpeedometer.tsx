@@ -9,20 +9,24 @@ interface ScoreSpeedometerProps {
 
 export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerProps) {
   // Calculate percentage (0-100)
-  // Score ranges from -maxScore to +maxScore, so normalize to 0-100%
-  const percentage = Math.max(0, Math.min(100, ((score + maxScore) / (maxScore * 2)) * 100))
+  // For display like "1/30", score is from 0 to maxScore
+  const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100))
   
   // Calculate angle for the speedometer needle (-90 to 90 degrees)
   const angle = (percentage / 100) * 180 - 90
   
-  // Determine color based on percentage
+  // Determine color based on percentage - more granular for better visual feedback
   const getColor = () => {
-    if (percentage < 40) {
-      return '#FFB3BA' // Light pink for low scores
-    } else if (percentage < 70) {
-      return '#FFE5B4' // Light yellow/peach for middle scores
+    if (percentage < 20) {
+      return '#FF6B6B' // Red for very low scores (0-20%)
+    } else if (percentage < 40) {
+      return '#FFB3BA' // Light pink for low scores (20-40%)
+    } else if (percentage < 60) {
+      return '#FFE5B4' // Light yellow/peach for middle scores (40-60%)
+    } else if (percentage < 80) {
+      return '#B4E5B4' // Light green for good scores (60-80%)
     } else {
-      return '#B4FFB4' // Light green for high scores
+      return '#4CAF50' // Strong green for excellent scores (80-100%)
     }
   }
   

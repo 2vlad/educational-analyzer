@@ -30,6 +30,7 @@ const METRIC_NAMES: Record<string, string> = {
   complexity: 'Сложность',
   interest: 'Интерес',
   care: 'Забота',
+  cognitive_load: 'Когнитивная нагрузка',
 }
 
 
@@ -386,7 +387,7 @@ export default function EducationalAnalyzer() {
 
       // Simple progress simulation and polling
       let completed = 0
-      const metrics = ['logic', 'practical', 'complexity', 'interest', 'care']
+      const metrics = ['logic', 'practical', 'complexity', 'interest', 'care', 'cognitive_load']
 
       // Set progress messages
       const progressMessages = [
@@ -395,6 +396,7 @@ export default function EducationalAnalyzer() {
         'Проверка сложности...',
         'Анализ интереса...',
         'Оценка качества...',
+        'Оценка когнитивной нагрузки...',
       ]
 
       // Update progress to 15% after initial delay
@@ -483,7 +485,7 @@ export default function EducationalAnalyzer() {
     let metricCount = 0
     
     if (analysisResult.results) {
-      Object.entries(analysisResult.results).forEach(([key, data]: [string, any]) => {
+      Object.entries(analysisResult.results).forEach(([key, data]) => {
         // Skip non-metric fields like lessonTitle
         if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
           overallScore += (data.score || 0)
@@ -691,8 +693,8 @@ export default function EducationalAnalyzer() {
                     lineHeight: '90%',
                   }}
                 >
-                  Сложность
-                </h3>
+                Сложность
+              </h3>
                 <div
                   style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
                   className="text-black"
@@ -706,6 +708,42 @@ export default function EducationalAnalyzer() {
                 {getShortComment(analysisResult.results?.complexity?.comment)}
               </p>
             </div>
+
+            {/* Cognitive Load */}
+            {analysisResult.results?.cognitive_load && (
+            <div
+              className="bg-[#F5F5F5] p-6 flex flex-col"
+              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+            >
+              <div
+                className="flex justify-between items-start"
+                style={{ marginTop: '20px', marginBottom: '8px' }}
+              >
+                <h3
+                  className="text-black"
+                  style={{
+                    fontWeight: 600,
+                    fontSize: '32px',
+                    marginTop: '-5px',
+                    lineHeight: '90%',
+                  }}
+                >
+                  Когнитивная нагрузка
+                </h3>
+                <div
+                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                  className="text-black"
+                >
+                  {analysisResult.results?.cognitive_load?.score > 0 ? '+' : ''}
+                  {analysisResult.results?.cognitive_load?.score || 0}
+                </div>
+              </div>
+              <div className="flex-grow" />
+              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
+                {getShortComment(analysisResult.results?.cognitive_load?.comment)}
+              </p>
+            </div>
+            )}
 
           </div>
 

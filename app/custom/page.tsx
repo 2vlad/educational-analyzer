@@ -10,16 +10,22 @@ import { Toaster, toast } from 'react-hot-toast'
 import { Loader2, Plus } from 'lucide-react'
 import ModelSelector from '@/components/ModelSelector'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
+import ScoreSpeedometer from '@/components/ScoreSpeedometer'
+import { SimpleLoader } from '@/components/SimpleLoader'
+import { apiService, type AnalysisResult as ApiAnalysisResult } from '@/src/services/api'
 
 export default function CustomMetricsPage() {
-  const { user, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const { user } = useAuth()
   const [metrics, setMetrics] = useState<MetricConfig[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingMetric, setEditingMetric] = useState<MetricConfig | null>(null)
   const [content, setContent] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [currentScreen, setCurrentScreen] = useState<'input' | 'loading' | 'results'>('input')
+  const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
+  const [progressMessage, setProgressMessage] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch metrics when component mounts or user changes
@@ -103,7 +109,7 @@ export default function CustomMetricsPage() {
       setMetrics([...metrics, data.configuration])
       setShowAddForm(false)
       toast.success('Metric added successfully')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding metric:', error)
       toast.error(error.message || 'Failed to add metric')
     }
@@ -174,35 +180,74 @@ export default function CustomMetricsPage() {
     if (!content.trim() || isAnalyzing) return
 
     setIsAnalyzing(true)
+    setError(null)
+    setCurrentScreen('loading')
+    setProgressMessage('Отправка на анализ...')
+    
     try {
       // Get selected model from localStorage
-      const selectedModel = localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
+      const selectedModel = globalThis.localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
       
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: content.trim(),
-          metricMode: 'custom',
-          modelId: selectedModel,
-        }),
+      const { analysisId } = await apiService.analyze({
+        content: content.trim(),
+        modelId: selectedModel,
+        metricMode: 'custom',
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Analysis failed')
-      }
-
-      const data = await response.json()
       
-      // Store the analysis result and navigate to results
-      sessionStorage.setItem('analysisResult', JSON.stringify(data))
-      sessionStorage.setItem('analysisContent', content)
-      router.push('/')
-    } catch (error: any) {
+      // Poll for results
+      let pollCount = 0
+      const activeMetrics = metrics.filter(m => m.is_active)
+      const progressMessages = activeMetrics.map(m => `Анализ ${m.name.toLowerCase()}...`)
+      let completed = 0
+      
+      const checkInterval = window.setInterval(async () => {
+        pollCount++
+        try {
+          const result = await apiService.getAnalysis(analysisId)
+          
+          // Count completed metrics
+          const completedNow = activeMetrics.filter(m => {
+            const metricResult = result.results?.[m.name]
+            return metricResult && typeof metricResult === 'object' && 'score' in metricResult
+          }).length
+          
+          if (completedNow > completed) {
+            completed = completedNow
+            if (completed < activeMetrics.length) {
+              setProgressMessage(progressMessages[completed] || 'Обработка...')
+            }
+          }
+          
+          // Check if complete
+          if (result.status === 'completed' || completed === activeMetrics.length) {
+            window.clearInterval(checkInterval)
+            setProgressMessage('Готово!')
+            setAnalysisResult(result)
+            
+            window.setTimeout(() => {
+              setCurrentScreen('results')
+              setIsAnalyzing(false)
+            }, 500)
+          } else if (result.status === 'failed') {
+            window.clearInterval(checkInterval)
+            setError('Анализ не удался. Пожалуйста, попробуйте снова.')
+            setCurrentScreen('input')
+            setIsAnalyzing(false)
+          }
+        } catch (error) {
+          console.error('Failed to check status:', error)
+          if (pollCount > 30) {
+            window.clearInterval(checkInterval)
+            setError('Превышено время ожидания. Попробуйте снова.')
+            setCurrentScreen('input')
+            setIsAnalyzing(false)
+          }
+        }
+      }, 3000)
+    } catch (error) {
       console.error('Analysis error:', error)
       toast.error(error.message || 'Failed to analyze content')
-    } finally {
+      setCurrentScreen('input')
       setIsAnalyzing(false)
     }
   }
@@ -214,6 +259,119 @@ export default function CustomMetricsPage() {
       </div>
     )
   }
+  
+  if (currentScreen === 'loading') {
+    return <SimpleLoader message={progressMessage} />
+  }
+  
+  if (currentScreen === 'results' && analysisResult) {
+    // Calculate overall score and count metrics
+    let overallScore = 0
+    let metricCount = 0
+    const metricResults: {name: string, score?: number, comment?: string}[] = []
+    
+    if (analysisResult.results) {
+      Object.entries(analysisResult.results).forEach(([key, data]) => {
+        if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
+          overallScore += (data.score || 0)
+          metricCount++
+          metricResults.push({ name: key, ...data })
+        }
+      })
+    }
+    
+    const totalPossibleScore = metricCount * 5
+    const adjustedScore = overallScore + (metricCount * 2)
+    
+    const getShortComment = (comment: string | undefined) => {
+      if (!comment) return ''
+      if (comment.length > 150) {
+        const truncated = comment.substring(0, 147)
+        const lastSpace = truncated.lastIndexOf(' ')
+        if (lastSpace > 100) {
+          return truncated.substring(0, lastSpace) + '...'
+        }
+        return truncated + '...'
+      }
+      return comment
+    }
+    
+    const getMetricDisplayName = (metricName: string) => {
+      const metric = metrics.find(m => m.name === metricName)
+      return metric?.name || metricName
+    }
+    
+    const Speedometer = ({ score }: { score: number }) => {
+      const normalizedScore = Math.round(Math.max(-2, Math.min(2, score)))
+      const getColorAndOffset = (score: number) => {
+        switch (score) {
+          case -2: return { color: '#ef4444', offset: 188.5 }
+          case -1: return { color: '#FF9F0A', offset: 141.4 }
+          case 0: return { color: '#FFD60A', offset: 94.25 }
+          case 1: return { color: '#A2D729', offset: 47.1 }
+          case 2: return { color: '#30D158', offset: 11.8 }
+          default: return { color: '#cccccc', offset: 188.5 }
+        }
+      }
+      const { color, offset } = getColorAndOffset(normalizedScore)
+      
+      return (
+        <div className="w-12 h-10 flex items-center justify-center">
+          <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 15 73 A 40 40 0 1 1 85 73" fill="none" stroke="#cccccc" strokeWidth="8" strokeLinecap="round" />
+            <path d="M 15 73 A 40 40 0 1 1 85 73" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" strokeDasharray="188.5" strokeDashoffset={offset} />
+            <text x="50" y="55" fontFamily="Inter, sans-serif" fontSize="28" fontWeight="bold" fill={color} textAnchor="middle" dominantBaseline="middle">
+              {normalizedScore > 0 ? '+' : ''}{normalizedScore}
+            </text>
+          </svg>
+        </div>
+      )
+    }
+    
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <UnifiedHeader />
+        <div className="flex-1 p-6">
+          <div className="max-w-[660px] mx-auto">
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {/* Overall Result */}
+              <div className="p-6 flex flex-col items-center justify-center" style={{ 
+                minWidth: '320px', minHeight: '320px', borderRadius: '40px',
+                backgroundColor: (() => {
+                  const percentage = ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100;
+                  if (percentage < 40) return '#FFE5E5';
+                  if (percentage < 70) return '#FFF9E5';
+                  return '#E5FFE5';
+                })()
+              }}>
+                <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+              </div>
+              
+              {/* Metric Results */}
+              {metricResults.map((result, index) => (
+                <div key={index} className="bg-[#F5F5F5] p-6 flex flex-col" style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}>
+                  <div className="flex justify-between items-start" style={{ marginTop: '20px', marginBottom: '8px' }}>
+                    <h3 className="text-[26px] font-light text-black">{getMetricDisplayName(result.name)}</h3>
+                    <Speedometer score={result.score || 0} />
+                  </div>
+                  <div className="flex-1 flex items-start" style={{ marginTop: '20px' }}>
+                    <p className="text-[20px] font-light text-black/70" style={{ lineHeight: '130%' }}>
+                      {getShortComment(result.comment)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button onClick={() => { setCurrentScreen('input'); setContent(''); setAnalysisResult(null); }}
+              className="px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">
+              Новый анализ
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -222,6 +380,13 @@ export default function CustomMetricsPage() {
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[450px] mt-[50px]">
           <Toaster position="top-right" />
+          
+          {/* Error Alert */}
+          {error && currentScreen === 'input' && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              {error}
+            </div>
+          )}
 
         {/* Header - Лёха AI style */}
         <header className="mb-10">

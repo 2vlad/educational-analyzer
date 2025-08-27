@@ -68,7 +68,24 @@ export class LLMService {
     // Get prompt for the provider family
     const providerFamily = getProviderFamily(this.currentProviderId)
     // Use custom prompt text if provided, otherwise load from file
-    const prompt = customPromptText || getPrompt(providerFamily, metric)
+    let prompt = customPromptText || getPrompt(providerFamily, metric)
+    
+    // For custom prompts, ensure JSON format for proper parsing
+    if (customPromptText && !customPromptText.includes('json')) {
+      prompt = `${customPromptText}
+
+ВАЖНО: Ответь строго в формате JSON:
+\`\`\`json
+{
+  "score": -2|-1|0|1|2,
+  "comment": "краткий комментарий (макс 150 символов)"
+}
+\`\`\`
+
+Материал для анализа:
+{{content}}`
+    }
+    
     const filledPrompt = fillPromptTemplate(prompt, content)
 
     console.log('\n📝 LLMService.analyze()')

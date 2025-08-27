@@ -568,9 +568,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.logic?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.logic?.comment)}
+                </p>
+                {analysisResult.results?.logic?.suggestions && analysisResult.results.logic.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.logic.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Practical */}
@@ -602,9 +612,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.practical?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.practical?.comment)}
+                </p>
+                {analysisResult.results?.practical?.suggestions && analysisResult.results.practical.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.practical.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Interest */}
@@ -636,9 +656,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.interest?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.interest?.comment)}
+                </p>
+                {analysisResult.results?.interest?.suggestions && analysisResult.results.interest.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.interest.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Care */}
@@ -670,9 +700,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.care?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.care?.comment)}
+                </p>
+                {analysisResult.results?.care?.suggestions && analysisResult.results.care.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.care.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Complexity */}
@@ -704,9 +744,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.complexity?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.complexity?.comment)}
+                </p>
+                {analysisResult.results?.complexity?.suggestions && analysisResult.results.complexity.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.complexity.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Cognitive Load */}
@@ -739,9 +789,19 @@ export default function EducationalAnalyzer() {
                 </div>
               </div>
               <div className="flex-grow" />
-              <p className="text-[15px] text-black" style={{ lineHeight: '100%' }}>
-                {getShortComment(analysisResult.results?.cognitive_load?.comment)}
-              </p>
+              <div className="space-y-3">
+                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                  {getShortComment(analysisResult.results?.cognitive_load?.comment)}
+                </p>
+                {analysisResult.results?.cognitive_load?.suggestions && analysisResult.results.cognitive_load.suggestions.length > 0 && (
+                  <div>
+                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                      → {analysisResult.results.cognitive_load.suggestions[0]}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
             )}
 

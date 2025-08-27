@@ -349,19 +349,40 @@ export default function CustomMetricsPage() {
               </div>
               
               {/* Metric Results */}
-              {metricResults.map((result, index) => (
-                <div key={index} className="bg-[#F5F5F5] p-6 flex flex-col" style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}>
-                  <div className="flex justify-between items-start" style={{ marginTop: '20px', marginBottom: '8px' }}>
-                    <h3 className="text-[26px] font-light text-black">{getMetricDisplayName(result.name)}</h3>
-                    <Speedometer score={result.score || 0} />
+              {metricResults.map((result, index) => {
+                const data = analysisResult.results?.[result.name]
+                if (!data || typeof data !== 'object') return null
+                
+                return (
+                  <div key={index} className="bg-[#F5F5F5] p-6 flex flex-col" style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}>
+                    <div className="flex justify-between items-start" style={{ marginTop: '20px', marginBottom: '8px' }}>
+                      <h3 className="text-black" style={{
+                        fontWeight: 600,
+                        fontSize: '32px',
+                        marginTop: '-5px',
+                        lineHeight: '90%',
+                      }}>{getMetricDisplayName(result.name)}</h3>
+                      <div style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }} className="text-black">
+                        {data.score > 0 ? '+' : ''}{data.score || 0}
+                      </div>
+                    </div>
+                    <div className="flex-grow" />
+                    <div className="space-y-3">
+                      <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                        {getShortComment(data.comment)}
+                      </p>
+                      {'suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0 && (
+                        <div>
+                          <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                          <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                            → {data.suggestions[0]}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 flex items-start" style={{ marginTop: '20px' }}>
-                    <p className="text-[20px] font-light text-black/70" style={{ lineHeight: '130%' }}>
-                      {getShortComment(result.comment)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             
             {/* Quick Win Section */}

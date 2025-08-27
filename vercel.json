@@ -24,12 +24,6 @@
       "maxDuration": 60
     }
   },
-  "crons": [
-    {
-      "path": "/api/worker/tick",
-      "schedule": "*/1 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",

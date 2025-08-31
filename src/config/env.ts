@@ -71,19 +71,40 @@ let serverEnv: z.infer<typeof serverEnvSchema> | undefined
 // Only validate server env on server-side
 if (typeof window === 'undefined') {
   try {
-    console.log('🔍 Checking environment variables:')
-    console.log(
-      'ANTHROPIC_API_KEY from process.env:',
-      process.env.ANTHROPIC_API_KEY?.substring(0, 20) + '...',
-    )
+    console.log('🔍 Starting environment validation...')
+    console.log('Available environment variables:')
+    console.log('- ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? 'SET' : 'NOT SET')
+    console.log('- OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'SET' : 'NOT SET')
+    console.log('- GOOGLE_API_KEY:', process.env.GOOGLE_API_KEY ? 'SET' : 'NOT SET')
+    console.log('- YANDEX_API_KEY:', process.env.YANDEX_API_KEY ? 'SET' : 'NOT SET')
+    console.log('- YANDEX_FOLDER_ID:', process.env.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
+    console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET')
+    console.log('- SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT SET')
+    console.log('- RATE_LIMIT_SALT:', process.env.RATE_LIMIT_SALT ? 'SET' : 'NOT SET')
+    
     serverEnv = serverEnvSchema.parse(process.env)
+    
+    console.log('✅ Schema validation passed')
+    
     validateLLMProviders(serverEnv)
+    console.log('✅ LLM providers validated')
+    
     validateSupabaseKeys(serverEnv)
+    console.log('✅ Supabase keys checked')
+    
     console.log('✅ Environment validated successfully')
+    console.log('Available API providers:')
+    if (serverEnv.ANTHROPIC_API_KEY) console.log('  - Anthropic')
+    if (serverEnv.OPENAI_API_KEY) console.log('  - OpenAI')
+    if (serverEnv.GOOGLE_API_KEY) console.log('  - Google')
+    if (serverEnv.YANDEX_API_KEY) console.log('  - Yandex')
   } catch (error) {
+    console.error('❌ Environment validation failed!')
     if (error instanceof z.ZodError) {
-      console.error('❌ Invalid environment variables:', error.flatten().fieldErrors)
-      throw new Error('Invalid environment variables')
+      console.error('Validation errors:', error.flatten().fieldErrors)
+      console.error('Missing required fields:', Object.keys(error.flatten().fieldErrors))
+    } else {
+      console.error('Error:', error)
     }
     throw error
   }

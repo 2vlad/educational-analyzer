@@ -24,20 +24,52 @@ export class LLMService {
   }
 
   private initializeProviders() {
+    console.log('🔧 Initializing LLM providers...')
+    console.log('Environment check:')
+    console.log('- env.isServer:', env.isServer)
+    console.log('- env.server exists:', !!env.server)
+    
     // Initialize available providers based on API keys
     if (env.isServer && env.server) {
       if (env.server.ANTHROPIC_API_KEY) {
+        console.log('✅ Initializing Anthropic provider')
         this.providers.set('anthropic', new ClaudeProvider())
+      } else {
+        console.log('⚠️ Anthropic API key not found')
       }
+      
       if (env.server.OPENAI_API_KEY) {
+        console.log('✅ Initializing OpenAI provider')
         this.providers.set('openai', new OpenAIProvider())
+      } else {
+        console.log('⚠️ OpenAI API key not found')
       }
+      
       if (env.server.GOOGLE_API_KEY) {
+        console.log('✅ Initializing Google provider')
         this.providers.set('google', new GeminiProvider())
+      } else {
+        console.log('⚠️ Google API key not found')
       }
+      
       if (env.server.YANDEX_API_KEY && env.server.YANDEX_FOLDER_ID) {
+        console.log('✅ Initializing Yandex provider')
+        console.log('  - API Key length:', env.server.YANDEX_API_KEY.length)
+        console.log('  - Folder ID:', env.server.YANDEX_FOLDER_ID)
         this.providers.set('yandex', new YandexProvider())
+      } else {
+        console.log('⚠️ Yandex provider not initialized:')
+        console.log('  - API Key:', env.server?.YANDEX_API_KEY ? 'SET' : 'NOT SET')
+        console.log('  - Folder ID:', env.server?.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
       }
+    } else {
+      console.error('❌ Not on server or env.server is not available!')
+    }
+
+    console.log('🤖 LLMService initialized with providers:', Array.from(this.providers.keys()))
+    
+    if (this.providers.size === 0) {
+      console.error('❌ CRITICAL: No LLM providers available! Analysis will fail.')
     }
   }
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/src/providers/AuthProvider'
-import { useRouter } from 'next/navigation'
 import { MetricConfig } from '@/src/types/metrics'
 import MetricListView from '@/components/settings/MetricListView'
 import AddMetricForm from '@/components/settings/AddMetricForm'
@@ -14,6 +13,13 @@ import ScoreSpeedometer from '@/components/ScoreSpeedometer'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import { apiService, type AnalysisResult as ApiAnalysisResult } from '@/src/services/api'
 import PromptGuide from '@/components/settings/PromptGuide'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 export default function CustomMetricsPage() {
   const { user } = useAuth()
@@ -27,6 +33,11 @@ export default function CustomMetricsPage() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // Prompt viewer state
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [promptError, setPromptError] = useState<string | null>(null)
+  const [promptsLoading, setPromptsLoading] = useState(false)
+  const [allPrompts, setAllPrompts] = useState<Array<{ metric: string; prompt: string }>>([])
 
   useEffect(() => {
     // Fetch metrics when component mounts or user changes
@@ -44,22 +55,82 @@ export default function CustomMetricsPage() {
       } else {
         // Use default LX metrics for non-authenticated users
         setMetrics([
-          { id: 'logic', name: 'Логика', prompt_text: 'Оцените логическую структуру и аргументацию', display_order: 1, is_active: true },
-          { id: 'practical', name: 'Польза', prompt_text: 'Оцените практическую применимость', display_order: 2, is_active: true },
-          { id: 'complexity', name: 'Сложность', prompt_text: 'Оцените глубину и сложность содержания', display_order: 3, is_active: true },
-          { id: 'interest', name: 'Интерес', prompt_text: 'Оцените вовлеченность и уровень интереса', display_order: 4, is_active: true },
-          { id: 'care', name: 'Забота', prompt_text: 'Оцените внимание к деталям и качество', display_order: 5, is_active: true }
+          {
+            id: 'logic',
+            name: 'Логика',
+            prompt_text: 'Оцените логическую структуру и аргументацию',
+            display_order: 1,
+            is_active: true,
+          },
+          {
+            id: 'practical',
+            name: 'Польза',
+            prompt_text: 'Оцените практическую применимость',
+            display_order: 2,
+            is_active: true,
+          },
+          {
+            id: 'complexity',
+            name: 'Сложность',
+            prompt_text: 'Оцените глубину и сложность содержания',
+            display_order: 3,
+            is_active: true,
+          },
+          {
+            id: 'interest',
+            name: 'Интерес',
+            prompt_text: 'Оцените вовлеченность и уровень интереса',
+            display_order: 4,
+            is_active: true,
+          },
+          {
+            id: 'care',
+            name: 'Забота',
+            prompt_text: 'Оцените внимание к деталям и качество',
+            display_order: 5,
+            is_active: true,
+          },
         ])
       }
     } catch (error) {
       console.error('Error fetching metrics:', error)
       // Use default metrics as fallback
       setMetrics([
-        { id: 'logic', name: 'Логика', prompt_text: 'Оцените логическую структуру и аргументацию', display_order: 1, is_active: true },
-        { id: 'practical', name: 'Польза', prompt_text: 'Оцените практическую применимость', display_order: 2, is_active: true },
-        { id: 'complexity', name: 'Сложность', prompt_text: 'Оцените глубину и сложность содержания', display_order: 3, is_active: true },
-        { id: 'interest', name: 'Интерес', prompt_text: 'Оцените вовлеченность и уровень интереса', display_order: 4, is_active: true },
-        { id: 'care', name: 'Забота', prompt_text: 'Оцените внимание к деталям и качество', display_order: 5, is_active: true }
+        {
+          id: 'logic',
+          name: 'Логика',
+          prompt_text: 'Оцените логическую структуру и аргументацию',
+          display_order: 1,
+          is_active: true,
+        },
+        {
+          id: 'practical',
+          name: 'Польза',
+          prompt_text: 'Оцените практическую применимость',
+          display_order: 2,
+          is_active: true,
+        },
+        {
+          id: 'complexity',
+          name: 'Сложность',
+          prompt_text: 'Оцените глубину и сложность содержания',
+          display_order: 3,
+          is_active: true,
+        },
+        {
+          id: 'interest',
+          name: 'Интерес',
+          prompt_text: 'Оцените вовлеченность и уровень интереса',
+          display_order: 4,
+          is_active: true,
+        },
+        {
+          id: 'care',
+          name: 'Забота',
+          prompt_text: 'Оцените внимание к деталям и качество',
+          display_order: 5,
+          is_active: true,
+        },
       ])
     } finally {
       setLoading(false)
@@ -67,6 +138,12 @@ export default function CustomMetricsPage() {
   }
 
   const handleReorder = async (updatedMetrics: MetricConfig[]) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast.error('Войдите в систему, чтобы изменять порядок метрик')
+      return
+    }
+
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(updatedMetrics)
@@ -94,6 +171,12 @@ export default function CustomMetricsPage() {
   }
 
   const handleAddMetric = async (metric: Omit<MetricConfig, 'id'>) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast.error('Войдите в систему, чтобы добавлять метрики')
+      return
+    }
+
     try {
       const response = await fetch('/api/configuration', {
         method: 'POST',
@@ -117,6 +200,12 @@ export default function CustomMetricsPage() {
   }
 
   const handleUpdateMetric = async (id: string, updates: Partial<MetricConfig>) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast.error('Войдите в систему, чтобы редактировать метрики')
+      return
+    }
+
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(metrics.map((m) => (m.id === id ? { ...m, ...updates } : m)))
@@ -138,7 +227,13 @@ export default function CustomMetricsPage() {
     }
   }
 
-  const handleDeleteMetric = async (id: string) => {
+  const handleDeleteMetric = async (id: string, _hard: boolean) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast.error('Войдите в систему, чтобы удалять метрики')
+      return
+    }
+
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(metrics.filter((m) => m.id !== id))
@@ -149,12 +244,12 @@ export default function CustomMetricsPage() {
       })
 
       if (!response.ok) throw new Error('Failed to delete metric')
-      toast.success('Metric deleted successfully')
+      toast.success('Метрика успешно удалена')
     } catch (error) {
       // Rollback on error
       setMetrics(previousMetrics)
       console.error('Error deleting metric:', error)
-      toast.error('Failed to delete metric')
+      toast.error('Не удалось удалить метрику')
     }
   }
 
@@ -184,47 +279,47 @@ export default function CustomMetricsPage() {
     setError(null)
     setCurrentScreen('loading')
     setProgressMessage('Отправка на анализ...')
-    
+
     try {
       // Get selected model from localStorage
       const selectedModel = globalThis.localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
-      
+
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: selectedModel,
         metricMode: 'custom',
       })
-      
+
       // Poll for results
       let pollCount = 0
-      const activeMetrics = metrics.filter(m => m.is_active)
-      const progressMessages = activeMetrics.map(m => `Анализ ${m.name.toLowerCase()}...`)
+      const activeMetrics = metrics.filter((m) => m.is_active)
+      const progressMessages = activeMetrics.map((m) => `Анализ ${m.name.toLowerCase()}...`)
       let completed = 0
-      
+
       const checkInterval = window.setInterval(async () => {
         pollCount++
         try {
           const result = await apiService.getAnalysis(analysisId)
-          
+
           // Count completed metrics
-          const completedNow = activeMetrics.filter(m => {
+          const completedNow = activeMetrics.filter((m) => {
             const metricResult = result.results?.[m.name]
             return metricResult && typeof metricResult === 'object' && 'score' in metricResult
           }).length
-          
+
           if (completedNow > completed) {
             completed = completedNow
             if (completed < activeMetrics.length) {
               setProgressMessage(progressMessages[completed] || 'Обработка...')
             }
           }
-          
+
           // Check if complete
           if (result.status === 'completed' || completed === activeMetrics.length) {
             window.clearInterval(checkInterval)
             setProgressMessage('Готово!')
             setAnalysisResult(result)
-            
+
             window.setTimeout(() => {
               setCurrentScreen('results')
               setIsAnalyzing(false)
@@ -253,6 +348,58 @@ export default function CustomMetricsPage() {
     }
   }
 
+  const loadPrompt = async (metric: string) => {
+    try {
+      setPromptsLoading(true)
+      setPromptError(null)
+      const modelId =
+        globalThis.localStorage.getItem('selectedModel') ||
+        analysisResult?.model_used ||
+        'yandex-gpt-pro'
+      const res = await fetch(
+        `/api/prompt?metric=${encodeURIComponent(metric)}&model=${encodeURIComponent(modelId)}`,
+      )
+      if (!res.ok) throw new Error('Failed to load prompt')
+      const data = await res.json()
+      // Store prompt text if needed in the future
+      console.log(data.prompt)
+    } catch (e: unknown) {
+      // Fallback: try local custom metric prompt_text
+      const local = metrics.find((m) => m.id === metric || m.name === metric)
+      if (local?.prompt_text) {
+        setPromptError(null)
+        // Store prompt text if needed in the future
+        console.log(local.prompt_text)
+      } else {
+        setPromptError((e as Error)?.message || 'Ошибка загрузки промпта')
+      }
+    } finally {
+      setPromptsLoading(false)
+    }
+  }
+
+  const loadAllPrompts = async (metricIds: string[]) => {
+    try {
+      setPromptsLoading(true)
+      setPromptError(null)
+      const prompts: Array<{ metric: string; prompt: string }> = []
+
+      for (const metricId of metricIds) {
+        // Try to load from local metrics first
+        const local = metrics.find((m) => m.id === metricId || m.name === metricId)
+        if (local?.prompt_text) {
+          prompts.push({ metric: local.name, prompt: local.prompt_text })
+        }
+      }
+
+      setAllPrompts(prompts)
+    } catch (e: unknown) {
+      setPromptError((e as Error)?.message || 'Ошибка загрузки промптов')
+    } finally {
+      setPromptsLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -260,30 +407,30 @@ export default function CustomMetricsPage() {
       </div>
     )
   }
-  
+
   if (currentScreen === 'loading') {
     return <SimpleLoader message={progressMessage} />
   }
-  
+
   if (currentScreen === 'results' && analysisResult) {
     // Calculate overall score and count metrics
     let overallScore = 0
     let metricCount = 0
-    const metricResults: {name: string, score?: number, comment?: string}[] = []
-    
+    const metricResults: { name: string; score?: number; comment?: string }[] = []
+
     if (analysisResult.results) {
       Object.entries(analysisResult.results).forEach(([key, data]) => {
         if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
-          overallScore += (data.score || 0)
+          overallScore += data.score || 0
           metricCount++
           metricResults.push({ name: key, ...data })
         }
       })
     }
-    
+
     const totalPossibleScore = metricCount * 5
-    const adjustedScore = overallScore + (metricCount * 2)
-    
+    const adjustedScore = overallScore + metricCount * 2
+
     const getShortComment = (comment: string | undefined) => {
       if (!comment) return ''
       if (comment.length > 150) {
@@ -296,74 +443,112 @@ export default function CustomMetricsPage() {
       }
       return comment
     }
-    
+
     const getMetricDisplayName = (metricName: string) => {
-      const metric = metrics.find(m => m.name === metricName)
+      const metric = metrics.find((m) => m.name === metricName)
       return metric?.name || metricName
     }
-    
-    const Speedometer = ({ score }: { score: number }) => {
-      const normalizedScore = Math.round(Math.max(-2, Math.min(2, score)))
-      const getColorAndOffset = (score: number) => {
-        switch (score) {
-          case -2: return { color: '#ef4444', offset: 188.5 }
-          case -1: return { color: '#FF9F0A', offset: 141.4 }
-          case 0: return { color: '#FFD60A', offset: 94.25 }
-          case 1: return { color: '#A2D729', offset: 47.1 }
-          case 2: return { color: '#30D158', offset: 11.8 }
-          default: return { color: '#cccccc', offset: 188.5 }
-        }
-      }
-      const { color, offset } = getColorAndOffset(normalizedScore)
-      
-      return (
-        <div className="w-12 h-10 flex items-center justify-center">
-          <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 15 73 A 40 40 0 1 1 85 73" fill="none" stroke="#cccccc" strokeWidth="8" strokeLinecap="round" />
-            <path d="M 15 73 A 40 40 0 1 1 85 73" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" strokeDasharray="188.5" strokeDashoffset={offset} />
-            <text x="50" y="55" fontFamily="Inter, sans-serif" fontSize="28" fontWeight="bold" fill={color} textAnchor="middle" dominantBaseline="middle">
-              {normalizedScore > 0 ? '+' : ''}{normalizedScore}
-            </text>
-          </svg>
-        </div>
-      )
-    }
-    
+
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
+            {/* Prompt link on results */}
+            {currentScreen === 'results' && (
+              <div className="flex justify-end mb-2">
+                <button
+                  className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                  onClick={() => {
+                    const metricIds = Object.keys(analysisResult?.results || {}).filter(
+                      (k) => k !== 'lessonTitle',
+                    )
+                    loadAllPrompts(metricIds)
+                    setPromptOpen(true)
+                  }}
+                >
+                  Посмотреть промпт
+                </button>
+                <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
+                  <DialogContent className="sm:max-w-[760px]">
+                    <DialogHeader>
+                      <DialogTitle>Промпты всех метрик</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[60vh] overflow-auto">
+                      {promptsLoading ? (
+                        <div className="text-sm text-gray-500">Загрузка…</div>
+                      ) : promptError ? (
+                        <div className="text-sm text-red-600">{promptError}</div>
+                      ) : (
+                        allPrompts.map(({ metric, prompt }) => (
+                          <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                            <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
+                            <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
+                        Закрыть
+                      </button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4 mb-8">
               {/* Overall Result */}
-              <div className="p-6 flex flex-col items-center justify-center" style={{ 
-                minWidth: '320px', minHeight: '320px', borderRadius: '40px',
-                backgroundColor: (() => {
-                  const percentage = ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100;
-                  if (percentage < 40) return '#FFE5E5';
-                  if (percentage < 70) return '#FFF9E5';
-                  return '#E5FFE5';
-                })()
-              }}>
+              <div
+                className="p-6 flex flex-col items-center justify-center"
+                style={{
+                  minWidth: '320px',
+                  minHeight: '320px',
+                  borderRadius: '40px',
+                  backgroundColor: (() => {
+                    const percentage =
+                      ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100
+                    if (percentage < 40) return '#FFE5E5'
+                    if (percentage < 70) return '#FFF9E5'
+                    return '#E5FFE5'
+                  })(),
+                }}
+              >
                 <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
               </div>
-              
+
               {/* Metric Results */}
               {metricResults.map((result, index) => {
                 const data = analysisResult.results?.[result.name]
                 if (!data || typeof data !== 'object') return null
-                
+
                 return (
-                  <div key={index} className="bg-[#F5F5F5] p-6 flex flex-col" style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}>
-                    <div className="flex justify-between items-start" style={{ marginTop: '20px', marginBottom: '8px' }}>
-                      <h3 className="text-black" style={{
-                        fontWeight: 600,
-                        fontSize: '32px',
-                        marginTop: '-5px',
-                        lineHeight: '90%',
-                      }}>{getMetricDisplayName(result.name)}</h3>
-                      <div style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }} className="text-black">
-                        {data.score > 0 ? '+' : ''}{data.score || 0}
+                  <div
+                    key={index}
+                    className="bg-[#F5F5F5] p-6 flex flex-col"
+                    style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+                  >
+                    <div
+                      className="flex justify-between items-start"
+                      style={{ marginTop: '20px', marginBottom: '8px' }}
+                    >
+                      <h3
+                        className="text-black"
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '32px',
+                          marginTop: '-5px',
+                          lineHeight: '90%',
+                        }}
+                      >
+                        {getMetricDisplayName(result.name)}
+                      </h3>
+                      <div
+                        style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                        className="text-black"
+                      >
+                        {data.score > 0 ? '+' : ''}
+                        {data.score || 0}
                       </div>
                     </div>
                     <div className="flex-grow" />
@@ -371,16 +556,24 @@ export default function CustomMetricsPage() {
                       <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                         {getShortComment(data.comment)}
                       </p>
-                      {(('suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0) || 
-                        ('recommendations' in data && typeof data.recommendations === 'string')) && (
+                      {(('suggestions' in data &&
+                        Array.isArray(data.suggestions) &&
+                        data.suggestions.length > 0) ||
+                        ('recommendations' in data &&
+                          typeof data.recommendations === 'string')) && (
                         <div>
-                          <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                          <p className="text-[12px] font-medium text-black/60 mb-1">
+                            Что поправить:
+                          </p>
                           <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                            → {('suggestions' in data && Array.isArray(data.suggestions)) ? 
-                                data.suggestions[0] : 
-                                ('recommendations' in data && typeof data.recommendations === 'string' ? 
-                                  data.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || data.recommendations.substring(0, 150) : 
-                                  '')}
+                            →{' '}
+                            {'suggestions' in data && Array.isArray(data.suggestions)
+                              ? data.suggestions[0]
+                              : 'recommendations' in data &&
+                                  typeof data.recommendations === 'string'
+                                ? data.recommendations.split(/\d+\)/).slice(1, 2)[0]?.trim() ||
+                                  data.recommendations.substring(0, 150)
+                                : ''}
                           </p>
                         </div>
                       )}
@@ -389,7 +582,7 @@ export default function CustomMetricsPage() {
                 )
               })}
             </div>
-            
+
             {/* Quick Win Section */}
             <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
               <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
@@ -401,15 +594,15 @@ export default function CustomMetricsPage() {
                     : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
               </p>
             </div>
-            
+
             {/* Detailed Analysis Sections */}
             <div className="space-y-8" style={{ width: '660px' }}>
               {metricResults.map((result, index) => {
                 if (!result || !result.name) return null
-                
+
                 const data = analysisResult.results?.[result.name]
                 if (!data || typeof data !== 'object' || !('score' in data)) return null
-                
+
                 return (
                   <div key={index} className="bg-white rounded-lg">
                     <div className="flex items-start gap-4 mb-4">
@@ -418,7 +611,7 @@ export default function CustomMetricsPage() {
                         {data.score})
                       </h3>
                     </div>
-                    
+
                     {/* Analysis Text */}
                     {'detailed_analysis' in data && data.detailed_analysis && (
                       <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
@@ -439,47 +632,52 @@ export default function CustomMetricsPage() {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Examples */}
-                    {'examples' in data && Array.isArray(data.examples) && data.examples.length > 0 && (
-                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
-                        <h4 className="text-[16px] font-semibold text-black mb-3">
-                          Примеры из текста
-                        </h4>
-                        <ul className="space-y-3">
-                          {data.examples.map((example: string, idx: number) => (
-                            <li key={idx} className="flex items-start">
-                              <span className="text-black mr-2">•</span>
-                              <span className="text-[14px] text-black italic">"{example}"</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
+                    {'examples' in data &&
+                      Array.isArray(data.examples) &&
+                      data.examples.length > 0 && (
+                        <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black mb-3">
+                            Примеры из текста
+                          </h4>
+                          <ul className="space-y-3">
+                            {data.examples.map((example: string, idx: number) => (
+                              <li key={idx} className="flex items-start">
+                                <span className="text-black mr-2">•</span>
+                                <span className="text-[14px] text-black italic">"{example}"</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                     {/* Suggestions */}
-                    {(('suggestions' in data && Array.isArray(data.suggestions) && data.suggestions.length > 0) || 
+                    {(('suggestions' in data &&
+                      Array.isArray(data.suggestions) &&
+                      data.suggestions.length > 0) ||
                       ('recommendations' in data && typeof data.recommendations === 'string')) && (
                       <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
-                        <h4 className="text-[16px] font-semibold text-black mb-3">
-                          Что поправить
-                        </h4>
+                        <h4 className="text-[16px] font-semibold text-black mb-3">Что поправить</h4>
                         <ul className="space-y-3">
-                          {'suggestions' in data && Array.isArray(data.suggestions) ? 
-                            data.suggestions.map((suggestion: string, idx: number) => (
-                              <li key={idx} className="flex items-start">
-                                <span className="text-black mr-2">→</span>
-                                <span className="text-[14px] text-black">{suggestion}</span>
-                              </li>
-                            )) :
-                            'recommendations' in data && typeof data.recommendations === 'string' ?
-                              data.recommendations.split(/\d+\)/).filter(Boolean).map((rec: string, idx: number) => (
+                          {'suggestions' in data && Array.isArray(data.suggestions)
+                            ? data.suggestions.map((suggestion: string, idx: number) => (
                                 <li key={idx} className="flex items-start">
                                   <span className="text-black mr-2">→</span>
-                                  <span className="text-[14px] text-black">{rec.trim()}</span>
+                                  <span className="text-[14px] text-black">{suggestion}</span>
                                 </li>
-                              )) : null
-                          }
+                              ))
+                            : 'recommendations' in data && typeof data.recommendations === 'string'
+                              ? data.recommendations
+                                  .split(/\d+\)/)
+                                  .filter(Boolean)
+                                  .map((rec: string, idx: number) => (
+                                    <li key={idx} className="flex items-start">
+                                      <span className="text-black mr-2">→</span>
+                                      <span className="text-[14px] text-black">{rec.trim()}</span>
+                                    </li>
+                                  ))
+                              : null}
                         </ul>
                       </div>
                     )}
@@ -487,9 +685,15 @@ export default function CustomMetricsPage() {
                 )
               })}
             </div>
-            
-            <button onClick={() => { setCurrentScreen('input'); setContent(''); setAnalysisResult(null); }}
-              className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors">
+
+            <button
+              onClick={() => {
+                setCurrentScreen('input')
+                setContent('')
+                setAnalysisResult(null)
+              }}
+              className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+            >
               Новый анализ
             </button>
           </div>
@@ -501,11 +705,11 @@ export default function CustomMetricsPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <UnifiedHeader />
-      
+
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[450px] mt-[50px]">
           <Toaster position="top-right" />
-          
+
           {/* Error Alert */}
           {error && currentScreen === 'input' && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -513,138 +717,208 @@ export default function CustomMetricsPage() {
             </div>
           )}
 
-        {/* Header - Лёха AI style */}
-        <header className="mb-10">
-          <div className="mb-4">
-            <h1 className="text-[48px] font-bold text-black mb-3 leading-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
-              Мой сет
-            </h1>
-            <p className="text-[20px] font-normal text-black" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}>
-              настройте критерии оценки
-              <br />
-              контента под ваши
-              <br />
-              потребности
-            </p>
-          </div>
-          <button
-            onClick={handleResetToDefaults}
-            className="px-6 py-2 text-sm text-black/60 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
-          >
-            Сбросить к стандартным
-          </button>
-        </header>
-
-        {/* Model Selector */}
-        <div className="mb-6">
-          <label className="block text-[15px] font-normal text-gray-500 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Модель
-          </label>
-          <ModelSelector />
-        </div>
-
-        {/* Main Content - Metric List */}
-        {user ? (
-          <div className="bg-white border border-gray-200 p-6 mb-6" style={{ borderRadius: '20px' }}>
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Добавить
-                </button>
-              </div>
-              <PromptGuide />
-            </div>
-
-            <MetricListView
-              metrics={metrics}
-              onReorder={handleReorder}
-              onEdit={setEditingMetric}
-              onDelete={handleDeleteMetric}
-              onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-            />
-          </div>
-        ) : (
-          <div className="bg-[#F5F5F5] p-6 mb-6" style={{ borderRadius: '20px' }}>
-            <p className="text-center text-gray-600">
-              Войдите в систему, чтобы настроить собственные метрики
-            </p>
-          </div>
-        )}
-
-        {/* Content Analysis Section - matching LX page */}
-        <div className="mb-6">
-          <label className="block text-[15px] font-normal text-gray-500 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Контент
-          </label>
-          <div className="relative">
-            <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">
-              <textarea
-                placeholder="Текст урока"
-                value={content}
-                onChange={(e) => {
-                  const text = e.target.value
-                  if (text.length <= 25000) {
-                    setContent(text)
-                  }
-                }}
-                className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
-                          bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                maxLength={25000}
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              />
-
-              {/* Character Counter */}
-              {content && (
-                <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                  {content.length} / 25000
-                </div>
-              )}
-
-              {/* Analyze Button inside textarea */}
-              <button
-                onClick={handleAnalyze}
-                disabled={!content.trim() || isAnalyzing}
-                className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
-                         hover:opacity-80 disabled:opacity-50
-                         rounded-full transition-opacity duration-200 flex items-center justify-center"
+          {/* Header - Лёха AI style */}
+          <header className="mb-10">
+            <div className="mb-4">
+              <h1
+                className="text-[48px] font-bold text-black mb-3 leading-tight"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Анализируем...
-                  </>
-                ) : (
-                  'Проанализировать'
-                )}
+                Мой сет
+              </h1>
+              <p
+                className="text-[20px] font-normal text-black"
+                style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
+              >
+                настройте критерии оценки
+                <br />
+                контента под ваши
+                <br />
+                потребности
+              </p>
+            </div>
+            <button
+              onClick={handleResetToDefaults}
+              className="px-6 py-2 text-sm text-black/60 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+            >
+              Сбросить к стандартным
+            </button>
+          </header>
+
+          {/* Model Selector */}
+          <div className="mb-6">
+            <label
+              className="block text-[15px] font-normal text-gray-500 mb-3"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Модель
+            </label>
+            <ModelSelector />
+          </div>
+
+          {/* Main Content - Metric List */}
+          {user ? (
+            <div
+              className="bg-white border border-gray-200 p-6 mb-6"
+              style={{ borderRadius: '20px' }}
+            >
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Добавить
+                  </button>
+                </div>
+                <PromptGuide />
+              </div>
+
+              <MetricListView
+                metrics={metrics}
+                onReorder={handleReorder}
+                onEdit={setEditingMetric}
+                onDelete={handleDeleteMetric}
+                onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+              />
+            </div>
+          ) : (
+            <div className="bg-[#F5F5F5] p-6 mb-6" style={{ borderRadius: '20px' }}>
+              <p className="text-center text-gray-600">
+                Войдите в систему, чтобы настроить собственные метрики
+              </p>
+            </div>
+          )}
+
+          {/* Content Analysis Section - matching LX page */}
+          <div className="mb-6">
+            <label
+              className="block text-[15px] font-normal text-gray-500 mb-1"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Контент
+            </label>
+            <div className="flex justify-end mb-2">
+              <button
+                className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                onClick={() => {
+                  const metricIds = metrics.map((m) => m.id)
+                  loadAllPrompts(metricIds)
+                  setPromptOpen(true)
+                }}
+              >
+                Посмотреть промпт
+              </button>
+              <Dialog
+                open={promptOpen && currentScreen === 'input'}
+                onOpenChange={(o) => setPromptOpen(o)}
+              >
+                <DialogContent className="sm:max-w-[760px]">
+                  <DialogHeader>
+                    <DialogTitle>Промпты всех метрик</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 max-h-[60vh] overflow-auto">
+                    {promptsLoading ? (
+                      <div className="text-sm text-gray-500">Загрузка…</div>
+                    ) : promptError ? (
+                      <div className="text-sm text-red-600">{promptError}</div>
+                    ) : (
+                      allPrompts.map(({ metric, prompt }) => (
+                        <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                          <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
+                          <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
+                      Закрыть
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {/* Prompt trigger on input */}
+            <div className="flex justify-end -mt-1 mb-2">
+              <button
+                className="px-3 py-1.5 text-sm border rounded-md"
+                onClick={() => {
+                  const m = metrics[0]?.id || 'logic'
+                  loadPrompt(m)
+                  setPromptOpen(true)
+                }}
+              >
+                Посмотреть промпт
               </button>
             </div>
+
+            <div className="relative">
+              <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">
+                <textarea
+                  placeholder="Текст урока"
+                  value={content}
+                  onChange={(e) => {
+                    const text = e.target.value
+                    if (text.length <= 25000) {
+                      setContent(text)
+                    }
+                  }}
+                  className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                          bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                  maxLength={25000}
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                />
+
+                {/* Character Counter */}
+                {content && (
+                  <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                    {content.length} / 25000
+                  </div>
+                )}
+
+                {/* Analyze Button inside textarea */}
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!content.trim() || isAnalyzing}
+                  className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                         hover:opacity-80 disabled:opacity-50
+                         rounded-full transition-opacity duration-200 flex items-center justify-center"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Анализируем...
+                    </>
+                  ) : (
+                    'Проанализировать'
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Add Metric Modal */}
-        {showAddForm && (
-          <AddMetricForm
-            onSubmit={handleAddMetric}
-            onCancel={() => setShowAddForm(false)}
-            existingNames={metrics.map((m) => m.name)}
-          />
-        )}
+          {/* Add Metric Modal */}
+          {showAddForm && (
+            <AddMetricForm
+              onSubmit={handleAddMetric}
+              onCancel={() => setShowAddForm(false)}
+              existingNames={metrics.map((m) => m.name)}
+            />
+          )}
 
-        {/* Edit Metric Modal */}
-        {editingMetric && (
-          <AddMetricForm
-            metric={editingMetric}
-            onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
-            onCancel={() => setEditingMetric(null)}
-            existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
-          />
-        )}
+          {/* Edit Metric Modal */}
+          {editingMetric && (
+            <AddMetricForm
+              metric={editingMetric}
+              onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
+              onCancel={() => setEditingMetric(null)}
+              existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
+            />
+          )}
         </div>
       </div>
     </div>

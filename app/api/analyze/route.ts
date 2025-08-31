@@ -90,22 +90,22 @@ export async function POST(request: NextRequest) {
     console.log('Final model to use:', finalModelId)
     console.log('====================')
 
+    // Create supabase client for auth check
+    const supabase = await createClient()
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
+
     // Get user's custom metrics if in custom mode
     let metricConfiguration = undefined
     if (metricMode === 'custom') {
       try {
-        // Try to get authenticated user
-        const supabase = await createClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (user) {
+        if (authUser) {
           // Fetch user's custom metrics
           const { data: configs, error } = await supabaseAdmin
             .from('metric_configurations')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', authUser.id)
             .eq('is_active', true)
             .order('display_order')
 
@@ -128,19 +128,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get or create session ID for guest users
+    let sessionId: string | undefined
+    if (!authUser) {
+      // For guest users, use or create a session ID
+      sessionId =
+        request.headers.get('x-session-id') ||
+        request.cookies.get('session_id')?.value ||
+        globalThis.crypto.randomUUID()
+    }
+
     // Run the analysis using the extracted function
     const result = await runAnalysisInternal(supabaseAdmin, {
       content,
       modelId: finalModelId,
       metricMode: metricMode || 'lx',
       metricConfiguration,
+      userId: authUser?.id,
+      sessionId,
     })
 
-    // Return analysis ID for polling
-    return NextResponse.json({
+    // Create response with session ID for guest users
+    const response = NextResponse.json({
       analysisId: result.id,
       status: result.status,
+      sessionId: sessionId, // Include session ID for client to store
     })
+
+    // Set session cookie for guest users
+    if (sessionId && !authUser) {
+      response.cookies.set('session_id', sessionId, {
+        httpOnly: false, // Allow client-side access
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      })
+    }
+
+    return response
   } catch (error) {
     console.error('Analyze endpoint error', {
       error: error instanceof Error ? error.message : 'Unknown error',

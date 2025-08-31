@@ -46,7 +46,7 @@ export default function HistoryPage() {
   const [selectedAnalyses, setSelectedAnalyses] = useState<string[]>([])
   const [compareMode, setCompareMode] = useState(false)
 
-  // Fetch analysis history
+  // Fetch analysis history (works for both authenticated users and guests)
   const { data, isLoading, error, refetch } = useQuery<HistoryResponse>({
     queryKey: ['analysisHistory', page, pageSize, search, dateRange, selectedModel],
     queryFn: async () => {
@@ -60,20 +60,21 @@ export default function HistoryPage() {
       if (dateRange.end) params.append('endDate', dateRange.end.toISOString())
       if (selectedModel) params.append('model', selectedModel)
 
-      const response = await fetch(`/api/history?${params}`)
+      // Include session ID for guest users
+      const sessionId = localStorage.getItem('session_id')
+      const headers: HeadersInit = {}
+      if (sessionId && !user) {
+        headers['x-session-id'] = sessionId
+      }
+
+      const response = await fetch(`/api/history?${params}`, { headers })
       if (!response.ok) {
         throw new Error('Failed to fetch history')
       }
       return response.json()
     },
-    enabled: !!user,
+    enabled: !authLoading, // Enable for all users once auth loading is done
   })
-
-  // Redirect if not authenticated
-  if (!authLoading && !user) {
-    router.push('/login')
-    return null
-  }
 
   const handleExport = (analysisIds: string[], format: 'pdf' | 'csv') => {
     const analysesToExport =

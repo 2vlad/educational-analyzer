@@ -22,6 +22,7 @@ import {
 } from '@/src/services/api'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import Image from 'next/image'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -146,6 +147,11 @@ export default function EducationalAnalyzer() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
   const [maxTextLength, setMaxTextLength] = useState<number>(20000)
+  // Prompt viewer state
+  const [promptOpen, setPromptOpen] = useState(false)
+  const [promptError, setPromptError] = useState<string | null>(null)
+  const [promptsLoading, setPromptsLoading] = useState(false)
+  const [allPrompts, setAllPrompts] = useState<Array<{ metric: string; prompt: string }>>([])
 
   // Load available models and config on mount
   useEffect(() => {
@@ -163,6 +169,35 @@ export default function EducationalAnalyzer() {
       }
     } catch (error) {
       console.error('Failed to fetch config:', error)
+    }
+  }
+
+  const loadAllPrompts = async (metricIds: string[]) => {
+    try {
+      setPromptsLoading(true)
+      setPromptError(null)
+      const modelId = analysisResult?.model_used || selectedModel || 'yandex-gpt-pro'
+      const results: Array<{ metric: string; prompt: string }> = []
+      await Promise.all(
+        metricIds.map(async (metric) => {
+          try {
+            const res = await fetch(`/api/prompt?metric=${encodeURIComponent(metric)}&model=${encodeURIComponent(modelId)}`)
+            if (res.ok) {
+              const data = await res.json()
+              results.push({ metric, prompt: data.prompt || '' })
+            } else {
+              throw new Error('not found')
+            }
+          } catch (err) {
+            results.push({ metric, prompt: 'Промпт не найден' })
+          }
+        })
+      )
+      setAllPrompts(results)
+    } catch (e: any) {
+      setPromptError(e?.message || 'Ошибка загрузки промптов')
+    } finally {
+      setPromptsLoading(false)
     }
   }
 
@@ -519,6 +554,46 @@ export default function EducationalAnalyzer() {
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
+          {/* Prompt dialog (global in results) */}
+          <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
+            <DialogContent className="sm:max-w-[760px]">
+              <DialogHeader>
+                <DialogTitle>Промпты всех метрик</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 max-h-[60vh] overflow-auto">
+                {promptsLoading ? (
+                  <div className="text-sm text-gray-500">Загрузка…</div>
+                ) : promptError ? (
+                  <div className="text-sm text-red-600">{promptError}</div>
+                ) : (
+                  allPrompts.map(({ metric, prompt }) => (
+                    <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                      <div className="text-xs font-medium text-gray-600 mb-2">{METRIC_NAMES[metric] || metric}</div>
+                      <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                    </div>
+                  ))
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setPromptOpen(false)}>Закрыть</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {/* Prompt trigger on results */}
+          {currentScreen === 'results' && (
+            <div className="flex justify-end mb-2">
+              <button
+                className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                onClick={() => {
+                  const metricIds = Object.keys(analysisResult?.results || {}).filter((k) => k !== 'lessonTitle')
+                  loadAllPrompts(metricIds)
+                  setPromptOpen(true)
+                }}
+              >
+                Посмотреть промпт
+              </button>
+            </div>
+          )}
           {/* Metrics Grid - 2x3 layout */}
           <div className="grid grid-cols-2 gap-4 mb-8">
             {/* Overall Result - Moved to first position */}
@@ -572,14 +647,13 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.logic?.comment)}
                 </p>
-                {analysisResult.results?.logic && 
-                 typeof analysisResult.results.logic === 'object' && 
-                 'recommendations' in analysisResult.results.logic && 
-                 typeof analysisResult.results.logic.recommendations === 'string' && (
+                {console.log('Logic full data:', JSON.stringify(analysisResult.results?.logic, null, 2))}
+                {analysisResult.results?.logic?.suggestions && 
+                 analysisResult.results.logic.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.logic.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.logic.recommendations.substring(0, 150)}
+                      → {analysisResult.results.logic.suggestions[0]}
                     </p>
                   </div>
                 )}
@@ -619,14 +693,13 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.practical?.comment)}
                 </p>
-                {analysisResult.results?.practical && 
-                 typeof analysisResult.results.practical === 'object' && 
-                 'recommendations' in analysisResult.results.practical && 
-                 typeof analysisResult.results.practical.recommendations === 'string' && (
+                {console.log('Practical full data:', JSON.stringify(analysisResult.results?.practical, null, 2))}
+                {analysisResult.results?.practical?.suggestions && 
+                 analysisResult.results.practical.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.practical.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.practical.recommendations.substring(0, 150)}
+                      → {analysisResult.results.practical.suggestions[0]}
                     </p>
                   </div>
                 )}
@@ -666,14 +739,13 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.interest?.comment)}
                 </p>
-                {analysisResult.results?.interest && 
-                 typeof analysisResult.results.interest === 'object' && 
-                 'recommendations' in analysisResult.results.interest && 
-                 typeof analysisResult.results.interest.recommendations === 'string' && (
+                {console.log('Interest full data:', JSON.stringify(analysisResult.results?.interest, null, 2))}
+                {analysisResult.results?.interest?.suggestions && 
+                 analysisResult.results.interest.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.interest.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.interest.recommendations.substring(0, 150)}
+                      → {analysisResult.results.interest.suggestions[0]}
                     </p>
                   </div>
                 )}
@@ -713,14 +785,13 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.care?.comment)}
                 </p>
-                {analysisResult.results?.care && 
-                 typeof analysisResult.results.care === 'object' && 
-                 'recommendations' in analysisResult.results.care && 
-                 typeof analysisResult.results.care.recommendations === 'string' && (
+                {console.log('Care full data:', JSON.stringify(analysisResult.results?.care, null, 2))}
+                {analysisResult.results?.care?.suggestions && 
+                 analysisResult.results.care.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.care.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.care.recommendations.substring(0, 150)}
+                      → {analysisResult.results.care.suggestions[0]}
                     </p>
                   </div>
                 )}
@@ -760,14 +831,13 @@ export default function EducationalAnalyzer() {
                 <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
                   {getShortComment(analysisResult.results?.complexity?.comment)}
                 </p>
-                {analysisResult.results?.complexity && 
-                 typeof analysisResult.results.complexity === 'object' && 
-                 'recommendations' in analysisResult.results.complexity && 
-                 typeof analysisResult.results.complexity.recommendations === 'string' && (
+                {console.log('Complexity full data:', JSON.stringify(analysisResult.results?.complexity, null, 2))}
+                {analysisResult.results?.complexity?.suggestions && 
+                 analysisResult.results.complexity.suggestions.length > 0 && (
                   <div>
                     <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
                     <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.complexity.recommendations.split(/\d+\)/).slice(1,2)[0]?.trim() || analysisResult.results.complexity.recommendations.substring(0, 150)}
+                      → {analysisResult.results.complexity.suggestions[0]}
                     </p>
                   </div>
                 )}
@@ -949,7 +1019,7 @@ export default function EducationalAnalyzer() {
       <UnifiedHeader />
       
       <div className="flex-1 flex justify-center p-6">
-        <div className="w-full max-w-[450px] mt-[50px]">
+        <div className="w-full max-w-[660px] mt-[50px]">
         {/* Header with title, subtitle and image */}
         <div className="flex justify-between mb-10">
           <div>
@@ -1026,6 +1096,48 @@ export default function EducationalAnalyzer() {
               </div>
             )}
           </div>
+
+          {/* Prompt trigger on upload screen */}
+          <div className="flex justify-end -mt-2 mb-4">
+            <button
+              className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+              onClick={() => {
+                const metricIds = Object.keys(METRIC_NAMES)
+                loadAllPrompts(metricIds)
+                setPromptOpen(true)
+              }}
+            >
+              Посмотреть промпт
+            </button>
+          </div>
+
+          {/* Prompt dialog on upload screen */}
+          {currentScreen === 'upload' && (
+            <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
+              <DialogContent className="sm:max-w-[760px]">
+                <DialogHeader>
+                  <DialogTitle>Промпты всех метрик</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 max-h-[60vh] overflow-auto">
+                  {promptsLoading ? (
+                    <div className="text-sm text-gray-500">Загрузка…</div>
+                  ) : promptError ? (
+                    <div className="text-sm text-red-600">{promptError}</div>
+                  ) : (
+                    allPrompts.map(({ metric, prompt }) => (
+                      <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                        <div className="text-xs font-medium text-gray-600 mb-2">{METRIC_NAMES[metric] || metric}</div>
+                        <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setPromptOpen(false)}>Закрыть</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
 
           {/* Content Section */}
           <div className="mb-6 mt-[40px]">

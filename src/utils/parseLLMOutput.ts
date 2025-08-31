@@ -85,16 +85,53 @@ function tryParseJSON(text: string): ParsedOutput | null {
       return null
     }
 
+    // Normalize suggestions: accept either suggestions[] or recommendations string
+    let suggestions: string[] | undefined = undefined
+
+    if (Array.isArray(parsed.suggestions)) {
+      suggestions = parsed.suggestions.slice(0, 3).map((s: unknown) => String(s).substring(0, 200))
+    } else if (typeof parsed.recommendations === 'string') {
+      const recs: string = parsed.recommendations
+      const items: string[] = []
+
+      // First try numbered items like "1) ... 2) ..."
+      const numbered = recs
+        .split(/\s*\d+\)\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+      if (numbered.length > 1) {
+        items.push(...numbered)
+      }
+
+      // Then try bullet lines "- ..." or "• ..."
+      if (items.length === 0) {
+        const bulletMatches = recs.matchAll(/(?:^|\n)\s*[•\-]\s+(.+)/g)
+        for (const m of bulletMatches) {
+          items.push(String(m[1]).trim())
+        }
+      }
+
+      // Fallback: split by newlines/semicolons if nothing else
+      if (items.length === 0) {
+        items.push(
+          ...recs
+            .split(/[\n;]+/)
+            .map((s) => s.trim())
+            .filter(Boolean),
+        )
+      }
+
+      suggestions = items.slice(0, 3).map((s) => s.substring(0, 200))
+    }
+
     return {
       score: Math.round(scoreValue), // Ensure it's an integer
       comment: parsed.comment || '',
       examples: Array.isArray(parsed.examples)
-        ? parsed.examples.slice(0, 2).map((e) => String(e).substring(0, 200))
+        ? parsed.examples.slice(0, 2).map((e: unknown) => String(e).substring(0, 200))
         : [],
       detailed_analysis: parsed.detailed_analysis || undefined,
-      suggestions: Array.isArray(parsed.suggestions)
-        ? parsed.suggestions.slice(0, 3).map((s) => String(s).substring(0, 200))
-        : undefined,
+      suggestions,
     }
   } catch {
     // JSON parsing failed, will try regex

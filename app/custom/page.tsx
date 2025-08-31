@@ -707,7 +707,7 @@ export default function CustomMetricsPage() {
       <UnifiedHeader />
 
       <div className="flex-1 flex justify-center p-6">
-        <div className="w-full max-w-[450px] mt-[50px]">
+        <div className="w-full max-w-[660px] mt-[50px]">
           <Toaster position="top-right" />
 
           {/* Error Alert */}
@@ -756,6 +756,8 @@ export default function CustomMetricsPage() {
             <ModelSelector />
           </div>
 
+          
+
           {/* Main Content - Metric List */}
           {user ? (
             <div
@@ -765,14 +767,53 @@ export default function CustomMetricsPage() {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
-                  <button
-                    onClick={() => setShowAddForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Добавить
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                      onClick={() => {
+                        const metricIds = metrics.map((m) => m.id)
+                        loadAllPrompts(metricIds)
+                        setPromptOpen(true)
+                      }}
+                    >
+                      Посмотреть промпт
+                    </button>
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Добавить
+                    </button>
+                  </div>
                 </div>
+                {/* Prompts dialog attached to metrics box */}
+                <Dialog open={promptOpen && currentScreen === 'input'} onOpenChange={(o) => setPromptOpen(o)}>
+                  <DialogContent className="sm:max-w-[760px]">
+                    <DialogHeader>
+                      <DialogTitle>Промпты всех метрик</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[60vh] overflow-auto">
+                      {promptsLoading ? (
+                        <div className="text-sm text-gray-500">Загрузка…</div>
+                      ) : promptError ? (
+                        <div className="text-sm text-red-600">{promptError}</div>
+                      ) : (
+                        allPrompts.map(({ metric, prompt }) => (
+                          <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                            <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
+                            <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
+                        Закрыть
+                      </button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <PromptGuide />
               </div>
 
@@ -792,7 +833,7 @@ export default function CustomMetricsPage() {
             </div>
           )}
 
-          {/* Content Analysis Section - matching LX page */}
+          {/* Content Analysis Section - label placed just above textarea */}
           <div className="mb-6">
             <label
               className="block text-[15px] font-normal text-gray-500 mb-1"
@@ -800,60 +841,8 @@ export default function CustomMetricsPage() {
             >
               Контент
             </label>
-            <div className="flex justify-end mb-2">
-              <button
-                className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
-                onClick={() => {
-                  const metricIds = metrics.map((m) => m.id)
-                  loadAllPrompts(metricIds)
-                  setPromptOpen(true)
-                }}
-              >
-                Посмотреть промпт
-              </button>
-              <Dialog
-                open={promptOpen && currentScreen === 'input'}
-                onOpenChange={(o) => setPromptOpen(o)}
-              >
-                <DialogContent className="sm:max-w-[760px]">
-                  <DialogHeader>
-                    <DialogTitle>Промпты всех метрик</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 max-h-[60vh] overflow-auto">
-                    {promptsLoading ? (
-                      <div className="text-sm text-gray-500">Загрузка…</div>
-                    ) : promptError ? (
-                      <div className="text-sm text-red-600">{promptError}</div>
-                    ) : (
-                      allPrompts.map(({ metric, prompt }) => (
-                        <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
-                          <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
-                          <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <DialogFooter>
-                    <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
-                      Закрыть
-                    </button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-            {/* Prompt trigger on input */}
-            <div className="flex justify-end -mt-1 mb-2">
-              <button
-                className="px-3 py-1.5 text-sm border rounded-md"
-                onClick={() => {
-                  const m = metrics[0]?.id || 'logic'
-                  loadPrompt(m)
-                  setPromptOpen(true)
-                }}
-              >
-                Посмотреть промпт
-              </button>
-            </div>
+            {/* Prompt link moved above; nothing here */}
+            {/* Single prompt trigger kept above (underlined link). Removed duplicate button. */}
 
             <div className="relative">
               <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">

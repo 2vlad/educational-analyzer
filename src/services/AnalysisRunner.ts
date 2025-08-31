@@ -16,6 +16,7 @@ export interface AnalysisInput {
   metricMode?: 'lx' | 'custom'
   metricConfiguration?: MetricConfig[]
   userId?: string
+  sessionId?: string
   programId?: string
   programRunId?: string
   lessonId?: string
@@ -125,6 +126,7 @@ export async function runAnalysisInternal(
     metricMode = 'lx',
     metricConfiguration,
     userId,
+    sessionId,
     // programId, programRunId, lessonId - will be used when database migration is applied
   } = input
 
@@ -147,6 +149,7 @@ export async function runAnalysisInternal(
     // program_run_id: programRunId || null,
     // lesson_id: lessonId || null,
     user_id: userId || null,
+    session_id: sessionId || null,
     configuration_snapshot: metricMode === 'custom' ? { metrics } : null,
   }
 

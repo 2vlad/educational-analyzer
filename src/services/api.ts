@@ -73,11 +73,21 @@ class ApiService {
       modelId: request.modelId,
     })
 
+    // Include session ID in headers for guest users
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    
+    if (typeof window !== 'undefined') {
+      const sessionId = localStorage.getItem('session_id')
+      if (sessionId) {
+        headers['x-session-id'] = sessionId
+      }
+    }
+
     const response = await fetch('/api/analyze', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(request),
     })
 
@@ -91,6 +101,12 @@ class ApiService {
 
     const data = await response.json()
     console.log('[API] /api/analyze success, analysis ID:', data.analysisId)
+    
+    // Store session ID for guest users
+    if (data.sessionId && typeof window !== 'undefined') {
+      localStorage.setItem('session_id', data.sessionId)
+    }
+    
     return data
   }
 

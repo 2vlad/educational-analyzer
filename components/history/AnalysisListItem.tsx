@@ -28,24 +28,37 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
     typeof analysis.results === 'string' ? JSON.parse(analysis.results) : analysis.results
 
   // Parse configuration snapshot
-  const configSnapshot = analysis.configuration_snapshot || []
+  const configSnapshot = analysis.configuration_snapshot?.metrics || []
 
-  // Calculate overall score
+  // Calculate overall score (matching the main page logic)
   const calculateOverallScore = () => {
-    if (!results || !results.metrics) return 'N/A'
+    if (!results) return { score: 0, displayScore: '0/10' }
 
-    const scores = Object.values(results.metrics).map((m: any) => {
-      if (m.score === 1) return 1
-      if (m.score === 0) return 0
-      if (m.score === -1) return -1
-      return 0
+    // Get all metric scores
+    const scores: number[] = []
+    Object.entries(results).forEach(([key, value]: [string, any]) => {
+      if (key !== 'lessonTitle' && value && typeof value === 'object' && 'score' in value) {
+        scores.push(value.score)
+      }
     })
 
-    if (scores.length === 0) return 'N/A'
+    if (scores.length === 0) return { score: 0, displayScore: '0/10' }
 
-    const sum = scores.reduce((acc: number, score: number) => acc + score, 0)
-    const normalized = ((sum + scores.length) / (scores.length * 2)) * 10
-    return normalized.toFixed(1)
+    // Sum all scores
+    const totalScore = scores.reduce((acc, score) => acc + score, 0)
+    
+    // Calculate max possible score
+    const metricCount = scores.length
+    const maxPossibleScore = metricCount * 2 // Since scores range from -2 to +2
+    
+    // Shift to 0-based range for display
+    const adjustedScore = totalScore + maxPossibleScore // Now ranges from 0 to maxPossibleScore*2
+    const totalPossible = maxPossibleScore * 2
+    
+    return { 
+      score: totalScore, 
+      displayScore: `${adjustedScore}/${totalPossible}`
+    }
   }
 
   const overallScore = calculateOverallScore()
@@ -88,8 +101,8 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
 
               {/* Overall Score */}
               <div className="text-center ml-4">
-                <div className="text-[32px] font-bold text-black">{overallScore}</div>
-                <div className="text-xs text-black/60">Общий</div>
+                <div className="text-[24px] font-bold text-black">{overallScore.displayScore}</div>
+                <div className="text-xs text-black/60">Общий балл</div>
               </div>
             </div>
 
@@ -119,11 +132,12 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
 
           {/* Metrics Results */}
           <div className="mb-6">
-            <h4 className="font-medium text-gray-900 mb-3">Analysis Results</h4>
+            <h4 className="font-medium text-gray-900 mb-3">Результаты анализа</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {configSnapshot.map((config: any) => {
-                const metricResult = results?.metrics?.[config.name] || {}
-                const score = metricResult.score || 0
+              {Object.entries(results || {}).map(([metricName, metricData]: [string, any]) => {
+                if (metricName === 'lessonTitle' || !metricData || typeof metricData !== 'object') return null
+                
+                const score = metricData.score || 0
 
                 const getScoreColor = (score: number) => {
                   if (score > 0) return 'text-green-600 bg-green-50 border-green-200'
@@ -132,28 +146,44 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
                 }
 
                 const getScoreText = (score: number) => {
-                  if (score > 0) return '+1'
-                  if (score < 0) return '-1'
+                  if (score === 2) return '+2'
+                  if (score === 1) return '+1'
+                  if (score === -1) return '-1'
+                  if (score === -2) return '-2'
                   return '0'
                 }
 
+                const metricDisplayNames: Record<string, string> = {
+                  logic: 'Логика',
+                  practical: 'Польза',
+                  complexity: 'Сложность',
+                  interest: 'Интерес',
+                  care: 'Забота',
+                  cognitive_load: 'Когнитивная нагрузка',
+                }
+
                 return (
-                  <div key={config.name} className="p-4 bg-white rounded-lg border border-gray-200">
+                  <div key={metricName} className="p-4 bg-white rounded-lg border border-gray-200">
                     <div className="flex items-start justify-between mb-2">
-                      <h5 className="font-medium text-gray-900 capitalize">{config.name}</h5>
+                      <h5 className="font-medium text-gray-900">{metricDisplayNames[metricName] || metricName}</h5>
                       <span
                         className={`px-2 py-1 text-sm font-semibold rounded ${getScoreColor(score)}`}
                       >
                         {getScoreText(score)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 mb-2">{config.prompt_text}</p>
-                    {metricResult.explanation && (
-                      <p className="text-sm text-gray-700 italic">"{metricResult.explanation}"</p>
+                    {metricData.comment && (
+                      <p className="text-sm text-gray-700 mb-2">"{metricData.comment}"</p>
+                    )}
+                    {metricData.suggestions && metricData.suggestions.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Рекомендации:</p>
+                        <p className="text-xs text-gray-600">→ {metricData.suggestions[0]}</p>
+                      </div>
                     )}
                   </div>
                 )
-              })}
+              }).filter(Boolean)}
             </div>
           </div>
 

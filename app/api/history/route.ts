@@ -9,15 +9,14 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Check authentication
+    // Check authentication - but allow guest access
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
+    // For guest users, we'll use session-based tracking
+    const sessionId = request.headers.get('x-session-id') || 
+                     request.cookies.get('session_id')?.value
 
     // Parse query parameters
     const { searchParams } = new globalThis.URL(request.url)
@@ -31,12 +30,31 @@ export async function GET(request: NextRequest) {
     // Calculate offset
     const offset = (page - 1) * pageSize
 
-    // Build query
+    // Build query based on user or session
     let query = supabase
       .from('analyses')
       .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
+
+    // Filter by user_id if authenticated, otherwise by session_id
+    if (user) {
+      query = query.eq('user_id', user.id)
+    } else if (sessionId) {
+      query = query.eq('session_id', sessionId)
+    } else {
+      // No user and no session - return empty results
+      return NextResponse.json({
+        analyses: [],
+        pagination: {
+          page,
+          pageSize,
+          totalItems: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      })
+    }
 
     // Apply filters
     if (search) {

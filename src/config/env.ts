@@ -2,8 +2,9 @@ import { z } from 'zod'
 
 // Server-side environment variables schema
 const serverEnvSchema = z.object({
-  // Supabase
-  SUPABASE_SERVICE_KEY: z.string().min(1, 'SUPABASE_SERVICE_KEY is required'),
+  // Supabase (accept either SERVICE_ROLE_KEY or SERVICE_KEY)
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_SERVICE_KEY: z.string().optional(),
 
   // LLM Providers (at least one required)
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -57,6 +58,13 @@ const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
   }
 }
 
+// Validate that at least one Supabase service key is configured
+const validateSupabaseKeys = (env: z.infer<typeof serverEnvSchema>) => {
+  if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SUPABASE_SERVICE_KEY) {
+    console.warn('⚠️ Warning: No SUPABASE_SERVICE_ROLE_KEY configured. Database operations may fail.')
+  }
+}
+
 // Parse and validate server environment
 let serverEnv: z.infer<typeof serverEnvSchema> | undefined
 
@@ -70,6 +78,7 @@ if (typeof window === 'undefined') {
     )
     serverEnv = serverEnvSchema.parse(process.env)
     validateLLMProviders(serverEnv)
+    validateSupabaseKeys(serverEnv)
     console.log('✅ Environment validated successfully')
   } catch (error) {
     if (error instanceof z.ZodError) {

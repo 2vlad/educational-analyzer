@@ -485,7 +485,7 @@ export default function EducationalAnalyzer() {
           } else if (result.status === 'failed') {
             console.error(`[POLL ${pollCount}] Analysis failed!`)
             window.clearInterval(checkInterval)
-            setError('Analysis failed. Please check your API keys in .env.local file.')
+            setError('Анализ не удался. Пожалуйста, проверьте настройки API.')
             setCurrentScreen('upload')
             setIsAnalyzing(false)
           }

@@ -8,7 +8,7 @@ if (!env.isServer) {
 // Create a Supabase client for server-side admin operations
 export const supabaseAdmin = createClient(
   env.client.NEXT_PUBLIC_SUPABASE_URL,
-  env.server!.SUPABASE_SERVICE_KEY,
+  env.server?.SUPABASE_SERVICE_ROLE_KEY || env.server?.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   {
     auth: {
       autoRefreshToken: false,

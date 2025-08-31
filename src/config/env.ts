@@ -32,7 +32,7 @@ const serverEnvSchema = z.object({
   RATE_LIMIT_PER_HOUR: z.string().transform(Number).default('10'),
 
   // Security
-  RATE_LIMIT_SALT: z.string().min(1, 'RATE_LIMIT_SALT is required'),
+  RATE_LIMIT_SALT: z.string().optional().default('default-salt-for-rate-limiting'),
 
   // Debug/Logging
   DEBUG: z

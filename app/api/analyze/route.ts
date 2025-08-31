@@ -167,10 +167,18 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Analyze endpoint error', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+    console.error('Analyze endpoint error:', error)
+    console.error('Full error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error,
     })
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Return more specific error message
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 })
   }
 }

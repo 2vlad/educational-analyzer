@@ -1,5 +1,4 @@
 import { env } from '@/src/config/env'
-import { modelsManager } from '@/src/config/models'
 import { LLMProvider, GenerateOptions, GenerateResult, ProviderError, ERROR_CODES } from './types'
 import { parseLLMOutput } from '@/src/utils/parseLLMOutput'
 import { debug } from '@/src/utils/debug'
@@ -81,33 +80,49 @@ export class YandexProvider implements LLMProvider {
       )
     }
 
-    // Resolve model config from manager
-    const modelId = 'yandex-gpt-pro'
-    const modelConfig = modelsManager.getModelConfig(modelId)
+    // The options.model already contains the actual Yandex model path (e.g., "yandexgpt/rc")
+    // when called from LLMService. We'll use that directly or fall back to a default.
+    const yandexModelPath = options.model || 'yandexgpt/latest'
 
-    if (!modelConfig) {
-      throw new ProviderError(
-        `Yandex model configuration not found: ${modelId}`,
-        ERROR_CODES.INVALID_REQUEST,
-        false,
-        this.providerName,
-      )
-    }
+    // For temperature and maxTokens, use options or defaults
+    const temperature = options.temperature ?? 0.3
+    const maxTokens = options.maxTokens ?? 2000
 
     const startTime = Date.now()
     const finalPrompt = prompt.replace('{{content}}', content)
 
     try {
       // Build modelUri from configuration; prefer stable "latest" in production
-      const configuredModel = (modelConfig.model || 'yandexgpt/latest').replace(/\/rc$/, '/latest')
-      const primaryUri = `gpt://${env.server.YANDEX_FOLDER_ID}/${configuredModel}`
+      // Ensure we trim any whitespace from the folder ID
+      const trimmedFolderId = env.server.YANDEX_FOLDER_ID.trim()
+
+      // Get the model name and replace /rc with /latest for stability
+      const configuredModel = yandexModelPath.replace(/\/rc$/, '/latest')
+
+      // Validate that we're using the correct Yandex model format
+      if (!configuredModel.startsWith('yandexgpt')) {
+        console.warn(`Warning: Unexpected Yandex model format: ${configuredModel}`)
+      }
+
+      const primaryUri = `gpt://${trimmedFolderId}/${configuredModel}`
+
+      // Add validation to ensure no newlines in the URI
+      if (primaryUri.includes('\n') || primaryUri.includes('\r')) {
+        console.error('ERROR: Model URI contains newline characters:', primaryUri)
+        throw new ProviderError(
+          'Invalid model URI format - contains newline characters',
+          ERROR_CODES.INVALID_REQUEST,
+          false,
+          this.providerName,
+        )
+      }
 
       const makeBody = (modelUri: string): YandexGPTRequest => ({
         modelUri,
         completionOptions: {
           stream: false,
-          temperature: options.temperature || modelConfig.temperature,
-          maxTokens: String(options.maxTokens || modelConfig.maxTokens),
+          temperature: temperature,
+          maxTokens: String(maxTokens),
         },
         messages: [
           {
@@ -150,7 +165,7 @@ export class YandexProvider implements LLMProvider {
         const shouldRetryWithLatest =
           response.status === 400 && /invalid model_uri/i.test(errorText)
         if (shouldRetryWithLatest) {
-          const fallbackUri = `gpt://${env.server.YANDEX_FOLDER_ID}/yandexgpt/latest`
+          const fallbackUri = `gpt://${trimmedFolderId}/yandexgpt/latest`
           console.warn('Retrying Yandex with fallback modelUri:', fallbackUri)
           response = await callYandex(fallbackUri)
         } else {

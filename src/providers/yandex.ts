@@ -81,7 +81,8 @@ export class YandexProvider implements LLMProvider {
       )
     }
 
-    const modelId = options.model === 'yandexgpt/rc' ? 'yandex-gpt-pro' : 'yandex-gpt-pro'
+    // Resolve model config from manager
+    const modelId = 'yandex-gpt-pro'
     const modelConfig = modelsManager.getModelConfig(modelId)
 
     if (!modelConfig) {
@@ -97,9 +98,12 @@ export class YandexProvider implements LLMProvider {
     const finalPrompt = prompt.replace('{{content}}', content)
 
     try {
-      // Prepare the request body
-      const requestBody: YandexGPTRequest = {
-        modelUri: `gpt://${env.server.YANDEX_FOLDER_ID}/yandexgpt/rc`, // Using latest RC version
+      // Build modelUri from configuration; prefer stable "latest" in production
+      const configuredModel = (modelConfig.model || 'yandexgpt/latest').replace(/\/rc$/, '/latest')
+      const primaryUri = `gpt://${env.server.YANDEX_FOLDER_ID}/${configuredModel}`
+
+      const makeBody = (modelUri: string): YandexGPTRequest => ({
+        modelUri,
         completionOptions: {
           stream: false,
           temperature: options.temperature || modelConfig.temperature,
@@ -110,12 +114,12 @@ export class YandexProvider implements LLMProvider {
             role: 'system',
             text: 'Ты помощник для анализа образовательного контента. Отвечай только в формате JSON.',
           },
-          {
-            role: 'user',
-            text: finalPrompt,
-          },
+          { role: 'user', text: finalPrompt },
         ],
-      }
+      })
+
+      // Create the request body for primary model
+      const requestBody = makeBody(primaryUri)
 
       debug.debug('\n=== YANDEX GPT REQUEST ===')
       debug.debug('Model URI:', requestBody.modelUri)
@@ -124,22 +128,44 @@ export class YandexProvider implements LLMProvider {
       debug.payload('Request messages', requestBody.messages)
       debug.debug('====================\n')
 
-      // Make the API request
-      const response = await fetch(this.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Api-Key ${env.server.YANDEX_API_KEY}`,
-          'Content-Type': 'application/json',
-          'x-data-logging-enabled': 'false', // Disable logging for privacy
-        },
-        body: JSON.stringify(requestBody),
-        signal: options.timeoutMs ? globalThis.AbortSignal.timeout(options.timeoutMs) : undefined,
-      })
+      // Helper to call Yandex endpoint
+      const callYandex = async (uri: string) =>
+        await fetch(this.apiEndpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: `Api-Key ${env.server.YANDEX_API_KEY}`,
+            'Content-Type': 'application/json',
+            'x-data-logging-enabled': 'false',
+            'x-folder-id': env.server.YANDEX_FOLDER_ID || '',
+          },
+          body: JSON.stringify(makeBody(uri)),
+          signal: options.timeoutMs ? globalThis.AbortSignal.timeout(options.timeoutMs) : undefined,
+        })
 
+      // Try primary modelUri; if YC reports invalid model_uri, retry with "yandexgpt/latest"
+      let response = await callYandex(primaryUri)
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Yandex API error:', response.status, errorText)
-
+        const shouldRetryWithLatest =
+          response.status === 400 && /invalid model_uri/i.test(errorText)
+        if (shouldRetryWithLatest) {
+          const fallbackUri = `gpt://${env.server.YANDEX_FOLDER_ID}/yandexgpt/latest`
+          console.warn('Retrying Yandex with fallback modelUri:', fallbackUri)
+          response = await callYandex(fallbackUri)
+        } else {
+          // Recreate Response body for downstream error handling
+          throw new ProviderError(
+            `API error: ${response.status}`,
+            ERROR_CODES.PROVIDER_ERROR,
+            response.status >= 500,
+            this.providerName,
+          )
+        }
+      }
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Yandex API error:', response.status, errorText)
         if (response.status === 401) {
           throw new ProviderError(
             'Authentication failed - check API key',

@@ -83,6 +83,9 @@ export interface DynamicAnalysisOptions {
 
   /** Model to use for analysis */
   model?: string
+
+  /** Persona description for the student character */
+  studentCharacter?: string
 }
 
 /**

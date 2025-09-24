@@ -9,6 +9,7 @@ import { logger } from '@/src/utils/logger'
 import { progressService } from '@/src/services/ProgressService'
 import { createHash } from 'crypto'
 import { env } from '@/src/config/env'
+import type { Metric } from '@/src/utils/prompts'
 
 export interface AnalysisInput {
   content: string
@@ -20,6 +21,7 @@ export interface AnalysisInput {
   programId?: string
   programRunId?: string
   lessonId?: string
+  studentCharacter?: string
 }
 
 export interface MetricConfig {
@@ -32,7 +34,7 @@ export interface MetricConfig {
 export interface AnalysisResult {
   id: string
   status: 'completed' | 'partial' | 'failed'
-  results: Record<string, any>
+  results: Record<string, unknown>
   contentHash: string
   totalDuration: number
   model: string
@@ -85,7 +87,8 @@ function getMetrics(
     defaultMetrics.push({
       id: 'cognitive_load',
       name: 'cognitive_load',
-      prompt_text: 'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
+      prompt_text:
+        'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
       display_order: 6,
     })
   }
@@ -127,6 +130,7 @@ export async function runAnalysisInternal(
     metricConfiguration,
     userId,
     sessionId,
+    studentCharacter,
     // programId, programRunId, lessonId - will be used when database migration is applied
   } = input
 
@@ -150,7 +154,7 @@ export async function runAnalysisInternal(
     // lesson_id: lessonId || null,
     user_id: userId || null,
     session_id: sessionId || null,
-    configuration_snapshot: metricMode === 'custom' ? { metrics } : null,
+    configuration_snapshot: metricMode === 'custom' ? { metrics, studentCharacter } : null,
   }
 
   const { error: insertError } = await supabase.from('analyses').insert(analysisRecord)
@@ -217,26 +221,34 @@ export async function runAnalysisInternal(
       // Determine if we should use custom prompt text
       // Standard metrics (logic, practical, complexity, interest, care) use prompt files
       // Custom metrics use prompt_text from database
-  const standardMetrics = ['logic', 'practical', 'complexity', 'interest', 'care', 'cognitive_load']
+      const standardMetrics = [
+        'logic',
+        'practical',
+        'complexity',
+        'interest',
+        'care',
+        'cognitive_load',
+      ]
       const isStandardMetric = standardMetrics.includes(metric.name)
       const customPromptText =
         !isStandardMetric && metric.prompt_text ? metric.prompt_text : undefined
 
-      // Debug logging
-      if (metric.name === 'ярость' || (!isStandardMetric && !metric.prompt_text)) {
-        console.log(`📌 Metric ${metric.name}:`)
-        console.log(`  Is standard: ${isStandardMetric}`)
-        console.log(`  Has prompt_text: ${!!metric.prompt_text}`)
-        console.log(`  Using custom prompt: ${!!customPromptText}`)
-      }
+      const metricId = metric.name as unknown as Metric
 
       const result = modelId
-        ? await llmService.analyzeWithModel(content, metric.name as any, modelId, customPromptText)
+        ? await llmService.analyzeWithModel(
+            content,
+            metricId,
+            modelId,
+            customPromptText,
+            studentCharacter,
+          )
         : await llmService.analyzeWithRetry(
             content,
-            metric.name as any,
+            metricId,
             undefined,
             customPromptText,
+            studentCharacter,
           )
 
       // Clear the progress interval
@@ -367,11 +379,19 @@ export async function runAnalysisInternal(
   console.log('Fail count:', failCount)
   console.log('Total duration:', totalDuration, 'ms')
   console.log('\nResults summary:')
-  Object.entries(results).forEach(([metric, data]: [string, any]) => {
-    if (data.error) {
-      console.log(`  ❌ ${metric}: Error - ${data.error}`)
-    } else if (metric !== 'lessonTitle') {
-      console.log(`  ✅ ${metric}: Score ${data.score}, "${data.comment}"`)
+  Object.entries(results).forEach(([metric, data]) => {
+    if (data && typeof data === 'object' && 'error' in data) {
+      const errorMessage = (data as { error?: unknown }).error
+      console.log(`  ❌ ${metric}: Error - ${String(errorMessage)}`)
+    } else if (
+      metric !== 'lessonTitle' &&
+      data &&
+      typeof data === 'object' &&
+      'score' in data &&
+      'comment' in data
+    ) {
+      const { score, comment } = data as { score?: unknown; comment?: unknown }
+      console.log(`  ✅ ${metric}: Score ${String(score)}, "${String(comment)}"`)
     }
   })
   console.log('=================\n')

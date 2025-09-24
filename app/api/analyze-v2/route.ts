@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { URL } from 'url'
 import { createClient, createServiceClient } from '@/src/lib/supabase/server'
 import { DynamicLLMService } from '@/src/services/DynamicLLMService'
 import { logger } from '@/src/utils/logger'
@@ -7,11 +8,13 @@ import { MetricConfig } from '@/src/types/metrics'
 import { InsertAnalysis } from '@/src/types/database'
 import { progressService } from '@/src/services/ProgressService'
 import { rateLimiter, getRateLimitIdentifier } from '@/src/lib/rate-limit'
+import { DEFAULT_STUDENT_CHARACTER, normalizeStudentCharacter } from '@/src/utils/studentCharacter'
 
 // Request schema
 const analyzeRequestSchema = z.object({
   content: z.string().min(1).max(20000),
   modelId: z.string().optional(),
+  studentCharacter: z.string().min(5).max(500).optional(),
 })
 
 // Check if content looks like educational material
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { content, modelId } = validation.data
+    const { content, modelId, studentCharacter } = validation.data
 
     console.log('=== ANALYZE V2 REQUEST ===')
     console.log('Model ID received:', modelId)
@@ -83,6 +86,26 @@ export async function POST(request: NextRequest) {
 
     console.log('User authenticated:', !!user)
     console.log('User ID:', user?.id || 'Guest')
+
+    let finalStudentCharacter = studentCharacter
+
+    if (!finalStudentCharacter && user) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('student_character')
+        .eq('id', user.id)
+        .single()
+
+      if (!profileError) {
+        finalStudentCharacter = profile?.student_character || undefined
+      } else {
+        console.error('Failed to load student character for user:', profileError)
+      }
+    }
+
+    const normalizedCharacter = normalizeStudentCharacter(
+      finalStudentCharacter || DEFAULT_STUDENT_CHARACTER,
+    )
 
     // Check rate limit
     const rateLimitId = getRateLimitIdentifier(request, user?.id)
@@ -205,7 +228,10 @@ export async function POST(request: NextRequest) {
       status: 'running',
       model_used: finalModelId || llmService.getCurrentModel(),
       user_id: user?.id || null,
-      configuration_snapshot: metricConfigs, // Save the exact configs used
+      configuration_snapshot: {
+        metrics: metricConfigs,
+        studentCharacter: normalizedCharacter,
+      }, // Save the exact configs used
     }
 
     const { error: insertError } = await supabaseAdmin
@@ -241,6 +267,7 @@ export async function POST(request: NextRequest) {
       const analysisResponse = await llmService.analyzeWithConfigs(content, {
         configurations: metricConfigs,
         model: finalModelId,
+        studentCharacter: normalizedCharacter,
       })
 
       const totalDuration = Date.now() - startTime

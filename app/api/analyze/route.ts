@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/src/lib/supabaseServer'
 import { runAnalysisInternal } from '@/src/services/AnalysisRunner'
 import { env } from '@/src/config/env'
 import { createClient } from '@/src/lib/supabase/server'
+import { DEFAULT_STUDENT_CHARACTER, normalizeStudentCharacter } from '@/src/utils/studentCharacter'
 
 // Use Node runtime so we can access fs to read prompts
 export const runtime = 'nodejs'
@@ -16,6 +17,7 @@ const analyzeRequestSchema = z.object({
   content: z.string().min(1).max(maxTextLength),
   modelId: z.string().optional(),
   metricMode: z.enum(['lx', 'custom']).optional(),
+  studentCharacter: z.string().min(5).max(500).optional(),
 })
 
 // Check if content looks like educational material
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { content, modelId, metricMode } = validation.data
+    const { content, modelId, metricMode, studentCharacter } = validation.data
 
     console.log('=== ANALYZE REQUEST ===')
     console.log('Model ID received:', modelId)
@@ -130,6 +132,24 @@ export async function POST(request: NextRequest) {
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
+
+    let finalStudentCharacter = studentCharacter
+
+    if (!finalStudentCharacter && authUser) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('student_character')
+          .eq('id', authUser.id)
+          .single()
+
+        finalStudentCharacter = profile?.student_character || undefined
+      } catch (error) {
+        console.error('Failed to load student character for user:', error)
+      }
+    }
+
+    const normalizedCharacter = normalizeStudentCharacter(finalStudentCharacter || DEFAULT_STUDENT_CHARACTER)
 
     // Get user's custom metrics if in custom mode
     let metricConfiguration = undefined
@@ -181,6 +201,7 @@ export async function POST(request: NextRequest) {
       metricConfiguration,
       userId: authUser?.id,
       sessionId,
+      studentCharacter: normalizedCharacter,
     })
 
     // Create response with session ID for guest users

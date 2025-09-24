@@ -23,6 +23,7 @@ import {
 import { SimpleLoader } from '@/components/SimpleLoader'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { DEFAULT_STUDENT_CHARACTER, normalizeStudentCharacter } from '@/src/utils/studentCharacter'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -144,6 +145,7 @@ export default function EducationalAnalyzer() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
+  const [studentCharacter, setStudentCharacter] = useState(DEFAULT_STUDENT_CHARACTER)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
   const [maxTextLength, setMaxTextLength] = useState<number>(20000)
@@ -157,6 +159,7 @@ export default function EducationalAnalyzer() {
   useEffect(() => {
     loadModels()
     fetchConfig()
+    loadStudentCharacter()
   }, [])
 
   const fetchConfig = async () => {
@@ -169,6 +172,21 @@ export default function EducationalAnalyzer() {
       }
     } catch (error) {
       console.error('Failed to fetch config:', error)
+    }
+  }
+
+  const loadStudentCharacter = async () => {
+    try {
+      const response = await fetch('/api/profile/character')
+      if (!response.ok) {
+        throw new Error('Failed to load student character')
+      }
+
+      const data = await response.json()
+      setStudentCharacter(normalizeStudentCharacter(data.studentCharacter))
+    } catch (error) {
+      console.error('Failed to load student character:', error)
+      setStudentCharacter(DEFAULT_STUDENT_CHARACTER)
     }
   }
 
@@ -188,7 +206,7 @@ export default function EducationalAnalyzer() {
             } else {
               throw new Error('not found')
             }
-          } catch (err) {
+          } catch {
             results.push({ metric, prompt: 'Промпт не найден' })
           }
         })
@@ -411,10 +429,13 @@ export default function EducationalAnalyzer() {
 
       console.log('Calling apiService.analyze...')
       console.log('Using metric mode:', metricMode)
+      const personaForRequest = normalizeStudentCharacter(studentCharacter)
+
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: modelToUse || undefined,
         metricMode: metricMode,
+        studentCharacter: personaForRequest,
       })
       console.log('✅ Analysis started successfully!')
       console.log('Analysis ID:', analysisId)

@@ -8,6 +8,7 @@ import {
   getPromptSnippet,
   type Metric,
 } from '@/src/utils/prompts'
+import { applyStudentCharacter } from '@/src/utils/studentCharacter'
 import { ClaudeProvider } from '@/src/providers/claude'
 import { OpenAIProvider } from '@/src/providers/openai'
 import { GeminiProvider } from '@/src/providers/gemini'
@@ -91,6 +92,7 @@ export class LLMService {
     content: string,
     metric: Metric,
     customPromptText?: string,
+    studentCharacter?: string,
   ): Promise<GenerateResult> {
     const modelConfig = modelsManager.getModelConfig(this.currentProviderId)
     if (!modelConfig) {
@@ -126,6 +128,8 @@ export class LLMService {
 Материал для анализа:
 {{content}}`
     }
+
+    prompt = applyStudentCharacter(prompt, studentCharacter)
     
     const filledPrompt = fillPromptTemplate(prompt, content)
 
@@ -187,13 +191,14 @@ export class LLMService {
     metric: Metric,
     maxRetries?: number,
     customPromptText?: string,
+    studentCharacter?: string,
   ): Promise<GenerateResult> {
     const retries = maxRetries || env.server?.MAX_RETRIES || 3
     let lastError: Error | undefined
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        const result = await this.analyze(content, metric, customPromptText)
+        const result = await this.analyze(content, metric, customPromptText, studentCharacter)
 
         if (attempt > 1) {
           logger.llmSuccess({ metric, attempt })
@@ -239,7 +244,7 @@ export class LLMService {
             })
 
             try {
-              return await this.analyze(content, metric, customPromptText)
+              return await this.analyze(content, metric, customPromptText, studentCharacter)
             } catch (fallbackError) {
               // Restore original model
               this.currentProviderId = oldModel
@@ -301,6 +306,7 @@ ${content.substring(0, 1500)}...
     metric: Metric,
     providerId: string,
     customPromptText?: string,
+    studentCharacter?: string,
   ): Promise<GenerateResult> {
     const oldModel = this.currentProviderId
     this.currentProviderId = providerId
@@ -312,7 +318,7 @@ ${content.substring(0, 1500)}...
         reason: 'Explicit model selection',
       })
 
-      return await this.analyze(content, metric, customPromptText)
+      return await this.analyze(content, metric, customPromptText, studentCharacter)
     } finally {
       this.currentProviderId = oldModel
     }

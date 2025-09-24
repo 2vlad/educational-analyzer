@@ -13,6 +13,7 @@ import ScoreSpeedometer from '@/components/ScoreSpeedometer'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import { apiService, type AnalysisResult as ApiAnalysisResult } from '@/src/services/api'
 import PromptGuide from '@/components/settings/PromptGuide'
+import { DEFAULT_STUDENT_CHARACTER, normalizeStudentCharacter } from '@/src/utils/studentCharacter'
 import {
   Dialog,
   DialogContent,
@@ -33,15 +34,94 @@ export default function CustomMetricsPage() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [studentCharacter, setStudentCharacter] = useState(DEFAULT_STUDENT_CHARACTER)
+  const [initialStudentCharacter, setInitialStudentCharacter] = useState(DEFAULT_STUDENT_CHARACTER)
+  const [characterLoading, setCharacterLoading] = useState(false)
+  const [characterSaving, setCharacterSaving] = useState(false)
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
   const [promptsLoading, setPromptsLoading] = useState(false)
   const [allPrompts, setAllPrompts] = useState<Array<{ metric: string; prompt: string }>>([])
+  const characterLimit = 500
+  const trimmedCurrentCharacter = studentCharacter.trim()
+  const trimmedInitialCharacter = initialStudentCharacter.trim()
+  const hasCharacterChanges = trimmedCurrentCharacter !== trimmedInitialCharacter
+
+  const renderStudentCharacterEditor = () => (
+    <div className="mb-8">
+      <div className="flex items-start justify-between mb-2">
+        <label
+          className="block text-[15px] font-normal text-gray-500"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          Характер Лёхи
+        </label>
+        {characterLoading && (
+          <span className="text-xs text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Загружаем...
+          </span>
+        )}
+      </div>
+      <p
+        className="text-sm text-gray-600 mb-3"
+        style={{ fontFamily: 'Inter, sans-serif', lineHeight: '140%' }}
+      >
+        Опишите, каким тоном и в каком образе отвечает ваш Лёха. Например: «Ты — Лёха, увлечённый
+        студент айти-колледжа, говоришь дружелюбно, но по делу».
+      </p>
+      <div className="relative">
+        <textarea
+          value={studentCharacter}
+          disabled={characterLoading || characterSaving}
+          onChange={(event) => {
+            const value = event.target.value
+            if (value.length <= characterLimit) {
+              setStudentCharacter(value)
+            }
+          }}
+          maxLength={characterLimit}
+          placeholder="Ты — Лёха, ..."
+          className="w-full min-h-[110px] bg-[#F5F5F5] rounded-[20px] px-4 py-3 text-[15px] text-black border border-transparent focus:border-black focus:outline-none focus:ring-0 transition-colors"
+          style={{ fontFamily: 'Inter, sans-serif', lineHeight: '150%' }}
+        />
+        <div className="absolute bottom-3 right-4 text-xs text-gray-400">
+          {studentCharacter.length}/{characterLimit}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        {!user && (
+          <span className="text-xs text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Войдите, чтобы сохранить характер и использовать его в анализе.
+          </span>
+        )}
+        <button
+          onClick={handleSaveStudentCharacter}
+          disabled={!user || characterSaving || characterLoading || !hasCharacterChanges}
+          className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm transition-colors ${
+            !user || characterSaving || characterLoading || !hasCharacterChanges
+              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              : 'bg-black text-white hover:bg-gray-800'
+          }`}
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          {characterSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Сохраняем...
+            </>
+          ) : (
+            'Сохранить характер'
+          )}
+        </button>
+      </div>
+    </div>
+  )
 
   useEffect(() => {
     // Fetch metrics when component mounts or user changes
     fetchMetrics()
+    loadStudentCharacter()
   }, [user])
 
   const fetchMetrics = async () => {
@@ -134,6 +214,30 @@ export default function CustomMetricsPage() {
       ])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadStudentCharacter = async () => {
+    setCharacterLoading(true)
+    try {
+      const response = await fetch('/api/profile/character')
+      if (!response.ok) {
+        throw new Error('Failed to load student character')
+      }
+
+      const data = await response.json()
+      const normalized = normalizeStudentCharacter(data.studentCharacter)
+      setStudentCharacter(normalized)
+      setInitialStudentCharacter(normalized)
+    } catch (error) {
+      console.error('Error loading student character:', error)
+      setStudentCharacter(DEFAULT_STUDENT_CHARACTER)
+      setInitialStudentCharacter(DEFAULT_STUDENT_CHARACTER)
+      if (user) {
+        toast.error('Не удалось загрузить характер Лёхи')
+      }
+    } finally {
+      setCharacterLoading(false)
     }
   }
 
@@ -272,6 +376,45 @@ export default function CustomMetricsPage() {
     }
   }
 
+  const handleSaveStudentCharacter = async () => {
+    if (!user) {
+      toast.error('Войдите в систему, чтобы сохранить характер Лёхи')
+      return
+    }
+
+    if (trimmedCurrentCharacter.length < 5) {
+      toast.error('Добавьте чуть больше деталей о характере Лёхи')
+      return
+    }
+
+    setCharacterSaving(true)
+    try {
+      const response = await fetch('/api/profile/character', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentCharacter: trimmedCurrentCharacter }),
+      })
+
+      if (!response.ok) {
+        const error = await response
+          .json()
+          .catch(() => ({ error: 'Не удалось сохранить характер' }))
+        throw new Error(error.error || 'Не удалось сохранить характер')
+      }
+
+      const data = await response.json()
+      const normalized = normalizeStudentCharacter(data.studentCharacter)
+      setStudentCharacter(normalized)
+      setInitialStudentCharacter(normalized)
+      toast.success('Характер Лёхи обновлён')
+    } catch (error) {
+      console.error('Error updating student character:', error)
+      toast.error(error instanceof Error ? error.message : 'Не удалось сохранить характер')
+    } finally {
+      setCharacterSaving(false)
+    }
+  }
+
   const handleAnalyze = async () => {
     if (!content.trim() || isAnalyzing) return
 
@@ -284,10 +427,13 @@ export default function CustomMetricsPage() {
       // Get selected model from localStorage
       const selectedModel = globalThis.localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
 
+      const personaForRequest = normalizeStudentCharacter(studentCharacter)
+
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: selectedModel,
         metricMode: 'custom',
+        studentCharacter: personaForRequest,
       })
 
       // Poll for results
@@ -345,36 +491,6 @@ export default function CustomMetricsPage() {
       toast.error(error.message || 'Failed to analyze content')
       setCurrentScreen('input')
       setIsAnalyzing(false)
-    }
-  }
-
-  const loadPrompt = async (metric: string) => {
-    try {
-      setPromptsLoading(true)
-      setPromptError(null)
-      const modelId =
-        globalThis.localStorage.getItem('selectedModel') ||
-        analysisResult?.model_used ||
-        'yandex-gpt-pro'
-      const res = await fetch(
-        `/api/prompt?metric=${encodeURIComponent(metric)}&model=${encodeURIComponent(modelId)}`,
-      )
-      if (!res.ok) throw new Error('Failed to load prompt')
-      const data = await res.json()
-      // Store prompt text if needed in the future
-      console.log(data.prompt)
-    } catch (e: unknown) {
-      // Fallback: try local custom metric prompt_text
-      const local = metrics.find((m) => m.id === metric || m.name === metric)
-      if (local?.prompt_text) {
-        setPromptError(null)
-        // Store prompt text if needed in the future
-        console.log(local.prompt_text)
-      } else {
-        setPromptError((e as Error)?.message || 'Ошибка загрузки промпта')
-      }
-    } finally {
-      setPromptsLoading(false)
     }
   }
 
@@ -454,6 +570,8 @@ export default function CustomMetricsPage() {
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
+            <Toaster position="top-right" />
+            {renderStudentCharacterEditor()}
             {/* Prompt link on results */}
             {currentScreen === 'results' && (
               <div className="flex justify-end mb-2">
@@ -745,6 +863,9 @@ export default function CustomMetricsPage() {
             </button>
           </header>
 
+          {/* Student Character Editor */}
+          {renderStudentCharacterEditor()}
+
           {/* Model Selector */}
           <div className="mb-6">
             <label
@@ -755,8 +876,6 @@ export default function CustomMetricsPage() {
             </label>
             <ModelSelector />
           </div>
-
-          
 
           {/* Main Content - Metric List */}
           {user ? (
@@ -788,7 +907,10 @@ export default function CustomMetricsPage() {
                   </div>
                 </div>
                 {/* Prompts dialog attached to metrics box */}
-                <Dialog open={promptOpen && currentScreen === 'input'} onOpenChange={(o) => setPromptOpen(o)}>
+                <Dialog
+                  open={promptOpen && currentScreen === 'input'}
+                  onOpenChange={(o) => setPromptOpen(o)}
+                >
                   <DialogContent className="sm:max-w-[760px]">
                     <DialogHeader>
                       <DialogTitle>Промпты всех метрик</DialogTitle>

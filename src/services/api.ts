@@ -4,6 +4,7 @@ export interface AnalyzeRequest {
   content: string
   modelId?: string
   metricMode?: 'lx' | 'custom'
+  studentCharacter?: string
 }
 
 export interface AnalyzeResponse {
@@ -74,12 +75,12 @@ class ApiService {
     })
 
     // Include session ID in headers for guest users
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
-    
-    if (typeof window !== 'undefined') {
-      const sessionId = localStorage.getItem('session_id')
+
+    if (typeof window !== 'undefined' && globalThis.localStorage) {
+      const sessionId = globalThis.localStorage.getItem('session_id')
       if (sessionId) {
         headers['x-session-id'] = sessionId
       }
@@ -103,8 +104,8 @@ class ApiService {
     console.log('[API] /api/analyze success, analysis ID:', data.analysisId)
     
     // Store session ID for guest users
-    if (data.sessionId && typeof window !== 'undefined') {
-      localStorage.setItem('session_id', data.sessionId)
+    if (data.sessionId && typeof window !== 'undefined' && globalThis.localStorage) {
+      globalThis.localStorage.setItem('session_id', data.sessionId)
     }
     
     return data

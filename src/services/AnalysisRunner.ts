@@ -20,6 +20,7 @@ export interface AnalysisInput {
   programId?: string
   programRunId?: string
   lessonId?: string
+  studentCharacter?: string
 }
 
 export interface MetricConfig {
@@ -127,6 +128,7 @@ export async function runAnalysisInternal(
     metricConfiguration,
     userId,
     sessionId,
+    studentCharacter,
     // programId, programRunId, lessonId - will be used when database migration is applied
   } = input
 
@@ -150,7 +152,10 @@ export async function runAnalysisInternal(
     // lesson_id: lessonId || null,
     user_id: userId || null,
     session_id: sessionId || null,
-    configuration_snapshot: metricMode === 'custom' ? { metrics } : null,
+    configuration_snapshot:
+      metricMode === 'custom'
+        ? { metrics, studentCharacter }
+        : null,
   }
 
   const { error: insertError } = await supabase.from('analyses').insert(analysisRecord)
@@ -231,12 +236,19 @@ export async function runAnalysisInternal(
       }
 
       const result = modelId
-        ? await llmService.analyzeWithModel(content, metric.name as any, modelId, customPromptText)
+        ? await llmService.analyzeWithModel(
+            content,
+            metric.name as any,
+            modelId,
+            customPromptText,
+            studentCharacter,
+          )
         : await llmService.analyzeWithRetry(
             content,
             metric.name as any,
             undefined,
             customPromptText,
+            studentCharacter,
           )
 
       // Clear the progress interval

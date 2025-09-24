@@ -8,6 +8,7 @@ import {
   getPromptSnippet,
   type Metric,
 } from '@/src/utils/prompts'
+import { applyStudentCharacter } from '@/src/utils/studentCharacter'
 import { ClaudeProvider } from '@/src/providers/claude'
 import { OpenAIProvider } from '@/src/providers/openai'
 import { GeminiProvider } from '@/src/providers/gemini'
@@ -20,7 +21,6 @@ import {
   DynamicAnalysisOptions,
   DEFAULT_METRIC_CONFIGS,
   validateMetricConfigs,
-  ValidationError,
 } from '@/src/types/metrics'
 
 /**
@@ -72,20 +72,35 @@ export class DynamicLLMService {
   /**
    * Analyze content using a single metric configuration
    */
-  private async analyzeSingleMetric(content: string, config: MetricConfig): Promise<MetricResult> {
+  private async analyzeSingleMetric(
+    content: string,
+    config: MetricConfig,
+    studentCharacter?: string,
+  ): Promise<MetricResult> {
     const modelConfig = modelsManager.getModelConfig(this.currentProviderId)
     if (!modelConfig) {
       throw new Error(`Model configuration not found: ${this.currentProviderId}`)
     }
 
-    // Replace {{content}} placeholder with actual content
-    const filledPrompt = config.prompt_text.replace('{{content}}', content)
+    const promptFromConfig = applyStudentCharacter(config.prompt_text, studentCharacter)
+    let promptToUse = promptFromConfig.replace('{{content}}', content)
+
+    try {
+      const providerFamily = getProviderFamily(this.currentProviderId)
+      const existingPrompt = getPrompt(providerFamily, config.id as Metric)
+      if (existingPrompt) {
+        const adjustedPrompt = applyStudentCharacter(existingPrompt, studentCharacter)
+        promptToUse = fillPromptTemplate(adjustedPrompt, content)
+      }
+    } catch {
+      // If existing prompt doesn't exist, use the dynamic one
+    }
 
     console.log('\n📝 DynamicLLMService.analyzeSingleMetric()')
     console.log('Metric:', config.name)
     console.log('Model:', this.currentProviderId)
     console.log('Content length:', content.length)
-    console.log('Prompt length:', filledPrompt.length)
+    console.log('Prompt length:', promptToUse.length)
 
     // Log request start
     const analysisId = globalThis.crypto.randomUUID()
@@ -93,26 +108,13 @@ export class DynamicLLMService {
       analysisId,
       metric: config.id as Metric,
       model: this.currentProviderId,
-      promptLength: filledPrompt.length,
+      promptLength: promptToUse.length,
       contentLength: content.length,
     })
 
     try {
       // Get provider and generate
       const provider = this.getProvider(this.currentProviderId)
-
-      // For backward compatibility, try to load existing prompt file if it exists
-      // Otherwise use the dynamic prompt
-      let promptToUse = filledPrompt
-      try {
-        const providerFamily = getProviderFamily(this.currentProviderId)
-        const existingPrompt = getPrompt(providerFamily, config.id as Metric)
-        if (existingPrompt) {
-          promptToUse = fillPromptTemplate(existingPrompt, content)
-        }
-      } catch {
-        // If existing prompt doesn't exist, use the dynamic one
-      }
 
       const result = await provider.generate(
         promptToUse,
@@ -146,7 +148,7 @@ export class DynamicLLMService {
         model: this.currentProviderId,
         error: error instanceof Error ? error.message : 'Unknown error',
         retryCount: 0,
-        promptSnippet: getPromptSnippet(filledPrompt),
+        promptSnippet: getPromptSnippet(promptToUse),
       })
 
       // Return error result
@@ -228,7 +230,9 @@ export class DynamicLLMService {
     // Process all metrics in parallel for better performance
     const startTime = Date.now()
     const results = await Promise.all(
-      configsToProcess.map((config) => this.analyzeSingleMetric(content, config)),
+      configsToProcess.map((config) =>
+        this.analyzeSingleMetric(content, config, options.studentCharacter),
+      ),
     )
 
     // Calculate overall score (average of all scores)
@@ -256,7 +260,11 @@ export class DynamicLLMService {
    * Backward compatible analyze method for single metric
    * Used when migrating from the old system
    */
-  async analyze(content: string, metric: Metric): Promise<GenerateResult> {
+  async analyze(
+    content: string,
+    metric: Metric,
+    studentCharacter?: string,
+  ): Promise<GenerateResult> {
     // Find matching config from defaults
     const config = this.defaultConfigs.find((c) => c.id === metric)
     if (!config) {
@@ -271,8 +279,7 @@ export class DynamicLLMService {
 
     // Get prompt for the provider family
     const providerFamily = getProviderFamily(this.currentProviderId)
-    const prompt = getPrompt(providerFamily, metric)
-    const filledPrompt = fillPromptTemplate(prompt, content)
+    const prompt = applyStudentCharacter(getPrompt(providerFamily, metric), studentCharacter)
 
     // Get provider and generate
     const provider = this.getProvider(this.currentProviderId)
@@ -291,13 +298,14 @@ export class DynamicLLMService {
     content: string,
     metric: Metric,
     maxRetries?: number,
+    studentCharacter?: string,
   ): Promise<GenerateResult> {
     const retries = maxRetries || env.server?.MAX_RETRIES || 3
     let lastError: Error | undefined
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        const result = await this.analyze(content, metric)
+        const result = await this.analyze(content, metric, studentCharacter)
 
         if (attempt > 1) {
           logger.llmSuccess({ metric, attempt })

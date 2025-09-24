@@ -6,9 +6,15 @@ export function normalizeStudentCharacter(character?: string): string {
   if (!trimmed) {
     return DEFAULT_STUDENT_CHARACTER
   }
-  // Replace multiple spaces with single and ensure ends with a period
+  // Replace multiple spaces with single
   const normalized = trimmed.replace(/\s+/g, ' ')
-  return normalized.endsWith('.') ? normalized : `${normalized}.`
+
+  // Preserve expressive endings like ! or ? instead of forcing a trailing period
+  if (/[.!?…]$/u.test(normalized)) {
+    return normalized
+  }
+
+  return `${normalized}.`
 }
 
 export function applyStudentCharacter(prompt: string, character?: string): string {
@@ -17,7 +23,7 @@ export function applyStudentCharacter(prompt: string, character?: string): strin
     return prompt
   }
 
-  const personaPattern = /^Ты\s+—[^.]*\./
+  const personaPattern = /^Ты\s+—[^.!?…]*[.!?…]/u
   if (personaPattern.test(prompt)) {
     return prompt.replace(personaPattern, persona)
   }

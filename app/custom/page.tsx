@@ -218,6 +218,13 @@ export default function CustomMetricsPage() {
   }
 
   const loadStudentCharacter = async () => {
+    if (!user) {
+      setStudentCharacter(DEFAULT_STUDENT_CHARACTER)
+      setInitialStudentCharacter(DEFAULT_STUDENT_CHARACTER)
+      setCharacterLoading(false)
+      return
+    }
+
     setCharacterLoading(true)
     try {
       const response = await fetch('/api/profile/character')
@@ -233,9 +240,7 @@ export default function CustomMetricsPage() {
       console.error('Error loading student character:', error)
       setStudentCharacter(DEFAULT_STUDENT_CHARACTER)
       setInitialStudentCharacter(DEFAULT_STUDENT_CHARACTER)
-      if (user) {
-        toast.error('Не удалось загрузить характер Лёхи')
-      }
+      toast.error('Не удалось загрузить характер Лёхи')
     } finally {
       setCharacterLoading(false)
     }

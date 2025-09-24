@@ -51,6 +51,8 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
 })
 
+type ClientEnv = z.infer<typeof clientEnvSchema>
+
 // Validate that at least one LLM provider is configured
 const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
   if (!env.ANTHROPIC_API_KEY && !env.OPENAI_API_KEY && !env.GOOGLE_API_KEY && !env.YANDEX_API_KEY) {
@@ -61,7 +63,9 @@ const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
 // Validate that at least one Supabase service key is configured
 const validateSupabaseKeys = (env: z.infer<typeof serverEnvSchema>) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SUPABASE_SERVICE_KEY) {
-    console.warn('⚠️ Warning: No SUPABASE_SERVICE_ROLE_KEY configured. Database operations may fail.')
+    console.warn(
+      '⚠️ Warning: No SUPABASE_SERVICE_ROLE_KEY configured. Database operations may fail.',
+    )
   }
 }
 
@@ -78,20 +82,23 @@ if (typeof window === 'undefined') {
     console.log('- GOOGLE_API_KEY:', process.env.GOOGLE_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_API_KEY:', process.env.YANDEX_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_FOLDER_ID:', process.env.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
-    console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET')
+    console.log(
+      '- SUPABASE_SERVICE_ROLE_KEY:',
+      process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET',
+    )
     console.log('- SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT SET')
     console.log('- RATE_LIMIT_SALT:', process.env.RATE_LIMIT_SALT ? 'SET' : 'NOT SET')
-    
+
     serverEnv = serverEnvSchema.parse(process.env)
-    
+
     console.log('✅ Schema validation passed')
-    
+
     validateLLMProviders(serverEnv)
     console.log('✅ LLM providers validated')
-    
+
     validateSupabaseKeys(serverEnv)
     console.log('✅ Supabase keys checked')
-    
+
     console.log('✅ Environment validated successfully')
     console.log('Available API providers:')
     if (serverEnv.ANTHROPIC_API_KEY) console.log('  - Anthropic')
@@ -110,11 +117,38 @@ if (typeof window === 'undefined') {
   }
 }
 
-// Parse and validate client environment
-const clientEnv = clientEnvSchema.parse({
+// Parse and validate client environment when possible
+const rawClientEnv = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-})
+}
+
+const clientEnvResult = clientEnvSchema.safeParse(rawClientEnv)
+
+if (!clientEnvResult.success) {
+  console.warn('⚠️ Supabase client environment variables are not fully configured.')
+  console.warn(
+    '   NEXT_PUBLIC_SUPABASE_URL set:',
+    rawClientEnv.NEXT_PUBLIC_SUPABASE_URL ? 'YES' : 'NO',
+  )
+  console.warn(
+    '   NEXT_PUBLIC_SUPABASE_ANON_KEY set:',
+    rawClientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES' : 'NO',
+  )
+  console.warn('   Features that require Supabase will fail until these values are provided.')
+}
+
+const clientEnv: ClientEnv | null = clientEnvResult.success ? clientEnvResult.data : null
+
+const ensureClientEnv = (): ClientEnv => {
+  if (!clientEnvResult.success) {
+    throw new Error(
+      'Supabase client environment variables NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be provided.',
+    )
+  }
+
+  return clientEnvResult.data
+}
 
 // Export validated environment variables
 export const env = {
@@ -126,8 +160,11 @@ export const env = {
 
   // Helper to check if we're on server
   isServer: typeof window === 'undefined',
+
+  // Runtime assertion for client env
+  requireClient: ensureClientEnv,
 }
 
 // Type exports for use across the app
 export type ServerEnv = z.infer<typeof serverEnvSchema>
-export type ClientEnv = z.infer<typeof clientEnvSchema>
+export type { ClientEnv }

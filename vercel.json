@@ -10,12 +10,6 @@
   "git": {
     "deploymentEnabled": true
   },
-  "crons": [
-    {
-      "path": "/api/worker/tick",
-      "schedule": "* * * * *"
-    }
-  ],
   "functions": {
     "app/api/analyze/route.ts": {
       "maxDuration": 60

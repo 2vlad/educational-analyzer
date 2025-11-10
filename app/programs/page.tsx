@@ -5,6 +5,7 @@ import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ProgramsList from '@/components/programs/ProgramsList'
 import ProgramLessons from '@/components/programs/ProgramLessons'
 import AddProgramModal from '@/components/programs/AddProgramModal'
+import ProgressTracker from '@/components/programs/ProgressTracker'
 import { apiService, type Program, type ProgramLesson, type CreateProgramRequest } from '@/src/services/api'
 import { useRouter } from 'next/navigation'
 
@@ -104,13 +105,22 @@ export default function ProgramsPage() {
         maxConcurrency: 3,
       })
       
-      alert(message)
+      // Don't show alert, ProgressTracker will appear automatically
+      console.log(message)
       
-      // Reload programs to update run status
+      // Reload programs to update run status and trigger ProgressTracker
       await loadPrograms()
     } catch (err: any) {
       console.error('Failed to start analysis:', err)
       alert(err.message || 'Не удалось запустить анализ')
+    }
+  }
+
+  const handleProgressComplete = async () => {
+    // Reload programs when run completes
+    await loadPrograms()
+    if (selectedProgram) {
+      await loadLessons(selectedProgram.id)
     }
   }
 
@@ -200,31 +210,44 @@ export default function ProgramsPage() {
           onDeleteProgram={handleDeleteProgram}
         />
 
-        {/* Main content area with lessons */}
+        {/* Main content area with progress tracker and lessons */}
         <div className="flex-1 overflow-y-auto">
           {selectedProgram && (
-            <ProgramLessons
-              program={{
-                id: selectedProgram.id,
-                title: selectedProgram.name,
-                lessonsCount: lessons.length,
-                completedCount: selectedProgram.lastRun?.succeeded || 0,
-                status: selectedProgram.lastRun?.status === 'completed' ? 'completed' : 
-                        selectedProgram.lastRun?.status === 'running' ? 'active' : 'draft'
-              }}
-              lessons={lessons.map((lesson, index) => ({
-                id: lesson.id,
-                programId: lesson.program_id,
-                title: lesson.title,
-                status: 'not-started' as const, // TODO: Get actual status from analyses
-                order: lesson.sort_order,
-              }))}
-              loading={lessonsLoading}
-            />
+            <div className="p-6 space-y-6">
+              {/* Progress Tracker - показываем если есть активный run */}
+              {selectedProgram.lastRun && 
+               ['running', 'paused', 'queued'].includes(selectedProgram.lastRun.status) && (
+                <ProgressTracker
+                  programId={selectedProgram.id}
+                  programName={selectedProgram.name}
+                  onComplete={handleProgressComplete}
+                />
+              )}
+
+              {/* Lessons list */}
+              <ProgramLessons
+                program={{
+                  id: selectedProgram.id,
+                  title: selectedProgram.name,
+                  lessonsCount: lessons.length,
+                  completedCount: selectedProgram.lastRun?.succeeded || 0,
+                  status: selectedProgram.lastRun?.status === 'completed' ? 'completed' : 
+                          selectedProgram.lastRun?.status === 'running' ? 'active' : 'draft'
+                }}
+                lessons={lessons.map((lesson, index) => ({
+                  id: lesson.id,
+                  programId: lesson.program_id,
+                  title: lesson.title,
+                  status: 'not-started' as const, // TODO: Get actual status from analyses
+                  order: lesson.sort_order,
+                }))}
+                loading={lessonsLoading}
+              />
+            </div>
           )}
           
           {!selectedProgram && programs.length === 0 && (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full p-6">
               <div className="text-center">
                 <p className="text-gray-600 mb-4">У вас пока нет программ</p>
                 <button

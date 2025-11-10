@@ -94,7 +94,7 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -107,7 +107,7 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
 
   if (lessons.length === 0) {
     return (
-      <div className="p-6">
+      <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{program.title}</h1>
           <p className="text-gray-600 mt-1">Уроки еще не загружены</p>
@@ -124,7 +124,7 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
   }
 
   return (
-    <div className="p-6">
+    <div>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{program.title}</h1>

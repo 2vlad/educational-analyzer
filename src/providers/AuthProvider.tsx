@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/src/lib/supabase/client'
 import { User, Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import { getAuthCallbackUrl } from '@/src/utils/url'
 
 interface AuthContextType {
   user: User | null
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getAuthCallbackUrl(),
         },
       })
       if (error) throw error
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: getAuthCallbackUrl(),
         },
       })
       if (error) throw error
@@ -100,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: getAuthCallbackUrl(),
         },
       })
       if (error) throw error

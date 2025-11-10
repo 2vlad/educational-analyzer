@@ -799,7 +799,6 @@ export default function CustomMetricsPage() {
                 </p>
               </div>
             )}
-          </div>
 
           {/* Content Analysis Section - label placed just above textarea */}
           <div className="mb-6">

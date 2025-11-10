@@ -255,7 +255,6 @@ export default function CustomMetricsPage() {
 
       // Poll for results
       let pollCount = 0
-      const activeMetrics = metrics.filter((m) => m.is_active)
       const progressMessages = activeMetrics.map((m) => `Анализ ${m.name.toLowerCase()}...`)
       let completed = 0
 

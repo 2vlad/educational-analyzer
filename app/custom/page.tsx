@@ -20,6 +20,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  loadGuestMetrics,
+  addGuestMetric,
+  updateGuestMetric,
+  deleteGuestMetric,
+  reorderGuestMetrics,
+  resetGuestMetrics,
+} from '@/src/utils/guestMetrics'
 
 export default function CustomMetricsPage() {
   const { user } = useAuth()
@@ -46,205 +54,147 @@ export default function CustomMetricsPage() {
 
   const fetchMetrics = async () => {
     try {
-      // Only fetch user metrics if authenticated
+      // Fetch metrics based on user authentication status
       if (user) {
+        // Authenticated: fetch from API
         const response = await fetch('/api/configuration')
         if (!response.ok) throw new Error('Failed to fetch metrics')
         const data = await response.json()
         setMetrics(data.configurations || [])
       } else {
-        // Use default LX metrics for non-authenticated users
-        setMetrics([
-          {
-            id: 'logic',
-            name: 'Логика',
-            prompt_text: 'Оцените логическую структуру и аргументацию',
-            display_order: 1,
-            is_active: true,
-          },
-          {
-            id: 'practical',
-            name: 'Польза',
-            prompt_text: 'Оцените практическую применимость',
-            display_order: 2,
-            is_active: true,
-          },
-          {
-            id: 'complexity',
-            name: 'Сложность',
-            prompt_text: 'Оцените глубину и сложность содержания',
-            display_order: 3,
-            is_active: true,
-          },
-          {
-            id: 'interest',
-            name: 'Интерес',
-            prompt_text: 'Оцените вовлеченность и уровень интереса',
-            display_order: 4,
-            is_active: true,
-          },
-          {
-            id: 'care',
-            name: 'Забота',
-            prompt_text: 'Оцените внимание к деталям и качество',
-            display_order: 5,
-            is_active: true,
-          },
-        ])
+        // Guest: load from LocalStorage
+        const guestMetrics = loadGuestMetrics()
+        setMetrics(guestMetrics)
       }
     } catch (error) {
       console.error('Error fetching metrics:', error)
-      // Use default metrics as fallback
-      setMetrics([
-        {
-          id: 'logic',
-          name: 'Логика',
-          prompt_text: 'Оцените логическую структуру и аргументацию',
-          display_order: 1,
-          is_active: true,
-        },
-        {
-          id: 'practical',
-          name: 'Польза',
-          prompt_text: 'Оцените практическую применимость',
-          display_order: 2,
-          is_active: true,
-        },
-        {
-          id: 'complexity',
-          name: 'Сложность',
-          prompt_text: 'Оцените глубину и сложность содержания',
-          display_order: 3,
-          is_active: true,
-        },
-        {
-          id: 'interest',
-          name: 'Интерес',
-          prompt_text: 'Оцените вовлеченность и уровень интереса',
-          display_order: 4,
-          is_active: true,
-        },
-        {
-          id: 'care',
-          name: 'Забота',
-          prompt_text: 'Оцените внимание к деталям и качество',
-          display_order: 5,
-          is_active: true,
-        },
-      ])
+      // Use LocalStorage as fallback for guests
+      if (!user) {
+        const guestMetrics = loadGuestMetrics()
+        setMetrics(guestMetrics)
+      }
+      toast.error('Не удалось загрузить метрики')
     } finally {
       setLoading(false)
     }
   }
 
   const handleReorder = async (updatedMetrics: MetricConfig[]) => {
-    // Check if user is authenticated
-    if (!user) {
-      toast.error('Войдите в систему, чтобы изменять порядок метрик')
-      return
-    }
-
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(updatedMetrics)
 
     try {
-      const configurations = updatedMetrics.map((metric, index) => ({
-        id: metric.id,
-        display_order: index + 1,
-      }))
+      if (user) {
+        // Authenticated: save to API
+        const configurations = updatedMetrics.map((metric, index) => ({
+          id: metric.id,
+          display_order: index + 1,
+        }))
 
-      const response = await fetch('/api/configuration/reorder', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ configurations }),
-      })
+        const response = await fetch('/api/configuration/reorder', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ configurations }),
+        })
 
-      if (!response.ok) throw new Error('Failed to reorder metrics')
-      toast.success('Metrics reordered successfully')
+        if (!response.ok) throw new Error('Failed to reorder metrics')
+        toast.success('Порядок метрик обновлен')
+      } else {
+        // Guest: save to LocalStorage
+        reorderGuestMetrics(updatedMetrics)
+        toast.success('Порядок метрик обновлен')
+      }
     } catch (error) {
       // Rollback on error
       setMetrics(previousMetrics)
       console.error('Error reordering metrics:', error)
-      toast.error('Failed to reorder metrics')
+      toast.error('Не удалось изменить порядок метрик')
     }
   }
 
   const handleAddMetric = async (metric: Omit<MetricConfig, 'id'>) => {
-    // Check if user is authenticated
-    if (!user) {
-      toast.error('Войдите в систему, чтобы добавлять метрики')
-      return
-    }
-
     try {
-      const response = await fetch('/api/configuration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(metric),
-      })
+      if (user) {
+        // Authenticated: save to API
+        const response = await fetch('/api/configuration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(metric),
+        })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to add metric')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to add metric')
+        }
+
+        const data = await response.json()
+        setMetrics([...metrics, data.configuration])
+        toast.success('Метрика добавлена')
+      } else {
+        // Guest: save to LocalStorage
+        const newMetric = addGuestMetric(metric)
+        setMetrics([...metrics, newMetric])
+        toast.success('Метрика добавлена')
       }
-
-      const data = await response.json()
-      setMetrics([...metrics, data.configuration])
+      
       setShowAddForm(false)
-      toast.success('Metric added successfully')
     } catch (error) {
       console.error('Error adding metric:', error)
-      toast.error(error.message || 'Failed to add metric')
+      toast.error('Не удалось добавить метрику')
     }
   }
 
   const handleUpdateMetric = async (id: string, updates: Partial<MetricConfig>) => {
-    // Check if user is authenticated
-    if (!user) {
-      toast.error('Войдите в систему, чтобы редактировать метрики')
-      return
-    }
-
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(metrics.map((m) => (m.id === id ? { ...m, ...updates } : m)))
 
     try {
-      const response = await fetch(`/api/configuration/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      })
+      if (user) {
+        // Authenticated: save to API
+        const response = await fetch(`/api/configuration/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        })
 
-      if (!response.ok) throw new Error('Failed to update metric')
-      toast.success('Metric updated successfully')
+        if (!response.ok) throw new Error('Failed to update metric')
+        toast.success('Метрика обновлена')
+      } else {
+        // Guest: save to LocalStorage
+        const success = updateGuestMetric(id, updates)
+        if (!success) throw new Error('Metric not found')
+        toast.success('Метрика обновлена')
+      }
     } catch (error) {
       // Rollback on error
       setMetrics(previousMetrics)
       console.error('Error updating metric:', error)
-      toast.error('Failed to update metric')
+      toast.error('Не удалось обновить метрику')
     }
   }
 
   const handleDeleteMetric = async (id: string, _hard: boolean) => {
-    // Check if user is authenticated
-    if (!user) {
-      toast.error('Войдите в систему, чтобы удалять метрики')
-      return
-    }
-
     // Optimistic update
     const previousMetrics = [...metrics]
     setMetrics(metrics.filter((m) => m.id !== id))
 
     try {
-      const response = await fetch(`/api/configuration/${id}`, {
-        method: 'DELETE',
-      })
+      if (user) {
+        // Authenticated: delete from API
+        const response = await fetch(`/api/configuration/${id}`, {
+          method: 'DELETE',
+        })
 
-      if (!response.ok) throw new Error('Failed to delete metric')
-      toast.success('Метрика успешно удалена')
+        if (!response.ok) throw new Error('Failed to delete metric')
+        toast.success('Метрика удалена')
+      } else {
+        // Guest: delete from LocalStorage
+        const success = deleteGuestMetric(id)
+        if (!success) throw new Error('Metric not found')
+        toast.success('Метрика удалена')
+      }
     } catch (error) {
       // Rollback on error
       setMetrics(previousMetrics)
@@ -256,17 +206,25 @@ export default function CustomMetricsPage() {
   const handleResetToDefaults = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/configuration/reset', {
-        method: 'POST',
-      })
+      if (user) {
+        // Authenticated: reset via API
+        const response = await fetch('/api/configuration/reset', {
+          method: 'POST',
+        })
 
-      if (!response.ok) throw new Error('Failed to reset metrics')
-      const data = await response.json()
-      setMetrics(data.configurations || [])
-      toast.success('Metrics reset to defaults')
+        if (!response.ok) throw new Error('Failed to reset metrics')
+        const data = await response.json()
+        setMetrics(data.configurations || [])
+        toast.success('Метрики сброшены к стандартным')
+      } else {
+        // Guest: reset LocalStorage
+        const defaultMetrics = resetGuestMetrics()
+        setMetrics(defaultMetrics)
+        toast.success('Метрики сброшены к стандартным')
+      }
     } catch (error) {
       console.error('Error resetting metrics:', error)
-      toast.error('Failed to reset metrics')
+      toast.error('Не удалось сбросить метрики')
     } finally {
       setLoading(false)
     }
@@ -284,10 +242,15 @@ export default function CustomMetricsPage() {
       // Get selected model from localStorage
       const selectedModel = globalThis.localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
 
+      // Get active metrics to send to the API
+      const activeMetrics = metrics.filter((m) => m.is_active)
+      console.log('Sending', activeMetrics.length, 'active metrics to API')
+
       const { analysisId } = await apiService.analyze({
         content: content.trim(),
         modelId: selectedModel,
         metricMode: 'custom',
+        configurations: activeMetrics,
       })
 
       // Poll for results
@@ -759,34 +722,35 @@ export default function CustomMetricsPage() {
           
 
           {/* Main Content - Metric List */}
-          {user ? (
-            <div
-              className="bg-white border border-gray-200 p-6 mb-6"
-              style={{ borderRadius: '20px' }}
-            >
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-[20px] font-semibold text-black">Ваши метрики</h2>
-                  <div className="flex items-center gap-4">
-                    <button
-                      className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
-                      onClick={() => {
-                        const metricIds = metrics.map((m) => m.id)
-                        loadAllPrompts(metricIds)
-                        setPromptOpen(true)
-                      }}
-                    >
-                      Посмотреть промпт
-                    </button>
-                    <button
-                      onClick={() => setShowAddForm(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Добавить
-                    </button>
-                  </div>
+          <div
+            className="bg-white border border-gray-200 p-6 mb-6"
+            style={{ borderRadius: '20px' }}
+          >
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[20px] font-semibold text-black">
+                  {user ? 'Ваши метрики' : 'Мои метрики'}
+                </h2>
+                <div className="flex items-center gap-4">
+                  <button
+                    className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                    onClick={() => {
+                      const metricIds = metrics.map((m) => m.id)
+                      loadAllPrompts(metricIds)
+                      setPromptOpen(true)
+                    }}
+                  >
+                    Посмотреть промпт
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:bg-gray-800 transition-colors text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Добавить
+                  </button>
                 </div>
+              </div>
                 {/* Prompts dialog attached to metrics box */}
                 <Dialog open={promptOpen && currentScreen === 'input'} onOpenChange={(o) => setPromptOpen(o)}>
                   <DialogContent className="sm:max-w-[760px]">
@@ -825,13 +789,17 @@ export default function CustomMetricsPage() {
                 onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
               />
             </div>
-          ) : (
-            <div className="bg-[#F5F5F5] p-6 mb-6" style={{ borderRadius: '20px' }}>
-              <p className="text-center text-gray-600">
-                Войдите в систему, чтобы настроить собственные метрики
-              </p>
-            </div>
-          )}
+            
+            {/* Info for guests */}
+            {!user && (
+              <div className="bg-blue-50 border border-blue-200 p-4 mb-6 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере. 
+                  Войдите в систему, чтобы синхронизировать метрики между устройствами.
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Content Analysis Section - label placed just above textarea */}
           <div className="mb-6">

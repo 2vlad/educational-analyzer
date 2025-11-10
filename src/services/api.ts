@@ -1,9 +1,12 @@
 // Client-side API service for interacting with backend
 
+import type { MetricConfig } from '@/src/types/metrics'
+
 export interface AnalyzeRequest {
   content: string
   modelId?: string
   metricMode?: 'lx' | 'custom'
+  configurations?: MetricConfig[]
 }
 
 export interface AnalyzeResponse {
@@ -71,6 +74,8 @@ class ApiService {
     console.log('[API] Calling /api/analyze with:', {
       contentLength: request.content.length,
       modelId: request.modelId,
+      metricMode: request.metricMode,
+      configurationsCount: request.configurations?.length || 0,
     })
 
     // Include session ID in headers for guest users

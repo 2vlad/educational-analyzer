@@ -11,11 +11,21 @@ export const runtime = 'nodejs'
 // Get max text length from env or use default
 const maxTextLength = env.server?.MAX_TEXT_LENGTH || 20000
 
+// Metric configuration schema
+const metricConfigSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  prompt_text: z.string(),
+  is_active: z.boolean(),
+  display_order: z.number(),
+})
+
 // Request schema
 const analyzeRequestSchema = z.object({
   content: z.string().min(1).max(maxTextLength),
   modelId: z.string().optional(),
   metricMode: z.enum(['lx', 'custom']).optional(),
+  configurations: z.array(metricConfigSchema).optional(),
 })
 
 // Check if content looks like educational material
@@ -86,12 +96,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { content, modelId, metricMode } = validation.data
+    const { content, modelId, metricMode, configurations } = validation.data
 
     console.log('=== ANALYZE REQUEST ===')
     console.log('Model ID received:', modelId)
     console.log('Content length:', content.length)
     console.log('Metric mode:', metricMode)
+    console.log('Custom configurations:', configurations ? `${configurations.length} metrics` : 'none')
 
     // Check if content is educational
     if (!isEducationalContent(content)) {
@@ -135,7 +146,16 @@ export async function POST(request: NextRequest) {
     let metricConfiguration = undefined
     if (metricMode === 'custom') {
       try {
-        if (authUser) {
+        // Priority 1: Use configurations from request (for guest users or override)
+        if (configurations && configurations.length > 0) {
+          // Filter active and sort by display order
+          metricConfiguration = configurations
+            .filter((c) => c.is_active)
+            .sort((a, b) => a.display_order - b.display_order)
+          console.log(`Using ${metricConfiguration.length} custom metrics from request`)
+        }
+        // Priority 2: Fetch from database for authenticated users
+        else if (authUser) {
           // Fetch user's custom metrics
           const { data: configs, error } = await supabaseAdmin
             .from('metric_configurations')
@@ -146,19 +166,19 @@ export async function POST(request: NextRequest) {
 
           if (!error && configs && configs.length > 0) {
             metricConfiguration = configs
-            console.log(`Loaded ${configs.length} custom metrics for user`)
+            console.log(`Loaded ${configs.length} custom metrics from database`)
             // Debug: Log the metrics to see if they have prompt_text
             configs.forEach((config) => {
               console.log(`Metric: ${config.name}, has prompt_text: ${!!config.prompt_text}`)
             })
           } else {
-            console.log('No custom metrics found, using defaults')
+            console.log('No custom metrics found in database, using defaults')
           }
         } else {
-          console.log('No authenticated user, using default metrics for custom mode')
+          console.log('No authenticated user and no configurations provided, using default metrics')
         }
       } catch (error) {
-        console.error('Error fetching custom metrics:', error)
+        console.error('Error processing custom metrics:', error)
         // Will fall back to default metrics
       }
     }

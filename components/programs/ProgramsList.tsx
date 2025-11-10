@@ -1,14 +1,17 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Plus, Download, Play, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Program } from '@/app/(dashboard)/programs/page'
+import type { Program } from '@/app/programs/page'
 
 interface ProgramsListProps {
   programs: Program[]
   selectedProgram: Program | null
   onSelectProgram: (program: Program) => void
   onAddProgram: () => void
+  onEnumerateLessons?: (programId: string) => void
+  onStartAnalysis?: (programId: string) => void
+  onDeleteProgram?: (programId: string) => void
 }
 
 export default function ProgramsList({
@@ -16,6 +19,9 @@ export default function ProgramsList({
   selectedProgram,
   onSelectProgram,
   onAddProgram,
+  onEnumerateLessons,
+  onStartAnalysis,
+  onDeleteProgram,
 }: ProgramsListProps) {
   return (
     <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
@@ -68,6 +74,55 @@ export default function ProgramsList({
                       }}
                     />
                   </div>
+                </div>
+              )}
+              
+              {/* Action buttons */}
+              {selectedProgram?.id === program.id && (
+                <div className="mt-3 flex gap-2">
+                  {program.lessonsCount === 0 && onEnumerateLessons && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEnumerateLessons(program.id)
+                      }}
+                      className="flex-1 text-xs"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Загрузить уроки
+                    </Button>
+                  )}
+                  
+                  {program.lessonsCount > 0 && program.status !== 'active' && onStartAnalysis && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onStartAnalysis(program.id)
+                      }}
+                      className="flex-1 text-xs"
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Запустить
+                    </Button>
+                  )}
+                  
+                  {onDeleteProgram && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDeleteProgram(program.id)
+                      }}
+                      className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
                 </div>
               )}
             </button>

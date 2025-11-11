@@ -179,15 +179,26 @@ export async function runAnalysisInternal(
   const startTime = Date.now()
 
   console.log(`\n📊 Analyzing ${metrics.length} metrics in parallel...`)
+  console.log(`Model ID: ${modelId}`)
+  console.log(`Metric mode: ${metricMode}`)
+  console.log(
+    `Metrics:`,
+    metrics.map((m) => m.name),
+  )
 
   // Generate lesson title first
   let lessonTitle = ''
   try {
+    console.log(`Generating title with model: ${modelId}`)
     const titleResult = await llmService.generateTitle(content, modelId)
     lessonTitle = titleResult.comment || 'Учебный материал'
     console.log('Generated lesson title:', lessonTitle)
   } catch (error) {
     console.error('Failed to generate title:', error)
+    console.error('Title generation error details:', {
+      message: error instanceof Error ? error.message : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     lessonTitle = 'Учебный материал'
   }
 

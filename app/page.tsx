@@ -159,6 +159,15 @@ export default function EducationalAnalyzer() {
   const [batchFiles, setBatchFiles] = useState<
     Array<{ file: globalThis.File; id: string; content?: string; error?: string }>
   >([])
+  const [batchResults, setBatchResults] = useState<
+    Array<{
+      fileName: string
+      analysisId: string
+      result?: ApiAnalysisResult
+      status: 'pending' | 'loading' | 'completed' | 'error'
+      error?: string
+    }>
+  >([])
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -376,6 +385,71 @@ export default function EducationalAnalyzer() {
     }
   }
 
+  // Poll for batch analysis results
+  const pollBatchResults = async (
+    analyses: Array<{ fileName: string; analysisId: string; status: string }>,
+  ) => {
+    const maxPolls = 60 // 3 minutes maximum
+    let pollCount = 0
+
+    const checkResults = async () => {
+      const updatedResults = await Promise.all(
+        analyses.map(async (analysis) => {
+          try {
+            const result = await apiService.getAnalysis(analysis.analysisId)
+
+            if (result.status === 'completed') {
+              return {
+                ...analysis,
+                result,
+                status: 'completed' as const,
+              }
+            } else if (result.status === 'failed') {
+              return {
+                ...analysis,
+                status: 'error' as const,
+                error: 'Анализ не удался',
+              }
+            } else {
+              return {
+                ...analysis,
+                status: 'loading' as const,
+              }
+            }
+          } catch {
+            return {
+              ...analysis,
+              status: 'error' as const,
+              error: 'Ошибка получения результата',
+            }
+          }
+        }),
+      )
+
+      setBatchResults(updatedResults)
+
+      const allCompleted = updatedResults.every(
+        (r) => r.status === 'completed' || r.status === 'error',
+      )
+
+      if (allCompleted) {
+        setCurrentScreen('results')
+        setProgressMessage('')
+        return
+      }
+
+      pollCount++
+      if (pollCount < maxPolls) {
+        window.setTimeout(checkResults, 3000)
+      } else {
+        setError('Превышено время ожидания результатов')
+        setCurrentScreen('upload')
+      }
+    }
+
+    checkResults()
+  }
+
   const handleAnalyze = async () => {
     if (!content.trim()) return
 
@@ -530,6 +604,279 @@ export default function EducationalAnalyzer() {
 
   if (currentScreen === 'loading') {
     return <SimpleLoader message={progressMessage} />
+  }
+
+  // Batch results screen
+  if (currentScreen === 'results' && batchResults.length > 0) {
+    // Calculate overall statistics
+    const completedResults = batchResults.filter((r) => r.status === 'completed' && r.result)
+    const totalLessons = batchResults.length
+    const completedLessons = completedResults.length
+
+    let totalScore = 0
+    let totalMaxScore = 0
+    const allMetricScores: Record<string, number[]> = {}
+
+    completedResults.forEach((batch) => {
+      if (!batch.result?.results) return
+
+      let lessonScore = 0
+      let lessonMetricCount = 0
+
+      Object.entries(batch.result.results).forEach(([key, data]) => {
+        if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
+          lessonScore += data.score || 0
+          lessonMetricCount++
+
+          if (!allMetricScores[key]) {
+            allMetricScores[key] = []
+          }
+          allMetricScores[key].push(data.score || 0)
+        }
+      })
+
+      const lessonMaxScore = lessonMetricCount * 5
+      const lessonAdjustedScore = lessonScore + lessonMetricCount * 2
+
+      totalScore += lessonAdjustedScore
+      totalMaxScore += lessonMaxScore
+    })
+
+    const averagePercentage =
+      totalMaxScore > 0 ? ((totalScore + totalMaxScore) / (totalMaxScore * 2)) * 100 : 0
+
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#1a1d2e] flex flex-col transition-colors">
+        <UnifiedHeader />
+        <div className="flex-1 p-6">
+          <div className="max-w-[660px] mx-auto">
+            {/* Overall Batch Statistics */}
+            <div
+              className="mb-8 p-8"
+              style={{
+                borderRadius: '40px',
+                backgroundColor: (() => {
+                  if (averagePercentage < 40) return '#FFE5E5'
+                  if (averagePercentage < 70) return '#FFF9E5'
+                  return '#E5FFE5'
+                })(),
+              }}
+            >
+              <h2
+                className="text-[32px] font-bold text-black mb-4"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Результаты анализа: {completedLessons} из {totalLessons} уроков
+              </h2>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-[48px] font-bold text-black">
+                    {Math.round(averagePercentage)}%
+                  </div>
+                  <div className="text-[14px] text-gray-700">Средний результат</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-[48px] font-bold text-black">{completedLessons}</div>
+                  <div className="text-[14px] text-gray-700">Уроков проанализировано</div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-[48px] font-bold text-black">
+                    {Object.keys(allMetricScores).length}
+                  </div>
+                  <div className="text-[14px] text-gray-700">Метрик оценено</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Individual Lesson Results */}
+            <div className="space-y-8">
+              {batchResults.map((batch, batchIndex) => {
+                if (batch.status === 'error') {
+                  return (
+                    <div
+                      key={batch.analysisId}
+                      className="p-6 bg-red-50 rounded-[40px] border border-red-200"
+                    >
+                      <h3 className="text-[20px] font-semibold text-red-900 mb-2">
+                        {batch.fileName}
+                      </h3>
+                      <p className="text-red-700">{batch.error || 'Ошибка анализа'}</p>
+                    </div>
+                  )
+                }
+
+                if (!batch.result) return null
+
+                const analysisResult = batch.result
+                let overallScore = 0
+                let metricCount = 0
+                const metricResults: Array<{ name: string; score?: number; comment?: string }> = []
+
+                if (analysisResult.results) {
+                  Object.entries(analysisResult.results).forEach(([key, data]) => {
+                    if (
+                      data &&
+                      typeof data === 'object' &&
+                      'score' in data &&
+                      key !== 'lessonTitle'
+                    ) {
+                      overallScore += data.score || 0
+                      metricCount++
+                      metricResults.push({ name: key, ...data })
+                    }
+                  })
+                }
+
+                const totalPossibleScore = metricCount * 5
+                const adjustedScore = overallScore + metricCount * 2
+
+                const getShortComment = (comment: string | undefined) => {
+                  if (!comment) return ''
+                  if (comment.length > 150) {
+                    const truncated = comment.substring(0, 147)
+                    const lastSpace = truncated.lastIndexOf(' ')
+                    if (lastSpace > 100) {
+                      return truncated.substring(0, lastSpace) + '...'
+                    }
+                    return truncated + '...'
+                  }
+                  return comment
+                }
+
+                const getMetricDisplayName = (metricName: string) => {
+                  return METRIC_NAMES[metricName] || metricName
+                }
+
+                return (
+                  <div key={batch.analysisId} className="space-y-6">
+                    {/* Lesson Title */}
+                    <h2
+                      className="text-[28px] font-bold text-black"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {batchIndex + 1}. {batch.fileName}
+                    </h2>
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Overall Result */}
+                      <div
+                        className="p-6 flex flex-col items-center justify-center"
+                        style={{
+                          minWidth: '320px',
+                          minHeight: '320px',
+                          borderRadius: '40px',
+                          backgroundColor: (() => {
+                            const percentage =
+                              ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) *
+                              100
+                            if (percentage < 40) return '#FFE5E5'
+                            if (percentage < 70) return '#FFF9E5'
+                            return '#E5FFE5'
+                          })(),
+                        }}
+                      >
+                        <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+                      </div>
+
+                      {/* Metric Results */}
+                      {metricResults.map((result, index) => {
+                        const data = analysisResult.results?.[result.name]
+                        if (!data || typeof data !== 'object') return null
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
+                            style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+                          >
+                            <div
+                              className="flex justify-between items-start"
+                              style={{ marginTop: '20px', marginBottom: '8px' }}
+                            >
+                              <h3
+                                className="text-black dark:text-white"
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: '32px',
+                                  marginTop: '-5px',
+                                  lineHeight: '90%',
+                                }}
+                              >
+                                {getMetricDisplayName(result.name)}
+                              </h3>
+                              <div
+                                style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                                className="text-black dark:text-white"
+                              >
+                                {data.score > 0 ? '+' : ''}
+                                {data.score || 0}
+                              </div>
+                            </div>
+                            <div className="flex-grow" />
+                            <div className="space-y-3">
+                              <p
+                                className="text-[15px] text-black dark:text-gray-200"
+                                style={{ lineHeight: '120%' }}
+                              >
+                                {getShortComment(data.comment)}
+                              </p>
+                              {(('suggestions' in data &&
+                                Array.isArray(data.suggestions) &&
+                                data.suggestions.length > 0) ||
+                                ('recommendations' in data &&
+                                  typeof data.recommendations === 'string')) && (
+                                <div>
+                                  <p className="text-[12px] font-medium text-black/60 dark:text-gray-400 mb-1">
+                                    Что поправить:
+                                  </p>
+                                  <p
+                                    className="text-[13px] text-black/80 dark:text-gray-300"
+                                    style={{ lineHeight: '120%' }}
+                                  >
+                                    →{' '}
+                                    {'suggestions' in data && Array.isArray(data.suggestions)
+                                      ? data.suggestions[0]
+                                      : 'recommendations' in data &&
+                                          typeof data.recommendations === 'string'
+                                        ? data.recommendations
+                                            .split(/\d+\)/)
+                                            .slice(1, 2)[0]
+                                            ?.trim() || data.recommendations.substring(0, 150)
+                                        : ''}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* New Analysis Button */}
+            <button
+              onClick={() => {
+                setCurrentScreen('upload')
+                setContent('')
+                setBatchResults([])
+                setBatchFiles([])
+                setAnalysisResult(null)
+              }}
+              className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+            >
+              Новый анализ
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (currentScreen === 'results' && analysisResult) {
@@ -1307,27 +1654,33 @@ export default function EducationalAnalyzer() {
                                 }
                               }
 
-                              // setBatchResults(results)
                               const successCount = results.filter(
                                 (r) => r.status === 'started',
                               ).length
 
                               if (successCount > 0) {
-                                setError(
-                                  `✓ Запущен анализ ${successCount} файлов. Перенаправляем в историю...`,
-                                )
+                                // Store results and start polling
+                                const batchData = results
+                                  .filter((r) => r.status === 'started')
+                                  .map((r) => ({
+                                    fileName: r.fileName,
+                                    analysisId: r.analysisId!,
+                                    status: 'pending',
+                                  }))
 
-                                // Redirect to history after 1.5 seconds
-                                window.setTimeout(() => {
-                                  window.location.href = '/history'
-                                }, 1500)
+                                setBatchResults(batchData)
+                                setCurrentScreen('loading')
+                                setProgressMessage(`Анализируем ${successCount} файлов...`)
+
+                                // Start polling for all results
+                                pollBatchResults(batchData)
                               } else {
                                 setError('Не удалось запустить анализ файлов')
+                                setIsAnalyzing(false)
                               }
                             } catch (err) {
                               console.error('Batch analysis error:', err)
                               setError('Ошибка при запуске анализа')
-                            } finally {
                               setIsAnalyzing(false)
                             }
                           }}

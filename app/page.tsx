@@ -155,6 +155,9 @@ export default function EducationalAnalyzer() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
   const [maxTextLength, setMaxTextLength] = useState<number>(20000)
+  // Batch analysis state
+  const [batchFiles, setBatchFiles] = useState<Array<{ file: globalThis.File; id: string; content?: string; error?: string }>>([])
+  const [batchResults, setBatchResults] = useState<any[]>([])
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -1062,13 +1065,7 @@ export default function EducationalAnalyzer() {
 
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[900px] mt-[50px]">
-          {analysisMode === 'batch' ? (
-            <BatchAnalysisSection
-              metricMode={metricMode}
-              onSwitchMode={() => setAnalysisMode('single')}
-            />
-          ) : (
-            <div className="w-full max-w-[660px] mx-auto">
+          <div className="w-full max-w-[660px] mx-auto">
               {/* Header with title, subtitle and image */}
               <div className="flex justify-between mb-10">
                 <div>
@@ -1230,15 +1227,24 @@ export default function EducationalAnalyzer() {
                     Контент
                   </label>
 
-                  {/* Text Input Area with Upload Button */}
-                  <div
-                    className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
-                      isDragOver ? 'bg-gray-100' : ''
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
+                  {analysisMode === 'batch' ? (
+                    /* Batch mode: File upload dropzone */
+                    <FileUploadDropzone
+                      onFilesSelected={(files) => setBatchFiles(files)}
+                      maxFiles={50}
+                      maxSizeMB={10}
+                      acceptedFileTypes={['.txt', '.md', '.html']}
+                    />
+                  ) : (
+                    /* Single mode: Text Input Area with Upload Button */
+                    <div
+                      className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
+                        isDragOver ? 'bg-gray-100' : ''
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
                     {progressMessage && progressMessage.includes('PDF') ? (
                       // Show loading state for PDF processing
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -1317,7 +1323,8 @@ export default function EducationalAnalyzer() {
                         </Button>
                       </>
                     )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Error Alert */}
@@ -1340,7 +1347,6 @@ export default function EducationalAnalyzer() {
                 </p>
               </div>
             </div>
-          )}
         </div>
       </div>
     </div>

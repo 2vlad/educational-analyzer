@@ -369,8 +369,9 @@ export default function CustomMetricsPage() {
             const result = await apiService.getAnalysis(analysis.analysisId)
             console.log('[BATCH] Status for', analysis.fileName, ':', result.status)
 
-            if (result.status === 'completed') {
-              console.log('[BATCH] ✅ Completed:', analysis.fileName)
+            // Treat both 'completed' and 'partial' as finished
+            if (result.status === 'completed' || result.status === 'partial') {
+              console.log('[BATCH] ✅ Completed:', analysis.fileName, `(${result.status})`)
               console.log('[BATCH] Results:', result.results ? Object.keys(result.results) : 'none')
               return {
                 ...analysis,

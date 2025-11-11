@@ -152,14 +152,17 @@ export default function CustomMetricsPage() {
 
     try {
       if (user) {
-        // Authenticated: save to API
-        const response = await fetch(`/api/configuration/${id}`, {
-          method: 'PATCH',
+        // Authenticated: save to API using PUT with id in body
+        const response = await fetch('/api/configuration', {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
+          body: JSON.stringify({ id, ...updates }),
         })
 
-        if (!response.ok) throw new Error('Failed to update metric')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update metric')
+        }
         toast.success('Метрика обновлена')
       } else {
         // Guest: save to LocalStorage
@@ -182,12 +185,15 @@ export default function CustomMetricsPage() {
 
     try {
       if (user) {
-        // Authenticated: delete from API
-        const response = await fetch(`/api/configuration/${id}`, {
+        // Authenticated: delete from API using query parameter
+        const response = await fetch(`/api/configuration?id=${id}`, {
           method: 'DELETE',
         })
 
-        if (!response.ok) throw new Error('Failed to delete metric')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to delete metric')
+        }
         toast.success('Метрика удалена')
       } else {
         // Guest: delete from LocalStorage

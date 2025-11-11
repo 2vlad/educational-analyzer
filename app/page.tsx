@@ -453,7 +453,7 @@ export default function EducationalAnalyzer() {
       ]
 
       // Update progress to 15% after initial delay
-      window.window.setTimeout(() => {
+      window.setTimeout(() => {
         setProgressMessage(progressMessages[0])
       }, 1000)
 
@@ -496,7 +496,7 @@ export default function EducationalAnalyzer() {
             setProgressMessage('Готово!')
             setAnalysisResult(result)
 
-            window.window.setTimeout(() => {
+            window.setTimeout(() => {
               setCurrentScreen('results')
               setIsAnalyzing(false)
             }, 500)

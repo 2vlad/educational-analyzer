@@ -586,7 +586,7 @@ export default function EducationalAnalyzer() {
                     <div className="text-sm text-red-600">{promptError}</div>
                   ) : (
                     allPrompts.map(({ metric, prompt }) => (
-                      <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                      <div key={metric} className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3">
                         <div className="text-xs font-medium text-gray-600 mb-2">
                           {METRIC_NAMES[metric] || metric}
                         </div>
@@ -642,7 +642,7 @@ export default function EducationalAnalyzer() {
 
               {/* Logic */}
               <div
-                className="bg-[#F5F5F5] p-6 flex flex-col"
+                className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                 style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
               >
                 <div
@@ -691,7 +691,7 @@ export default function EducationalAnalyzer() {
 
               {/* Practical */}
               <div
-                className="bg-[#F5F5F5] p-6 flex flex-col"
+                className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                 style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
               >
                 <div
@@ -740,7 +740,7 @@ export default function EducationalAnalyzer() {
 
               {/* Interest */}
               <div
-                className="bg-[#F5F5F5] p-6 flex flex-col"
+                className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                 style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
               >
                 <div
@@ -789,7 +789,7 @@ export default function EducationalAnalyzer() {
 
               {/* Care */}
               <div
-                className="bg-[#F5F5F5] p-6 flex flex-col"
+                className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                 style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
               >
                 <div
@@ -838,7 +838,7 @@ export default function EducationalAnalyzer() {
 
               {/* Complexity */}
               <div
-                className="bg-[#F5F5F5] p-6 flex flex-col"
+                className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                 style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
               >
                 <div
@@ -888,7 +888,7 @@ export default function EducationalAnalyzer() {
               {/* Cognitive Load */}
               {analysisResult.results?.cognitive_load && (
                 <div
-                  className="bg-[#F5F5F5] p-6 flex flex-col"
+                  className="bg-[#F5F5F5] dark:bg-gray-800 p-6 flex flex-col"
                   style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
                 >
                   <div
@@ -939,9 +939,9 @@ export default function EducationalAnalyzer() {
             </div>
 
             {/* Quick Win Section */}
-            <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-              <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
-              <p className="text-[14px] text-black leading-relaxed">
+            <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+              <h2 className="text-[20px] font-semibold text-black dark:text-white mb-3">Quick Win</h2>
+              <p className="text-[14px] text-black dark:text-white leading-relaxed">
                 {overallScore > 0
                   ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
                   : overallScore < 0
@@ -968,10 +968,10 @@ export default function EducationalAnalyzer() {
 
                       {/* Analysis Text */}
                       {data.detailed_analysis && (
-                        <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
-                          <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
+                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">Анализ</h4>
                           {typeof data.detailed_analysis === 'string' ? (
-                            <p className="text-[14px] text-black leading-relaxed">
+                            <p className="text-[14px] text-black dark:text-white leading-relaxed">
                               {data.detailed_analysis}
                             </p>
                           ) : (
@@ -981,7 +981,7 @@ export default function EducationalAnalyzer() {
                                   <h5 className="text-[14px] font-medium text-black mb-1">
                                     {key}:
                                   </h5>
-                                  <p className="text-[14px] text-black ml-4">{value}</p>
+                                  <p className="text-[14px] text-black dark:text-white ml-4">{value}</p>
                                 </div>
                               ))}
                             </div>
@@ -991,15 +991,15 @@ export default function EducationalAnalyzer() {
 
                       {/* Examples */}
                       {data.examples && data.examples.length > 0 && (
-                        <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
-                          <h4 className="text-[16px] font-semibold text-black mb-3">
+                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">
                             Примеры из текста
                           </h4>
                           <ul className="space-y-3">
                             {data.examples.map((example: string, index: number) => (
                               <li key={index} className="flex items-start">
                                 <span className="text-black mr-2">•</span>
-                                <span className="text-[14px] text-black italic">"{example}"</span>
+                                <span className="text-[14px] text-black dark:text-white italic">"{example}"</span>
                               </li>
                             ))}
                           </ul>
@@ -1009,8 +1009,8 @@ export default function EducationalAnalyzer() {
                       {/* Suggestions - What to fix */}
                       {((data.suggestions && data.suggestions.length > 0) ||
                         data.recommendations) && (
-                        <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
-                          <h4 className="text-[16px] font-semibold text-black mb-3">
+                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">
                             Что поправить
                           </h4>
                           <ul className="space-y-3">
@@ -1018,7 +1018,7 @@ export default function EducationalAnalyzer() {
                               ? data.suggestions.map((suggestion: string, index: number) => (
                                   <li key={index} className="flex items-start">
                                     <span className="text-black mr-2">→</span>
-                                    <span className="text-[14px] text-black">{suggestion}</span>
+                                    <span className="text-[14px] text-black dark:text-white">{suggestion}</span>
                                   </li>
                                 ))
                               : data.recommendations
@@ -1027,7 +1027,7 @@ export default function EducationalAnalyzer() {
                                   .map((rec: string, index: number) => (
                                     <li key={index} className="flex items-start">
                                       <span className="text-black mr-2">→</span>
-                                      <span className="text-[14px] text-black">{rec.trim()}</span>
+                                      <span className="text-[14px] text-black dark:text-white">{rec.trim()}</span>
                                     </li>
                                   ))}
                           </ul>
@@ -1202,7 +1202,7 @@ export default function EducationalAnalyzer() {
                           <div className="text-sm text-red-600">{promptError}</div>
                         ) : (
                           allPrompts.map(({ metric, prompt }) => (
-                            <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                            <div key={metric} className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3">
                               <div className="text-xs font-medium text-gray-600 mb-2">
                                 {METRIC_NAMES[metric] || metric}
                               </div>
@@ -1252,7 +1252,7 @@ export default function EducationalAnalyzer() {
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <Loader2 className="h-8 w-8 animate-spin text-black dark:text-white mb-4 transition-colors" />
                         <p
-                          className="text-[18px] text-black dark:text-white transition-colors"
+                          className="text-[18px] text-black dark:text-white dark:text-white transition-colors"
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         >
                           {progressMessage}

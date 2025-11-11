@@ -75,7 +75,7 @@ export default function SearchFilter({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             placeholder="Search content..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
           />
         </div>
 
@@ -83,14 +83,14 @@ export default function SearchFilter({
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
             hasActiveFilters
-              ? 'bg-gray-100 border-gray-400 text-blue-700'
+              ? 'bg-gray-100 border-gray-400 text-black'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
           <Filter className="w-4 h-4" />
           Filters
           {hasActiveFilters && (
-            <span className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+            <span className="ml-1 px-2 py-0.5 bg-black text-white text-xs rounded-full">
               Active
             </span>
           )}
@@ -123,7 +123,7 @@ export default function SearchFilter({
                     const date = e.target.value ? new Date(e.target.value) : undefined
                     onDateRangeChange({ ...dateRange, start: date })
                   }}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                 />
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function SearchFilter({
                     const date = e.target.value ? new Date(e.target.value) : undefined
                     onDateRangeChange({ ...dateRange, end: date })
                   }}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
                 />
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function SearchFilter({
                   onModelChange(e.target.value)
                   onApply()
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900"
               >
                 {models.map((model) => (
                   <option key={model.value} value={model.value}>
@@ -167,7 +167,7 @@ export default function SearchFilter({
           <div className="mt-4 flex justify-end">
             <button
               onClick={onApply}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Apply Filters
             </button>

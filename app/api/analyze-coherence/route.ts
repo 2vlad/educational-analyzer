@@ -18,11 +18,21 @@ const coherenceRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[COHERENCE API] Starting coherence analysis request...')
+
     // Parse and validate request body
     const body = await request.json()
+    console.log('[COHERENCE API] Request body:', {
+      lessonsCount: body.lessons?.length,
+      modelId: body.modelId,
+      firstLessonTitle: body.lessons?.[0]?.title,
+      firstLessonContentLength: body.lessons?.[0]?.content?.length,
+    })
+
     const validation = coherenceRequestSchema.safeParse(body)
 
     if (!validation.success) {
+      console.error('[COHERENCE API] Validation failed:', validation.error.flatten())
       return NextResponse.json(
         { error: 'Invalid request', details: validation.error.flatten() },
         { status: 400 },
@@ -33,6 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Validate lesson count
     if (lessons.length < 2) {
+      console.error('[COHERENCE API] Not enough lessons:', lessons.length)
       return NextResponse.json(
         { error: 'At least 2 lessons are required for coherence analysis' },
         { status: 400 },
@@ -40,23 +51,35 @@ export async function POST(request: NextRequest) {
     }
 
     if (lessons.length > 20) {
+      console.error('[COHERENCE API] Too many lessons:', lessons.length)
       return NextResponse.json(
         { error: 'Maximum 20 lessons allowed for coherence analysis' },
         { status: 400 },
       )
     }
 
-    console.log(`Analyzing coherence of ${lessons.length} lessons...`)
+    console.log(
+      `[COHERENCE API] Analyzing coherence of ${lessons.length} lessons with model: ${modelId || 'default'}`,
+    )
 
     // Analyze coherence
     const analysis = await llmService.analyzeCoherence(lessons, modelId)
+
+    console.log('[COHERENCE API] Analysis completed successfully:', {
+      score: analysis.score,
+      summaryLength: analysis.summary?.length,
+      strengthsCount: analysis.strengths?.length,
+      issuesCount: analysis.issues?.length,
+      suggestionsCount: analysis.suggestions?.length,
+    })
 
     return NextResponse.json({
       success: true,
       analysis,
     })
   } catch (error) {
-    console.error('Coherence analysis error:', error)
+    console.error('[COHERENCE API] Error during coherence analysis:', error)
+    console.error('[COHERENCE API] Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json(
       {
         error: 'Internal server error',

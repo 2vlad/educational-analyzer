@@ -454,22 +454,37 @@ ${lessonsOverview}
         // Try to extract JSON from the response - support multiple formats
         let jsonText = result.comment || ''
 
+        console.log('[Coherence Analysis] Original response length:', jsonText.length)
+        console.log('[Coherence Analysis] First 500 chars:', jsonText.substring(0, 500))
+
         // Remove markdown code blocks
         jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+
+        // Trim whitespace
+        jsonText = jsonText.trim()
 
         // Try to find JSON object
         const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
-          console.log('[Coherence Analysis] Found JSON in response')
+          console.log('[Coherence Analysis] Found JSON in response, length:', jsonMatch[0].length)
+          console.log('[Coherence Analysis] JSON to parse:', jsonMatch[0].substring(0, 300))
           parsed = JSON.parse(jsonMatch[0])
-          console.log('[Coherence Analysis] Parsed successfully:', parsed)
+          console.log('[Coherence Analysis] Parsed successfully:', JSON.stringify(parsed))
         } else {
           console.error('[Coherence Analysis] No JSON found in response')
+          console.error('[Coherence Analysis] Full response:', jsonText)
           throw new Error('No JSON found in response')
         }
       } catch (parseError) {
         console.error('[Coherence Analysis] Failed to parse JSON:', parseError)
-        console.error('[Coherence Analysis] Raw response:', result.comment)
+        console.error(
+          '[Coherence Analysis] Parse error details:',
+          parseError instanceof Error ? parseError.message : 'Unknown',
+        )
+        console.error(
+          '[Coherence Analysis] Raw response (first 1000 chars):',
+          result.comment?.substring(0, 1000),
+        )
 
         // Return a fallback analysis with the raw comment
         return {

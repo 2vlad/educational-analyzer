@@ -1062,19 +1062,6 @@ export default function EducationalAnalyzer() {
 
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[900px] mt-[50px]">
-          {/* Mode Toggle */}
-          <div className="mb-8">
-            <Tabs
-              value={analysisMode}
-              onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
-            >
-              <TabsList className="grid w-full max-w-md grid-cols-2">
-                <TabsTrigger value="single">Одиночный анализ</TabsTrigger>
-                <TabsTrigger value="batch">Пакетный анализ</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
           {analysisMode === 'batch' ? (
             <BatchAnalysisSection
               metricMode={metricMode}
@@ -1157,6 +1144,35 @@ export default function EducationalAnalyzer() {
                       Loading models...
                     </div>
                   )}
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="mb-6">
+                  <label
+                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Режим анализа
+                  </label>
+                  <Tabs
+                    value={analysisMode}
+                    onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
+                  >
+                    <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] rounded-[50px] p-[3px]">
+                      <TabsTrigger 
+                        value="single" 
+                        className="text-[20px] font-light h-full rounded-[46px] data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                      >
+                        Одиночный анализ
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="batch" 
+                        className="text-[20px] font-light h-full rounded-[46px] data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                      >
+                        Пакетный анализ
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
                 </div>
 
                 {/* Prompt trigger on upload screen */}

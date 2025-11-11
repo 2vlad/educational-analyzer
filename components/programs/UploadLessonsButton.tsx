@@ -97,7 +97,7 @@ export default function UploadLessonsButton({
               onFilesSelected={setUploadedFiles}
               maxFiles={100}
               maxSizeMB={10}
-              acceptedFileTypes={['.txt', '.md', '.html']}
+              acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
             />
           </div>
 

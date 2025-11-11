@@ -1,10 +1,9 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Upload, X, FileText, AlertCircle } from 'lucide-react'
+import { Upload, X, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface UploadedFile {
   file: globalThis.File
@@ -34,6 +33,12 @@ export function FileUploadDropzone({
   const [isProcessing, setIsProcessing] = useState(false)
 
   const readFileContent = async (file: globalThis.File): Promise<string> => {
+    // Handle PDF files differently
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      return await parsePdfFile(file)
+    }
+
+    // Handle text files
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -43,6 +48,37 @@ export function FileUploadDropzone({
       reader.onerror = () => reject(new Error(`Failed to read ${file.name}`))
       reader.readAsText(file)
     })
+  }
+
+  const parsePdfFile = async (file: globalThis.File): Promise<string> => {
+    try {
+      const formData = new globalThis.FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/parse-pdf', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to parse PDF')
+      }
+
+      const result = await response.json()
+
+      // If truncated, we could show a warning but still return the text
+      if (result.truncated) {
+        console.warn(
+          `PDF ${file.name} was truncated. Pages: ${result.pages}, Original: ${result.originalLength}, Returned: ${result.text.length}`,
+        )
+      }
+
+      return result.text
+    } catch (error) {
+      console.error('PDF parsing error:', error)
+      throw new Error(error instanceof Error ? error.message : 'Failed to parse PDF file')
+    }
   }
 
   const processFiles = async (files: globalThis.FileList | globalThis.File[]) => {
@@ -90,11 +126,12 @@ export function FileUploadDropzone({
           id: `${file.name}-${Date.now()}-${Math.random()}`,
           content,
         })
-      } catch {
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Ошибка чтения файла'
         newFiles.push({
           file,
           id: `${file.name}-${Date.now()}-${Math.random()}`,
-          error: 'Ошибка чтения файла',
+          error: errorMessage,
         })
       }
     }
@@ -153,6 +190,12 @@ export function FileUploadDropzone({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
+  const handleDropzoneClick = () => {
+    if (!isProcessing) {
+      document.getElementById('file-upload')?.click()
+    }
+  }
+
   return (
     <div className={cn('space-y-4', className)}>
       {/* Dropzone */}
@@ -160,6 +203,7 @@ export function FileUploadDropzone({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onClick={handleDropzoneClick}
         className={cn(
           'relative h-[180px] px-6 py-6 rounded-[25px] text-center transition-colors cursor-pointer',
           isDragging ? 'bg-gray-100' : 'bg-[#F2F2F2] hover:bg-gray-100',
@@ -180,17 +224,17 @@ export function FileUploadDropzone({
           <Upload className={cn('w-10 h-10', isDragging ? 'text-gray-600' : 'text-gray-400')} />
 
           <div>
-            <p className="text-[20px] font-light text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <p
+              className="text-[20px] font-light text-black"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
               {isDragging ? 'Отпустите файлы сюда' : 'Перетащите файлы сюда'}
             </p>
-            <p className="text-[15px] text-gray-500 mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
-              или{' '}
-              <label
-                htmlFor="file-upload"
-                className="text-black hover:text-gray-700 cursor-pointer font-normal"
-              >
-                выберите файлы
-              </label>
+            <p
+              className="text-[15px] text-gray-500 mt-1"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              или <span className="text-black hover:text-gray-700 font-normal">выберите файлы</span>
             </p>
           </div>
 
@@ -205,7 +249,7 @@ export function FileUploadDropzone({
         {isProcessing && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
             <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black" />
               <span className="text-sm text-gray-600">Обработка файлов...</span>
             </div>
           </div>

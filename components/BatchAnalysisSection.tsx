@@ -108,7 +108,7 @@ export default function BatchAnalysisSection({
             onFilesSelected={setUploadedFiles}
             maxFiles={50}
             maxSizeMB={10}
-            acceptedFileTypes={['.txt', '.md', '.html']}
+            acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
           />
 
           {uploadedFiles.filter((f) => !f.error).length > 0 && (

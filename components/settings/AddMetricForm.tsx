@@ -96,7 +96,7 @@ export default function AddMetricForm({
         <form onSubmit={handleSubmit} className="p-6">
           {/* Name Field */}
           <div className="mb-6">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-500 mb-2">
               Название метрики
             </label>
             <input
@@ -129,7 +129,7 @@ export default function AddMetricForm({
 
           {/* Prompt Field */}
           <div className="mb-6">
-            <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="prompt" className="block text-sm font-medium text-gray-500 mb-2">
               Описание метрики
             </label>
             <textarea

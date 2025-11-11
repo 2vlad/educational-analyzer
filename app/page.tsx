@@ -569,7 +569,7 @@ export default function EducationalAnalyzer() {
     }
 
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col transition-colors">
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
@@ -1061,7 +1061,7 @@ export default function EducationalAnalyzer() {
 
   // Upload screen - New design based on Figma
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col transition-colors">
       {/* Unified Header with Toggle */}
       <UnifiedHeader />
 
@@ -1072,13 +1072,13 @@ export default function EducationalAnalyzer() {
               <div className="flex justify-between mb-10">
                 <div>
                   <h1
-                    className="text-[48px] font-bold text-black mb-3 leading-tight"
+                    className="text-[48px] font-bold text-black dark:text-white mb-3 leading-tight transition-colors"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Лёха AI
                   </h1>
                   <p
-                    className="text-[20px] font-normal text-black"
+                    className="text-[20px] font-normal text-black dark:text-gray-300 transition-colors"
                     style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
                   >
                     оценивает качество
@@ -1107,7 +1107,7 @@ export default function EducationalAnalyzer() {
                 {/* Model Section */}
                 <div className="mb-6">
                   <label
-                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Модель
@@ -1148,7 +1148,7 @@ export default function EducationalAnalyzer() {
                 {/* Mode Toggle */}
                 <div className="mb-6">
                   <label
-                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Режим анализа
@@ -1223,7 +1223,7 @@ export default function EducationalAnalyzer() {
                 {/* Content Section */}
                 <div className="mb-6 mt-[40px]">
                   <label
-                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Контент

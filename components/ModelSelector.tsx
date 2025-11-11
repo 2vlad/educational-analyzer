@@ -93,7 +93,7 @@ export default function ModelSelector() {
       onValueChange={handleModelChange}
       onOpenChange={setIsDropdownOpen}
     >
-      <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 transition-colors rounded-[50px] border border-gray-200 dark:border-gray-200 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+      <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black dark:text-white bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-[50px] border border-gray-200 dark:border-gray-700 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
         <SelectValue placeholder="Выберите модель" />
         <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
           <ChevronRight
@@ -103,9 +103,9 @@ export default function ModelSelector() {
           />
         </div>
       </SelectTrigger>
-      <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
+      <SelectContent className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-2xl border-gray-200 dark:border-gray-700">
         {models.map((model) => (
-          <SelectItem key={model.id} value={model.id} className="text-[20px] text-black py-2">
+          <SelectItem key={model.id} value={model.id} className="text-[20px] text-black dark:text-white py-2">
             {model.name}
           </SelectItem>
         ))}

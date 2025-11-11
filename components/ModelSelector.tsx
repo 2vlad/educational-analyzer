@@ -15,7 +15,11 @@ interface Model {
   name: string
 }
 
-export default function ModelSelector() {
+interface ModelSelectorProps {
+  onModelChange?: (modelId: string) => void
+}
+
+export default function ModelSelector({ onModelChange }: ModelSelectorProps = {}) {
   const [models, setModels] = useState<Model[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -77,6 +81,10 @@ export default function ModelSelector() {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('selectedModel', value)
     }
+    // Call optional callback
+    if (onModelChange) {
+      onModelChange(value)
+    }
   }
 
   if (models.length === 0) {
@@ -105,7 +113,11 @@ export default function ModelSelector() {
       </SelectTrigger>
       <SelectContent className="bg-white dark:bg-[#2a2d3e] text-black dark:text-white rounded-2xl border-gray-300 dark:border-gray-600">
         {models.map((model) => (
-          <SelectItem key={model.id} value={model.id} className="text-[20px] text-black dark:text-white py-2">
+          <SelectItem
+            key={model.id}
+            value={model.id}
+            className="text-[20px] text-black dark:text-white py-2"
+          >
             {model.name}
           </SelectItem>
         ))}

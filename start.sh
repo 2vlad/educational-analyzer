@@ -10,6 +10,8 @@ echo "📝 Clearing any system-level ANTHROPIC_API_KEY to use .env files instead
 unset ANTHROPIC_API_KEY
 unset OPENAI_API_KEY
 unset GOOGLE_API_KEY
+unset YANDEX_API_KEY
+unset YANDEX_FOLDER_ID
 
 # Run the development server
 echo "✅ Starting Next.js development server..."

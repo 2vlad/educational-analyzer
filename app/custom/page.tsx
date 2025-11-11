@@ -6,13 +6,15 @@ import { MetricConfig } from '@/src/types/metrics'
 import MetricListView from '@/components/settings/MetricListView'
 import AddMetricForm from '@/components/settings/AddMetricForm'
 import { Toaster, toast } from 'react-hot-toast'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, ChevronRight, CloudUpload } from 'lucide-react'
 import ModelSelector from '@/components/ModelSelector'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ScoreSpeedometer from '@/components/ScoreSpeedometer'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import { apiService, type AnalysisResult as ApiAnalysisResult } from '@/src/services/api'
 import PromptGuide from '@/components/settings/PromptGuide'
+import { FileUploadDropzone } from '@/components/ui/file-upload-dropzone'
+import { AnalysisModeTabs } from '@/components/AnalysisModeTabs'
 import {
   Dialog,
   DialogContent,
@@ -35,12 +37,35 @@ export default function CustomMetricsPage() {
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingMetric, setEditingMetric] = useState<MetricConfig | null>(null)
+  const [analysisMode, setAnalysisMode] = useState<'single' | 'batch'>('single')
   const [content, setContent] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [currentScreen, setCurrentScreen] = useState<'input' | 'loading' | 'results'>('input')
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string>('')
+  // Batch analysis state
+  const [batchFiles, setBatchFiles] = useState<
+    Array<{ file: globalThis.File; id: string; content?: string; error?: string }>
+  >([])
+  const [batchResults, setBatchResults] = useState<
+    Array<{
+      fileName: string
+      analysisId: string
+      result?: ApiAnalysisResult
+      status: 'pending' | 'loading' | 'completed' | 'error'
+      error?: string
+    }>
+  >([])
+  const [coherenceAnalysis, setCoherenceAnalysis] = useState<{
+    score: number
+    summary: string
+    strengths: string[]
+    issues: string[]
+    suggestions: string[]
+  } | null>(null)
+  const [coherenceLoading, setCoherenceLoading] = useState(false)
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -115,32 +140,41 @@ export default function CustomMetricsPage() {
 
   const handleAddMetric = async (metric: Omit<MetricConfig, 'id'>) => {
     try {
+      console.log('[CLIENT] Adding metric:', { name: metric.name, user: user?.id })
+
       if (user) {
         // Authenticated: save to API
+        console.log('[CLIENT] User authenticated, calling API...')
         const response = await fetch('/api/configuration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(metric),
         })
 
+        console.log('[CLIENT] Response status:', response.status)
+
         if (!response.ok) {
           const error = await response.json()
+          console.error('[CLIENT] API error response:', error)
           throw new Error(error.error || 'Failed to add metric')
         }
 
         const data = await response.json()
+        console.log('[CLIENT] ✅ Metric created successfully:', data.configuration)
         setMetrics([...metrics, data.configuration])
         toast.success('Метрика добавлена')
       } else {
         // Guest: save to LocalStorage
+        console.log('[CLIENT] Guest mode, saving to localStorage...')
         const newMetric = addGuestMetric(metric)
         setMetrics([...metrics, newMetric])
         toast.success('Метрика добавлена')
       }
-      
+
       setShowAddForm(false)
     } catch (error) {
-      console.error('Error adding metric:', error)
+      console.error('[CLIENT] Error adding metric:', error)
+      console.error('[CLIENT] Error details:', error instanceof Error ? error.message : error)
       toast.error('Не удалось добавить метрику')
     }
   }
@@ -152,14 +186,17 @@ export default function CustomMetricsPage() {
 
     try {
       if (user) {
-        // Authenticated: save to API
-        const response = await fetch(`/api/configuration/${id}`, {
-          method: 'PATCH',
+        // Authenticated: save to API using PUT with id in body
+        const response = await fetch('/api/configuration', {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
+          body: JSON.stringify({ id, ...updates }),
         })
 
-        if (!response.ok) throw new Error('Failed to update metric')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update metric')
+        }
         toast.success('Метрика обновлена')
       } else {
         // Guest: save to LocalStorage
@@ -182,12 +219,15 @@ export default function CustomMetricsPage() {
 
     try {
       if (user) {
-        // Authenticated: delete from API
-        const response = await fetch(`/api/configuration/${id}`, {
+        // Authenticated: delete from API using query parameter
+        const response = await fetch(`/api/configuration?id=${id}`, {
           method: 'DELETE',
         })
 
-        if (!response.ok) throw new Error('Failed to delete metric')
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to delete metric')
+        }
         toast.success('Метрика удалена')
       } else {
         // Guest: delete from LocalStorage
@@ -310,7 +350,97 @@ export default function CustomMetricsPage() {
     }
   }
 
-  const loadPrompt = async (metric: string) => {
+  // Poll for batch analysis results
+  const pollBatchResults = async (
+    analyses: Array<{ fileName: string; analysisId: string; status: string }>,
+  ) => {
+    console.log('[BATCH] Starting to poll for', analyses.length, 'analyses')
+    const maxPolls = 60 // 3 minutes maximum
+    let pollCount = 0
+
+    const checkResults = async () => {
+      console.log('[BATCH] Poll attempt', pollCount + 1, 'of', maxPolls)
+
+      const updatedResults = await Promise.all(
+        analyses.map(async (analysis) => {
+          try {
+            console.log('[BATCH] Fetching status for', analysis.fileName, analysis.analysisId)
+            const result = await apiService.getAnalysis(analysis.analysisId)
+            console.log('[BATCH] Status for', analysis.fileName, ':', result.status)
+
+            // Treat both 'completed' and 'partial' as finished
+            if (result.status === 'completed' || result.status === 'partial') {
+              console.log('[BATCH] ✅ Completed:', analysis.fileName, `(${result.status})`)
+              console.log('[BATCH] Results:', result.results ? Object.keys(result.results) : 'none')
+              return {
+                ...analysis,
+                result,
+                status: 'completed' as const,
+              }
+            } else if (result.status === 'failed') {
+              console.log('[BATCH] ❌ Failed:', analysis.fileName)
+              return {
+                ...analysis,
+                status: 'error' as const,
+                error: 'Анализ не удался',
+              }
+            } else {
+              console.log('[BATCH] ⏳ Still processing:', analysis.fileName, result.status)
+              return {
+                ...analysis,
+                status: 'loading' as const,
+              }
+            }
+          } catch (error) {
+            console.error('[BATCH] ❌ Error fetching result for', analysis.fileName, error)
+            return {
+              ...analysis,
+              status: 'error' as const,
+              error: 'Ошибка получения результата',
+            }
+          }
+        }),
+      )
+
+      setBatchResults(updatedResults)
+
+      const allCompleted = updatedResults.every(
+        (r) => r.status === 'completed' || r.status === 'error',
+      )
+
+      const completedCount = updatedResults.filter((r) => r.status === 'completed').length
+      const errorCount = updatedResults.filter((r) => r.status === 'error').length
+      const loadingCount = updatedResults.filter((r) => r.status === 'loading').length
+
+      console.log(
+        `[BATCH] Status: ${completedCount} completed, ${errorCount} errors, ${loadingCount} loading`,
+      )
+
+      if (allCompleted) {
+        console.log('[BATCH] All analyses completed! Showing results screen.')
+        setCurrentScreen('results')
+        setProgressMessage('')
+        setIsAnalyzing(false)
+        return
+      }
+
+      pollCount++
+      if (pollCount < maxPolls) {
+        console.log('[BATCH] Waiting 3 seconds before next check...')
+        window.setTimeout(checkResults, 3000)
+      } else {
+        console.error('[BATCH] Timeout! Exceeded max polls.')
+        setError('Превышено время ожидания результатов')
+        setCurrentScreen('input')
+        setIsAnalyzing(false)
+      }
+    }
+
+    checkResults()
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _loadPrompt = async (metric: string) => {
     try {
       setPromptsLoading(true)
       setPromptError(null)
@@ -362,6 +492,64 @@ export default function CustomMetricsPage() {
     }
   }
 
+  // Analyze coherence when batch results are all completed
+  useEffect(() => {
+    const analyzeCoherence = async () => {
+      // Only analyze if we have batch results and they're all completed
+      if (
+        batchResults.length < 2 ||
+        coherenceLoading ||
+        coherenceAnalysis ||
+        currentScreen !== 'results'
+      ) {
+        return
+      }
+
+      const completedResults = batchResults.filter((r) => r.status === 'completed' && r.result)
+      if (completedResults.length < 2 || completedResults.length !== batchResults.length) {
+        return
+      }
+
+      setCoherenceLoading(true)
+
+      try {
+        // Prepare lessons data
+        const lessons = completedResults.map((r, idx) => ({
+          filename: r.fileName || batchFiles[idx]?.name || `Урок ${idx + 1}`,
+          content: batchFiles[idx]
+            ? typeof batchFiles[idx].content === 'string'
+              ? batchFiles[idx].content
+              : ''
+            : '',
+        }))
+
+        // Call coherence analysis API
+        const response = await fetch('/api/analyze-coherence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lessons,
+            modelId: selectedModel,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Coherence analysis failed')
+        }
+
+        const data = await response.json()
+        setCoherenceAnalysis(data.analysis)
+      } catch (error) {
+        console.error('Failed to analyze coherence:', error)
+        // Silently fail - coherence is optional
+      } finally {
+        setCoherenceLoading(false)
+      }
+    }
+
+    analyzeCoherence()
+  }, [batchResults, currentScreen, coherenceLoading, coherenceAnalysis, batchFiles, selectedModel])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -370,8 +558,305 @@ export default function CustomMetricsPage() {
     )
   }
 
+  // Loading screen
   if (currentScreen === 'loading') {
     return <SimpleLoader message={progressMessage} />
+  }
+
+  // Batch results screen
+  if (currentScreen === 'results' && batchResults.length > 0) {
+    const completedResults = batchResults.filter((r) => r.status === 'completed' && r.result)
+
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <UnifiedHeader />
+        <div className="flex-1 p-6">
+          <div className="max-w-[660px] mx-auto">
+            {/* Overall Batch Statistics */}
+            <div
+              className="mb-8 p-8"
+              style={{
+                borderRadius: '40px',
+                backgroundColor: '#E5FFE5',
+              }}
+            >
+              <h2
+                className="text-[32px] font-bold text-black mb-4"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Результаты анализа: {completedResults.length} из {batchResults.length} уроков
+              </h2>
+
+              {/* Coherence Analysis Loading/Results */}
+              {coherenceLoading && (
+                <div className="flex items-center gap-3 text-gray-600 mt-4">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-[16px]">Анализ связности уроков...</span>
+                </div>
+              )}
+
+              {!coherenceLoading && coherenceAnalysis && (
+                <div
+                  className="mt-6 p-6 rounded-[32px]"
+                  style={{
+                    backgroundColor:
+                      coherenceAnalysis.score >= 80
+                        ? '#d4f4dd'
+                        : coherenceAnalysis.score >= 60
+                          ? '#fff4cc'
+                          : '#ffe6e6',
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[20px] font-semibold text-gray-900">
+                      Анализ связности уроков
+                    </h3>
+                    <span
+                      className="text-[24px] font-bold"
+                      style={{
+                        color:
+                          coherenceAnalysis.score >= 80
+                            ? '#10b981'
+                            : coherenceAnalysis.score >= 60
+                              ? '#f59e0b'
+                              : '#ef4444',
+                      }}
+                    >
+                      {coherenceAnalysis.score}/100
+                    </span>
+                  </div>
+
+                  <p className="text-[15px] text-gray-700 mb-4">{coherenceAnalysis.summary}</p>
+
+                  {coherenceAnalysis.strengths.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">
+                        ✅ Сильные стороны:
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.strengths.map((strength, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {coherenceAnalysis.issues.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">⚠️ Проблемы:</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.issues.map((issue, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {issue}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {coherenceAnalysis.suggestions.length > 0 && (
+                    <div>
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">
+                        💡 Рекомендации:
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.suggestions.map((suggestion, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Individual Lesson Results */}
+            <div className="space-y-12">
+              {batchResults.map((batch, batchIndex) => {
+                if (batch.status === 'error') {
+                  return (
+                    <div
+                      key={batch.analysisId}
+                      className="p-6 bg-red-50 rounded-[40px] border border-red-200"
+                    >
+                      <h3 className="text-[20px] font-semibold text-red-900 mb-2">
+                        {batch.fileName}
+                      </h3>
+                      <p className="text-red-700">{batch.error || 'Ошибка анализа'}</p>
+                    </div>
+                  )
+                }
+
+                if (!batch.result) return null
+
+                const analysisResult = batch.result
+                let overallScore = 0
+                let metricCount = 0
+                const metricResults: Array<{ name: string; score?: number; comment?: string }> = []
+
+                if (analysisResult.results) {
+                  Object.entries(analysisResult.results).forEach(([key, data]) => {
+                    if (
+                      data &&
+                      typeof data === 'object' &&
+                      'score' in data &&
+                      key !== 'lessonTitle'
+                    ) {
+                      overallScore += data.score || 0
+                      metricCount++
+                      metricResults.push({ name: key, ...data })
+                    }
+                  })
+                }
+
+                const totalPossibleScore = metricCount * 5
+                const adjustedScore = overallScore + metricCount * 2
+
+                const getShortComment = (comment: string | undefined) => {
+                  if (!comment) return ''
+                  if (comment.length > 150) {
+                    const truncated = comment.substring(0, 147)
+                    const lastSpace = truncated.lastIndexOf(' ')
+                    if (lastSpace > 100) {
+                      return truncated.substring(0, lastSpace) + '...'
+                    }
+                    return truncated + '...'
+                  }
+                  return comment
+                }
+
+                const getMetricDisplayName = (metricName: string) => {
+                  const metric = metrics.find((m) => m.name === metricName)
+                  return metric?.name || metricName
+                }
+
+                return (
+                  <div key={batch.analysisId} className="space-y-6">
+                    <h2
+                      className="text-[28px] font-bold text-black"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {batchIndex + 1}. {batch.fileName}
+                    </h2>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Overall Result */}
+                      <div
+                        className="p-6 flex flex-col items-center justify-center"
+                        style={{
+                          minWidth: '320px',
+                          minHeight: '320px',
+                          borderRadius: '40px',
+                          backgroundColor: (() => {
+                            const percentage =
+                              ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) *
+                              100
+                            if (percentage < 40) return '#FFE5E5'
+                            if (percentage < 70) return '#FFF9E5'
+                            return '#E5FFE5'
+                          })(),
+                        }}
+                      >
+                        <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+                      </div>
+
+                      {/* Metric Results */}
+                      {metricResults.map((result, index) => {
+                        const data = analysisResult.results?.[result.name]
+                        if (!data || typeof data !== 'object') return null
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-[#F5F5F5] p-6 flex flex-col"
+                            style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+                          >
+                            <div
+                              className="flex justify-between items-start"
+                              style={{ marginTop: '20px', marginBottom: '8px' }}
+                            >
+                              <h3
+                                className="text-black"
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: '32px',
+                                  marginTop: '-5px',
+                                  lineHeight: '90%',
+                                }}
+                              >
+                                {getMetricDisplayName(result.name)}
+                              </h3>
+                              <div
+                                style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                                className="text-black"
+                              >
+                                {data.score > 0 ? '+' : ''}
+                                {data.score || 0}
+                              </div>
+                            </div>
+                            <div className="flex-grow" />
+                            <div className="space-y-3">
+                              <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                                {getShortComment(data.comment)}
+                              </p>
+                              {(('suggestions' in data &&
+                                Array.isArray(data.suggestions) &&
+                                data.suggestions.length > 0) ||
+                                ('recommendations' in data &&
+                                  typeof data.recommendations === 'string')) && (
+                                <div>
+                                  <p className="text-[12px] font-medium text-black/60 mb-1">
+                                    Что поправить:
+                                  </p>
+                                  <p
+                                    className="text-[13px] text-black/80"
+                                    style={{ lineHeight: '120%' }}
+                                  >
+                                    →{' '}
+                                    {'suggestions' in data && Array.isArray(data.suggestions)
+                                      ? data.suggestions[0]
+                                      : 'recommendations' in data &&
+                                          typeof data.recommendations === 'string'
+                                        ? data.recommendations
+                                            .split(/\d+\)/)
+                                            .slice(1, 2)[0]
+                                            ?.trim() || data.recommendations.substring(0, 150)
+                                        : ''}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* New Analysis Button */}
+            <button
+              onClick={() => {
+                setCurrentScreen('input')
+                setContent('')
+                setBatchResults([])
+                setBatchFiles([])
+                setAnalysisResult(null)
+                setCoherenceAnalysis(null)
+              }}
+              className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+            >
+              Новый анализ
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (currentScreen === 'results' && analysisResult) {
@@ -715,10 +1200,8 @@ export default function CustomMetricsPage() {
             >
               Модель
             </label>
-            <ModelSelector />
+            <ModelSelector onModelChange={setSelectedModel} />
           </div>
-
-          
 
           {/* Main Content - Metric List */}
           <div
@@ -750,110 +1233,309 @@ export default function CustomMetricsPage() {
                   </button>
                 </div>
               </div>
-                {/* Prompts dialog attached to metrics box */}
-                <Dialog open={promptOpen && currentScreen === 'input'} onOpenChange={(o) => setPromptOpen(o)}>
-                  <DialogContent className="sm:max-w-[760px]">
-                    <DialogHeader>
-                      <DialogTitle>Промпты всех метрик</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 max-h-[60vh] overflow-auto">
-                      {promptsLoading ? (
-                        <div className="text-sm text-gray-500">Загрузка…</div>
-                      ) : promptError ? (
-                        <div className="text-sm text-red-600">{promptError}</div>
-                      ) : (
-                        allPrompts.map(({ metric, prompt }) => (
-                          <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
-                            <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
-                            <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
-                        Закрыть
-                      </button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <PromptGuide />
-              </div>
-
-              <MetricListView
-                metrics={metrics}
-                onReorder={handleReorder}
-                onEdit={setEditingMetric}
-                onDelete={handleDeleteMetric}
-                onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-              />
+              {/* Prompts dialog attached to metrics box */}
+              <Dialog
+                open={promptOpen && currentScreen === 'input'}
+                onOpenChange={(o) => setPromptOpen(o)}
+              >
+                <DialogContent className="sm:max-w-[760px]">
+                  <DialogHeader>
+                    <DialogTitle>Промпты всех метрик</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 max-h-[60vh] overflow-auto">
+                    {promptsLoading ? (
+                      <div className="text-sm text-gray-500">Загрузка…</div>
+                    ) : promptError ? (
+                      <div className="text-sm text-red-600">{promptError}</div>
+                    ) : (
+                      allPrompts.map(({ metric, prompt }) => (
+                        <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                          <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
+                          <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
+                      Закрыть
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <PromptGuide />
             </div>
 
-            {/* Info for guests */}
-            {!user && (
-              <div className="bg-blue-50 border border-blue-200 p-4 mb-6" style={{ borderRadius: '20px' }}>
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере. 
-                  Войдите в систему, чтобы синхронизировать метрики между устройствами.
-                </p>
-              </div>
-            )}
+            <MetricListView
+              metrics={metrics}
+              onReorder={handleReorder}
+              onEdit={setEditingMetric}
+              onDelete={handleDeleteMetric}
+              onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+            />
+          </div>
 
-          {/* Content Analysis Section - label placed just above textarea */}
+          {/* Info for guests */}
+          {!user && (
+            <div
+              className="bg-gray-100 border border-gray-200 p-4 mb-6"
+              style={{ borderRadius: '20px' }}
+            >
+              <p className="text-sm text-gray-800">
+                💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере.
+                Войдите в систему, чтобы синхронизировать метрики между устройствами.
+              </p>
+            </div>
+          )}
+
+          {/* Content Analysis Section */}
           <div className="mb-6">
+            {/* Analysis Mode Tabs */}
+            <AnalysisModeTabs value={analysisMode} onChange={setAnalysisMode} className="mb-6" />
+
             <label
-              className="block text-[15px] font-normal text-gray-500 mb-1"
+              className="block text-[15px] font-normal text-gray-500 mb-3"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               Контент
             </label>
-            {/* Prompt link moved above; nothing here */}
-            {/* Single prompt trigger kept above (underlined link). Removed duplicate button. */}
 
-            <div className="relative">
-              <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">
-                <textarea
-                  placeholder="Текст урока"
-                  value={content}
-                  onChange={(e) => {
-                    const text = e.target.value
-                    if (text.length <= 25000) {
-                      setContent(text)
-                    }
-                  }}
-                  className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
-                          bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                  maxLength={25000}
-                  style={{ fontFamily: 'Inter, sans-serif' }}
+            {analysisMode === 'batch' ? (
+              /* Batch mode: File upload dropzone */
+              <>
+                <FileUploadDropzone
+                  onFilesSelected={(files) => setBatchFiles(files)}
+                  maxFiles={50}
+                  maxSizeMB={10}
+                  acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
                 />
+                {/* Batch Analyze Button */}
+                {batchFiles.filter((f) => !f.error && f.content).length > 0 && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={async () => {
+                        const filesToAnalyze = batchFiles.filter((f) => !f.error && f.content)
+                        if (filesToAnalyze.length === 0) {
+                          setError('Нет файлов для анализа')
+                          return
+                        }
+                        setIsAnalyzing(true)
+                        setError(null)
+                        setCurrentScreen('loading')
+                        setProgressMessage(
+                          `Запуск анализа ${filesToAnalyze.length} файлов с пользовательскими метриками...`,
+                        )
 
-                {/* Character Counter */}
-                {content && (
-                  <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                    {content.length} / 25000
+                        try {
+                          const selectedModel =
+                            globalThis.localStorage.getItem('selectedModel') || 'yandex-gpt-pro'
+                          const activeMetrics = metrics.filter((m) => m.is_active)
+
+                          const analyses = await Promise.all(
+                            filesToAnalyze.map(async (file) => {
+                              try {
+                                const { analysisId } = await apiService.analyze({
+                                  content: file.content || '',
+                                  modelId: selectedModel,
+                                  metricMode: 'custom',
+                                  configurations: activeMetrics,
+                                })
+                                return {
+                                  fileName: file.file.name,
+                                  analysisId,
+                                  status: 'loading' as const,
+                                }
+                              } catch (error) {
+                                console.error(`Failed to analyze ${file.file.name}:`, error)
+                                return {
+                                  fileName: file.file.name,
+                                  analysisId: '',
+                                  status: 'error' as const,
+                                  error: 'Ошибка запуска анализа',
+                                }
+                              }
+                            }),
+                          )
+
+                          setBatchResults(analyses)
+                          pollBatchResults(analyses)
+                        } catch (error) {
+                          console.error('Batch analysis failed:', error)
+                          setError('Не удалось запустить батч-анализ')
+                          setCurrentScreen('input')
+                          setIsAnalyzing(false)
+                        }
+                      }}
+                      disabled={isAnalyzing}
+                      className="px-10 py-4 text-[16px] font-medium bg-black text-white 
+                           hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed
+                           rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Анализируем {batchFiles.filter((f) => !f.error && f.content).length}{' '}
+                          файлов...
+                        </>
+                      ) : (
+                        <>
+                          <ChevronRight className="w-5 h-5" />
+                          Проанализировать {
+                            batchFiles.filter((f) => !f.error && f.content).length
+                          }{' '}
+                          файлов
+                        </>
+                      )}
+                    </button>
                   </div>
                 )}
-
-                {/* Analyze Button inside textarea */}
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!content.trim() || isAnalyzing}
-                  className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
-                         hover:opacity-80 disabled:opacity-50
-                         rounded-full transition-opacity duration-200 flex items-center justify-center"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Анализируем...
-                    </>
+              </>
+            ) : (
+              /* Single mode: Text Input Area with Upload Button */
+              <div className="relative">
+                <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[25px] px-3 py-3">
+                  {progressMessage && progressMessage.includes('PDF') ? (
+                    // Show loading state for PDF processing
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
+                      <p
+                        className="text-[18px] text-black"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {progressMessage}
+                      </p>
+                    </div>
                   ) : (
-                    'Проанализировать'
+                    <>
+                      {/* Upload Button */}
+                      <button
+                        onClick={() => document.getElementById('custom-file-upload')?.click()}
+                        className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
+                           text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                        title="Загрузить файл"
+                      >
+                        <CloudUpload className="w-[30px] h-[30px]" />
+                      </button>
+
+                      {/* Hidden file input */}
+                      <input
+                        type="file"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+
+                          // Check file size
+                          const maxSizeBytes = 10 * 1024 * 1024 // 10MB
+                          if (file.size > maxSizeBytes) {
+                            setError('Размер файла должен быть менее 10МБ')
+                            return
+                          }
+
+                          // Handle PDF files
+                          if (file.name.toLowerCase().endsWith('.pdf')) {
+                            setError(null)
+                            setProgressMessage('Извлекаем текст из PDF...')
+
+                            try {
+                              const formData = new globalThis.FormData()
+                              formData.append('file', file)
+
+                              const response = await fetch('/api/parse-pdf', {
+                                method: 'POST',
+                                body: formData,
+                              })
+
+                              if (!response.ok) {
+                                const errorData = await response.json()
+                                setError(errorData.error || 'Ошибка обработки PDF')
+                                setProgressMessage('')
+                                return
+                              }
+
+                              const data = await response.json()
+                              const extractedText = data.text
+
+                              if (extractedText.length <= 25000) {
+                                setContent(extractedText)
+                                setError(null)
+                              } else {
+                                setError(
+                                  'Извлеченный текст слишком большой. Максимум 25000 символов',
+                                )
+                              }
+                              setProgressMessage('')
+                            } catch (err) {
+                              console.error('PDF parsing error:', err)
+                              setError('Не удалось обработать PDF файл')
+                              setProgressMessage('')
+                            }
+                            return
+                          }
+
+                          // Handle text files
+                          const reader = new FileReader()
+                          reader.onload = (ev) => {
+                            const text = ev.target?.result as string
+                            if (text.length <= 25000) {
+                              setContent(text)
+                              setError(null)
+                            } else {
+                              setError('Файл слишком большой. Максимум 25000 символов')
+                            }
+                          }
+                          reader.readAsText(file)
+                        }}
+                        className="hidden"
+                        id="custom-file-upload"
+                        accept=".txt,.md,.pdf"
+                      />
+
+                      <textarea
+                        placeholder="Текст урока"
+                        value={content}
+                        onChange={(e) => {
+                          const text = e.target.value
+                          if (text.length <= 25000) {
+                            setContent(text)
+                          }
+                        }}
+                        className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                        maxLength={25000}
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      />
+
+                      {/* Character Counter */}
+                      {content && (
+                        <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                          {content.length} / 25000
+                        </div>
+                      )}
+
+                      {/* Analyze Button inside textarea */}
+                      <button
+                        onClick={handleAnalyze}
+                        disabled={!content.trim() || isAnalyzing}
+                        className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                             hover:opacity-80 disabled:opacity-50
+                             rounded-full transition-opacity duration-200 flex items-center justify-center"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Анализируем...
+                          </>
+                        ) : (
+                          'Проанализировать'
+                        )}
+                      </button>
+                    </>
                   )}
-                </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Add Metric Modal */}
@@ -872,6 +1554,7 @@ export default function CustomMetricsPage() {
               onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
               onCancel={() => setEditingMetric(null)}
               existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
+              isEdit={true}
             />
           )}
         </div>

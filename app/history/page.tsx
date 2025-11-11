@@ -117,7 +117,7 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-white">
       <UnifiedHeader />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-[1200px] mx-auto">
           {/* Header - Лёха AI style */}
@@ -128,101 +128,104 @@ export default function HistoryPage() {
                 Просматривайте и управляйте вашими прошлыми анализами контента
               </p>
             </div>
-          <div className="flex items-center gap-3">
-            {selectedAnalyses.length > 0 && (
-              <button
-                onClick={() => setCompareMode(true)}
-                className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-              >
-                Сравнить выбранные ({selectedAnalyses.length})
-              </button>
-            )}
-            <ExportButton
-              onExport={handleExport}
-              selectedCount={selectedAnalyses.length}
-              totalCount={analyses.length}
+            <div className="flex items-center gap-3">
+              {selectedAnalyses.length > 0 && (
+                <button
+                  onClick={() => setCompareMode(true)}
+                  className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  Сравнить выбранные ({selectedAnalyses.length})
+                </button>
+              )}
+              <ExportButton
+                onExport={handleExport}
+                selectedCount={selectedAnalyses.length}
+                totalCount={analyses.length}
+              />
+            </div>
+          </header>
+
+          {/* Search and Filters */}
+          <div className="mb-8">
+            <SearchFilter
+              search={search}
+              onSearchChange={setSearch}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              onApply={() => {
+                setPage(1)
+                refetch()
+              }}
             />
           </div>
-        </header>
 
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <SearchFilter
-            search={search}
-            onSearchChange={setSearch}
-            dateRange={dateRange}
-            onDateRangeChange={setDateRange}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            onApply={() => {
-              setPage(1)
-              refetch()
-            }}
-          />
-        </div>
+          {/* Comparison View */}
+          {compareMode && selectedAnalyses.length > 0 && (
+            <ComparisonView
+              analysisIds={selectedAnalyses}
+              analyses={analyses.filter((a) => selectedAnalyses.includes(a.id))}
+              onClose={() => {
+                setCompareMode(false)
+                setSelectedAnalyses([])
+              }}
+            />
+          )}
 
-        {/* Comparison View */}
-        {compareMode && selectedAnalyses.length > 0 && (
-          <ComparisonView
-            analysisIds={selectedAnalyses}
-            analyses={analyses.filter((a) => selectedAnalyses.includes(a.id))}
-            onClose={() => {
-              setCompareMode(false)
-              setSelectedAnalyses([])
-            }}
-          />
-        )}
-
-        {/* Analysis List */}
-        {!compareMode && (
-          <>
-            {analyses.length === 0 ? (
-              <div className="bg-white border border-gray-200 p-12" style={{ borderRadius: '40px' }}>
-                <div className="text-center">
-                  <History className="w-12 h-12 text-black/40 mx-auto mb-4" />
-                  <h3 className="text-[24px] font-medium text-black mb-2">Пока нет анализов</h3>
-                  <p className="text-black/60 mb-6">
-                    Начните анализировать контент, чтобы увидеть вашу историю
-                  </p>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-                  >
-                    Начать анализ
-                  </button>
+          {/* Analysis List */}
+          {!compareMode && (
+            <>
+              {analyses.length === 0 ? (
+                <div
+                  className="bg-white border border-gray-200 p-12"
+                  style={{ borderRadius: '40px' }}
+                >
+                  <div className="text-center">
+                    <History className="w-12 h-12 text-black/40 mx-auto mb-4" />
+                    <h3 className="text-[24px] font-medium text-black mb-2">Пока нет анализов</h3>
+                    <p className="text-black/60 mb-6">
+                      Начните анализировать контент, чтобы увидеть вашу историю
+                    </p>
+                    <button
+                      onClick={() => router.push('/')}
+                      className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                    >
+                      Начать анализ
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {analyses.map((analysis) => (
-                  <AnalysisListItem
-                    key={analysis.id}
-                    analysis={analysis}
-                    selected={selectedAnalyses.includes(analysis.id)}
-                    onSelect={(selected) => {
-                      if (selected) {
-                        setSelectedAnalyses([...selectedAnalyses, analysis.id])
-                      } else {
-                        setSelectedAnalyses(selectedAnalyses.filter((id) => id !== analysis.id))
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4">
+                  {analyses.map((analysis) => (
+                    <AnalysisListItem
+                      key={analysis.id}
+                      analysis={analysis}
+                      selected={selectedAnalyses.includes(analysis.id)}
+                      onSelect={(selected) => {
+                        if (selected) {
+                          setSelectedAnalyses([...selectedAnalyses, analysis.id])
+                        } else {
+                          setSelectedAnalyses(selectedAnalyses.filter((id) => id !== analysis.id))
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.totalPages}
-                hasNextPage={pagination.hasNextPage}
-                hasPreviousPage={pagination.hasPreviousPage}
-                onPageChange={setPage}
-              />
-            )}
-          </>
-        )}
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  hasNextPage={pagination.hasNextPage}
+                  hasPreviousPage={pagination.hasPreviousPage}
+                  onPageChange={setPage}
+                />
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

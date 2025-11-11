@@ -85,7 +85,8 @@ function getMetrics(
     defaultMetrics.push({
       id: 'cognitive_load',
       name: 'cognitive_load',
-      prompt_text: 'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
+      prompt_text:
+        'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
       display_order: 6,
     })
   }
@@ -178,15 +179,26 @@ export async function runAnalysisInternal(
   const startTime = Date.now()
 
   console.log(`\n📊 Analyzing ${metrics.length} metrics in parallel...`)
+  console.log(`Model ID: ${modelId}`)
+  console.log(`Metric mode: ${metricMode}`)
+  console.log(
+    `Metrics:`,
+    metrics.map((m) => m.name),
+  )
 
   // Generate lesson title first
   let lessonTitle = ''
   try {
+    console.log(`Generating title with model: ${modelId}`)
     const titleResult = await llmService.generateTitle(content, modelId)
     lessonTitle = titleResult.comment || 'Учебный материал'
     console.log('Generated lesson title:', lessonTitle)
   } catch (error) {
     console.error('Failed to generate title:', error)
+    console.error('Title generation error details:', {
+      message: error instanceof Error ? error.message : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     lessonTitle = 'Учебный материал'
   }
 
@@ -197,6 +209,21 @@ export async function runAnalysisInternal(
 
     // Update progress: metric starting to process
     await progressService.updateMetricProgress(analysisId, metric.name, 'processing', 10)
+
+    // Determine if we should use custom prompt text (BEFORE try-catch for error logging access)
+    // Standard metrics (logic, practical, complexity, interest, care) use prompt files
+    // Custom metrics use prompt_text from database
+    const standardMetrics = [
+      'logic',
+      'practical',
+      'complexity',
+      'interest',
+      'care',
+      'cognitive_load',
+    ]
+    const isStandardMetric = standardMetrics.includes(metric.name)
+    const customPromptText =
+      !isStandardMetric && metric.prompt_text ? metric.prompt_text : undefined
 
     try {
       // Simulate granular progress updates during LLM processing
@@ -213,14 +240,6 @@ export async function runAnalysisInternal(
 
       // Analyze with retry
       console.log(`\n📊 Analyzing metric ${index + 1}/${metrics.length}: ${metric.name}`)
-
-      // Determine if we should use custom prompt text
-      // Standard metrics (logic, practical, complexity, interest, care) use prompt files
-      // Custom metrics use prompt_text from database
-  const standardMetrics = ['logic', 'practical', 'complexity', 'interest', 'care', 'cognitive_load']
-      const isStandardMetric = standardMetrics.includes(metric.name)
-      const customPromptText =
-        !isStandardMetric && metric.prompt_text ? metric.prompt_text : undefined
 
       // Debug logging
       if (metric.name === 'ярость' || (!isStandardMetric && !metric.prompt_text)) {
@@ -272,10 +291,14 @@ export async function runAnalysisInternal(
       // Mark metric as failed
       await progressService.updateMetricProgress(analysisId, metric.name, 'failed', 0)
 
-      console.log(
-        `❌ Metric ${metric.name} failed:`,
-        error instanceof Error ? error.message : 'Unknown error',
-      )
+      console.error(`❌ Metric ${metric.name} failed:`, error)
+      console.error(`Error details for ${metric.name}:`, {
+        message: error instanceof Error ? error.message : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined,
+        modelId,
+        isStandardMetric,
+        hasCustomPrompt: !!customPromptText,
+      })
 
       // Store failed LLM request
       await supabase.from('llm_requests').insert({
@@ -294,6 +317,20 @@ export async function runAnalysisInternal(
 
   // Wait for all metrics to complete
   const metricResults = await Promise.all(metricPromises)
+
+  // Log analysis summary
+  console.log('\n📊 Analysis Summary:')
+  console.log(`Total metrics: ${metricResults.length}`)
+  console.log(`Successful: ${metricResults.filter((r) => r.success).length}`)
+  console.log(`Failed: ${metricResults.filter((r) => !r.success).length}`)
+
+  const failedMetrics = metricResults.filter((r) => !r.success)
+  if (failedMetrics.length > 0) {
+    console.error(
+      '❌ Failed metrics:',
+      failedMetrics.map((r) => `${r.metric}: ${r.error}`),
+    )
+  }
 
   // Helper function to get current metric progress
   async function getCurrentMetricProgress(analysisId: string, metric: string): Promise<number> {

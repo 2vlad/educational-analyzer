@@ -11,10 +11,10 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
   // Calculate percentage (0-100)
   // For display like "1/30", score is from 0 to maxScore
   const percentage = Math.max(0, Math.min(100, (score / maxScore) * 100))
-  
+
   // Calculate angle for the speedometer needle (-90 to 90 degrees)
   const angle = (percentage / 100) * 180 - 90
-  
+
   // Determine color based on percentage - more granular for better visual feedback
   const getColor = () => {
     if (percentage < 20) {
@@ -29,18 +29,13 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
       return '#4CAF50' // Strong green for excellent scores (80-100%)
     }
   }
-  
+
   const color = getColor()
-  
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
       {/* SVG Speedometer */}
-      <svg
-        width="240"
-        height="140"
-        viewBox="0 0 240 140"
-        className="mb-2"
-      >
+      <svg width="240" height="140" viewBox="0 0 240 140" className="mb-2">
         {/* Background arc */}
         <path
           d="M 30 120 A 90 90 0 0 1 210 120"
@@ -49,7 +44,7 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
           strokeWidth="16"
           strokeLinecap="round"
         />
-        
+
         {/* Colored arc based on score */}
         <path
           d="M 30 120 A 90 90 0 0 1 210 120"
@@ -60,7 +55,7 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
           strokeDasharray={`${percentage * 2.827} 282.7`}
           style={{ transition: 'stroke-dasharray 0.5s ease' }}
         />
-        
+
         {/* Needle */}
         <g transform={`translate(120, 120) rotate(${angle})`}>
           <line
@@ -74,11 +69,11 @@ export default function ScoreSpeedometer({ score, maxScore }: ScoreSpeedometerPr
           />
           <circle cx="0" cy="0" r="8" fill="#1a1a1a" />
         </g>
-        
+
         {/* Center decorative circle */}
         <circle cx="120" cy="120" r="5" fill={color} />
       </svg>
-      
+
       {/* Score display */}
       <div className="text-center">
         <div style={{ fontSize: '50px', fontWeight: 400 }} className="text-black leading-none">

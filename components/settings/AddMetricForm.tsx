@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MetricConfig } from '@/src/types/metrics'
 import { X, AlertCircle } from 'lucide-react'
 
@@ -96,7 +96,7 @@ export default function AddMetricForm({
         <form onSubmit={handleSubmit} className="p-6">
           {/* Name Field */}
           <div className="mb-6">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-500 mb-2">
               Название метрики
             </label>
             <input
@@ -104,7 +104,7 @@ export default function AddMetricForm({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-gray-900 focus:border-gray-900 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Например: Ясность, Вовлечённость, Техническая точность"
@@ -129,7 +129,7 @@ export default function AddMetricForm({
 
           {/* Prompt Field */}
           <div className="mb-6">
-            <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="prompt" className="block text-sm font-medium text-gray-500 mb-2">
               Описание метрики
             </label>
             <textarea
@@ -137,7 +137,7 @@ export default function AddMetricForm({
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-gray-900 focus:border-gray-900 resize-none ${
                 errors.prompt ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Введите критерии оценки для этой метрики. Укажите конкретно, какие аспекты следует оценивать и как."
@@ -167,24 +167,25 @@ export default function AddMetricForm({
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-gray-900"
                 disabled={submitting}
               />
               <div>
-                <span className="text-sm font-medium text-gray-700">Активна</span>
-                <p className="text-xs text-gray-500">
-                  Активные метрики будут использоваться при анализе. Неактивные сохраняются, но не используются.
+                <span className="text-sm font-medium text-black">Активна</span>
+                <p className="text-xs text-gray-600">
+                  Активные метрики будут использоваться при анализе. Неактивные сохраняются, но не
+                  используются.
                 </p>
               </div>
             </label>
           </div>
 
           {/* Tips */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">
+          <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+            <h3 className="text-sm font-medium text-black mb-2">
               Советы по написанию хороших метрик:
             </h3>
-            <ul className="text-xs text-blue-700 space-y-1">
+            <ul className="text-xs text-gray-700 space-y-1">
               <li>• Будьте конкретны в том, какие аспекты следует оценивать</li>
               <li>• Включите чёткие критерии оценки (что хорошо/плохо)</li>
               <li>• Учитывайте контекст и целевую аудиторию</li>
@@ -204,10 +205,10 @@ export default function AddMetricForm({
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
-              {submitting ? 'Сохранение...' : isEdit ? 'Сохранить изменения' : 'Добавить метрику'}
+              {submitting ? 'Сохранение...' : isEdit ? 'Обновить метрику' : 'Добавить метрику'}
             </button>
           </div>
         </form>

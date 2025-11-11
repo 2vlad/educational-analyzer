@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
     const maxSizeBytes = maxSizeMB * 1024 * 1024
     if (file.size > maxSizeBytes) {
       console.log('[PDF API] File too large:', file.size, 'Max:', maxSizeBytes)
-      return NextResponse.json({ error: `File size must be less than ${maxSizeMB}MB` }, { status: 400 })
+      return NextResponse.json(
+        { error: `File size must be less than ${maxSizeMB}MB` },
+        { status: 400 },
+      )
     }
 
     // Convert file to buffer

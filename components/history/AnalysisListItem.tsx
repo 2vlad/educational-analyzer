@@ -46,18 +46,18 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
 
     // Sum all scores
     const totalScore = scores.reduce((acc, score) => acc + score, 0)
-    
+
     // Calculate max possible score
     const metricCount = scores.length
     const maxPossibleScore = metricCount * 2 // Since scores range from -2 to +2
-    
+
     // Shift to 0-based range for display
     const adjustedScore = totalScore + maxPossibleScore // Now ranges from 0 to maxPossibleScore*2
     const totalPossible = maxPossibleScore * 2
-    
-    return { 
-      score: totalScore, 
-      displayScore: `${adjustedScore}/${totalPossible}`
+
+    return {
+      score: totalScore,
+      displayScore: `${adjustedScore}/${totalPossible}`,
     }
   }
 
@@ -134,56 +134,64 @@ export default function AnalysisListItem({ analysis, selected, onSelect }: Analy
           <div className="mb-6">
             <h4 className="font-medium text-gray-900 mb-3">Результаты анализа</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Object.entries(results || {}).map(([metricName, metricData]: [string, any]) => {
-                if (metricName === 'lessonTitle' || !metricData || typeof metricData !== 'object') return null
-                
-                const score = metricData.score || 0
+              {Object.entries(results || {})
+                .map(([metricName, metricData]: [string, any]) => {
+                  if (metricName === 'lessonTitle' || !metricData || typeof metricData !== 'object')
+                    return null
 
-                const getScoreColor = (score: number) => {
-                  if (score > 0) return 'text-green-600 bg-green-50 border-green-200'
-                  if (score < 0) return 'text-red-600 bg-red-50 border-red-200'
-                  return 'text-gray-600 bg-gray-50 border-gray-200'
-                }
+                  const score = metricData.score || 0
 
-                const getScoreText = (score: number) => {
-                  if (score === 2) return '+2'
-                  if (score === 1) return '+1'
-                  if (score === -1) return '-1'
-                  if (score === -2) return '-2'
-                  return '0'
-                }
+                  const getScoreColor = (score: number) => {
+                    if (score > 0) return 'text-green-600 bg-green-50 border-green-200'
+                    if (score < 0) return 'text-red-600 bg-red-50 border-red-200'
+                    return 'text-gray-600 bg-gray-50 border-gray-200'
+                  }
 
-                const metricDisplayNames: Record<string, string> = {
-                  logic: 'Логика',
-                  practical: 'Польза',
-                  complexity: 'Сложность',
-                  interest: 'Интерес',
-                  care: 'Забота',
-                  cognitive_load: 'Когнитивная нагрузка',
-                }
+                  const getScoreText = (score: number) => {
+                    if (score === 2) return '+2'
+                    if (score === 1) return '+1'
+                    if (score === -1) return '-1'
+                    if (score === -2) return '-2'
+                    return '0'
+                  }
 
-                return (
-                  <div key={metricName} className="p-4 bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-start justify-between mb-2">
-                      <h5 className="font-medium text-gray-900">{metricDisplayNames[metricName] || metricName}</h5>
-                      <span
-                        className={`px-2 py-1 text-sm font-semibold rounded ${getScoreColor(score)}`}
-                      >
-                        {getScoreText(score)}
-                      </span>
-                    </div>
-                    {metricData.comment && (
-                      <p className="text-sm text-gray-700 mb-2">"{metricData.comment}"</p>
-                    )}
-                    {metricData.suggestions && metricData.suggestions.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-xs font-medium text-gray-600 mb-1">Рекомендации:</p>
-                        <p className="text-xs text-gray-600">→ {metricData.suggestions[0]}</p>
+                  const metricDisplayNames: Record<string, string> = {
+                    logic: 'Логика',
+                    practical: 'Польза',
+                    complexity: 'Сложность',
+                    interest: 'Интерес',
+                    care: 'Забота',
+                    cognitive_load: 'Когнитивная нагрузка',
+                  }
+
+                  return (
+                    <div
+                      key={metricName}
+                      className="p-4 bg-white rounded-lg border border-gray-200"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h5 className="font-medium text-gray-900">
+                          {metricDisplayNames[metricName] || metricName}
+                        </h5>
+                        <span
+                          className={`px-2 py-1 text-sm font-semibold rounded ${getScoreColor(score)}`}
+                        >
+                          {getScoreText(score)}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                )
-              }).filter(Boolean)}
+                      {metricData.comment && (
+                        <p className="text-sm text-gray-700 mb-2">"{metricData.comment}"</p>
+                      )}
+                      {metricData.suggestions && metricData.suggestions.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-xs font-medium text-gray-600 mb-1">Рекомендации:</p>
+                          <p className="text-xs text-gray-600">→ {metricData.suggestions[0]}</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+                .filter(Boolean)}
             </div>
           </div>
 

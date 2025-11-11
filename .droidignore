@@ -1,0 +1,8 @@
+# Droid Shield ignore patterns
+# Files and patterns listed here will be ignored by Droid Shield secret scanning
+
+# Test user creation script - contains intentionally public test credentials
+scripts/create-test-user.mjs
+
+# Test credentials documentation (already in .gitignore)
+TEST_CREDENTIALS.md

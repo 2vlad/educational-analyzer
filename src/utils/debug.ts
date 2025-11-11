@@ -54,9 +54,10 @@ class DebugLogger {
   // Special method for large payloads - only logs when DEBUG=true
   payload(label: string, data: any, maxLength: number = 200) {
     if (this.isDebug) {
-      const preview = typeof data === 'string' 
-        ? data.substring(0, maxLength) 
-        : JSON.stringify(data).substring(0, maxLength)
+      const preview =
+        typeof data === 'string'
+          ? data.substring(0, maxLength)
+          : JSON.stringify(data).substring(0, maxLength)
       console.log(`[DEBUG:PAYLOAD] ${label}:`, preview + (preview.length >= maxLength ? '...' : ''))
     }
   }

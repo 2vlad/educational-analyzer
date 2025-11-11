@@ -9,7 +9,7 @@ global.fetch = jest.fn()
 
 describe('YonoteAdapter', () => {
   let adapter: YonoteAdapter
-  
+
   beforeEach(() => {
     jest.clearAllMocks()
     adapter = new YonoteAdapter()
@@ -89,10 +89,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(mockHtml),
       })
 
-      const lessons = await adapter.enumerateLessons(
-        'https://yonote.ru/course/123',
-        { cookie: 'session=abc123' }
-      )
+      const lessons = await adapter.enumerateLessons('https://yonote.ru/course/123', {
+        cookie: 'session=abc123',
+      })
 
       expect(lessons).toHaveLength(3)
       expect(lessons[0]).toEqual({
@@ -113,7 +112,7 @@ describe('YonoteAdapter', () => {
       })
 
       await expect(
-        adapter.enumerateLessons('https://yonote.ru/course/123', { cookie: '' })
+        adapter.enumerateLessons('https://yonote.ru/course/123', { cookie: '' }),
       ).rejects.toThrow('401')
     })
 
@@ -121,7 +120,7 @@ describe('YonoteAdapter', () => {
       ;(global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'))
 
       await expect(
-        adapter.enumerateLessons('https://yonote.ru/course/123', { cookie: 'session=abc' })
+        adapter.enumerateLessons('https://yonote.ru/course/123', { cookie: 'session=abc' }),
       ).rejects.toThrow('Network error')
     })
 
@@ -142,10 +141,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(emptyHtml),
       })
 
-      const lessons = await adapter.enumerateLessons(
-        'https://yonote.ru/course/123',
-        { cookie: 'session=abc123' }
-      )
+      const lessons = await adapter.enumerateLessons('https://yonote.ru/course/123', {
+        cookie: 'session=abc123',
+      })
 
       expect(lessons).toHaveLength(0)
     })
@@ -183,10 +181,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(mockLessonHtml),
       })
 
-      const content = await adapter.fetchLessonContent(
-        'https://yonote.ru/lesson/1',
-        { cookie: 'session=abc123' }
-      )
+      const content = await adapter.fetchLessonContent('https://yonote.ru/lesson/1', {
+        cookie: 'session=abc123',
+      })
 
       expect(content.text).toContain('Getting Started with Programming')
       expect(content.text).toContain('Welcome to the first lesson')
@@ -214,10 +211,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(htmlWithWhitespace),
       })
 
-      const content = await adapter.fetchLessonContent(
-        'https://yonote.ru/lesson/1',
-        { cookie: 'session=abc123' }
-      )
+      const content = await adapter.fetchLessonContent('https://yonote.ru/lesson/1', {
+        cookie: 'session=abc123',
+      })
 
       expect(content.text).not.toContain('   ')
       expect(content.text).toContain('Text with multiple spaces')
@@ -232,7 +228,7 @@ describe('YonoteAdapter', () => {
       })
 
       await expect(
-        adapter.fetchLessonContent('https://yonote.ru/lesson/1', { cookie: 'expired' })
+        adapter.fetchLessonContent('https://yonote.ru/lesson/1', { cookie: 'expired' }),
       ).rejects.toThrow('403')
     })
 
@@ -250,10 +246,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(emptyHtml),
       })
 
-      const content = await adapter.fetchLessonContent(
-        'https://yonote.ru/lesson/1',
-        { cookie: 'session=abc123' }
-      )
+      const content = await adapter.fetchLessonContent('https://yonote.ru/lesson/1', {
+        cookie: 'session=abc123',
+      })
 
       expect(content.text).toBe('')
       expect(content.hash).toBeDefined()
@@ -280,10 +275,9 @@ describe('YonoteAdapter', () => {
         text: jest.fn().mockResolvedValue(htmlWithTags),
       })
 
-      const content = await adapter.fetchLessonContent(
-        'https://yonote.ru/lesson/1',
-        { cookie: 'session=abc123' }
-      )
+      const content = await adapter.fetchLessonContent('https://yonote.ru/lesson/1', {
+        cookie: 'session=abc123',
+      })
 
       expect(content.text).toContain('This is bold and italic text')
       expect(content.text).toContain('Important: Remember this!')
@@ -327,10 +321,9 @@ describe('YonoteAdapter', () => {
       })
 
       // Should not throw, but handle gracefully
-      const content = await adapter.fetchLessonContent(
-        'https://yonote.ru/lesson/1',
-        { cookie: 'session=abc123' }
-      )
+      const content = await adapter.fetchLessonContent('https://yonote.ru/lesson/1', {
+        cookie: 'session=abc123',
+      })
 
       expect(content.text).toBeDefined()
       expect(content.hash).toBeDefined()

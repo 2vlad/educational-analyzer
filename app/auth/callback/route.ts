@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
-    
+
     // Log error for debugging
     console.error('Auth callback error:', error)
   }

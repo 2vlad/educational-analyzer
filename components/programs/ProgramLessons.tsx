@@ -10,14 +10,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { Program, Lesson } from '@/app/(dashboard)/programs/page'
+import UploadLessonsButton from '@/components/programs/UploadLessonsButton'
+import type { Program, Lesson } from '@/types/programs'
 
 interface ProgramLessonsProps {
   program: Program
   lessons: Lesson[]
+  loading?: boolean
+  onRefresh?: () => void
 }
 
-export default function ProgramLessons({ program, lessons }: ProgramLessonsProps) {
+export default function ProgramLessons({
+  program,
+  lessons,
+  loading = false,
+  onRefresh,
+}: ProgramLessonsProps) {
   const router = useRouter()
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set())
 
@@ -91,8 +99,50 @@ export default function ProgramLessons({ program, lessons }: ProgramLessonsProps
     }
   }
 
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка уроков...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (lessons.length === 0) {
+    const isManual = program.sourceType === 'manual'
+
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">{program.title}</h1>
+          <p className="text-gray-600 mt-1">Уроки еще не загружены</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">
+              {isManual
+                ? 'Загрузите файлы уроков для начала работы'
+                : 'Нажмите "Загрузить уроки" в списке программ, чтобы загрузить список уроков'}
+            </p>
+            {isManual && onRefresh && (
+              <UploadLessonsButton
+                programId={program.id}
+                programName={program.title}
+                onSuccess={onRefresh}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="p-6">
+    <div>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{program.title}</h1>
@@ -169,19 +219,11 @@ export default function ProgramLessons({ program, lessons }: ProgramLessonsProps
                 )}
                 {lesson.status === 'completed' && (
                   <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewResults(lesson)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => handleViewResults(lesson)}>
                       <Eye className="w-4 h-4 mr-2" />
                       Результаты
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleReanalyze(lesson)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => handleReanalyze(lesson)}>
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Переанализировать
                     </Button>

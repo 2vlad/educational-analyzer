@@ -12,9 +12,12 @@ const saveCredentialSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Get user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -22,11 +25,11 @@ export async function POST(request: NextRequest) {
     // Parse and validate request body
     const body = await request.json()
     const validationResult = saveCredentialSchema.safeParse(body)
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         { error: 'Invalid request data', details: validationResult.error.errors },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!appSecretKey) {
       return NextResponse.json(
         { error: 'Server configuration error: APP_SECRET_KEY not set' },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (!validatePassword(appSecretKey)) {
       return NextResponse.json(
         { error: 'Server configuration error: Invalid APP_SECRET_KEY' },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
@@ -55,10 +58,7 @@ export async function POST(request: NextRequest) {
       encryptedCookie = encryptForStorage(cookie, appSecretKey)
     } catch (error) {
       console.error('Encryption error:', error)
-      return NextResponse.json(
-        { error: 'Failed to encrypt credentials' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to encrypt credentials' }, { status: 500 })
     }
 
     // Check if user already has a Yonote credential
@@ -86,10 +86,7 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('Error updating credential:', error)
-        return NextResponse.json(
-          { error: 'Failed to update credential' },
-          { status: 500 }
-        )
+        return NextResponse.json({ error: 'Failed to update credential' }, { status: 500 })
       }
       credential = data
     } else {
@@ -108,10 +105,7 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('Error creating credential:', error)
-        return NextResponse.json(
-          { error: 'Failed to save credential' },
-          { status: 500 }
-        )
+        return NextResponse.json({ error: 'Failed to save credential' }, { status: 500 })
       }
       credential = data
     }
@@ -126,7 +120,9 @@ export async function POST(request: NextRequest) {
         createdAt: credential.created_at,
         updatedAt: credential.updated_at,
       },
-      message: existingCredential ? 'Credential updated successfully' : 'Credential saved successfully'
+      message: existingCredential
+        ? 'Credential updated successfully'
+        : 'Credential saved successfully',
     })
   } catch (error) {
     console.error('Error in POST /api/credentials/yonote:', error)

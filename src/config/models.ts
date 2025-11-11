@@ -4,7 +4,7 @@ import modelsConfig from '../../config/models.json'
 
 // Model configuration schema
 const modelSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'google', 'yandex']),
+  provider: z.enum(['anthropic', 'openai', 'google', 'yandex', 'openrouter']),
   model: z.string(),
   maxTokens: z.number(),
   temperature: z.number(),
@@ -86,6 +86,8 @@ class ModelsManager {
         return !!env.server.GOOGLE_API_KEY
       case 'yandex':
         return !!env.server.YANDEX_API_KEY && !!env.server.YANDEX_FOLDER_ID
+      case 'openrouter':
+        return !!env.server.OPENROUTER_API_KEY
       default:
         return false
     }

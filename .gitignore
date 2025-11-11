@@ -30,6 +30,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Test credentials (DO NOT COMMIT)
+TEST_CREDENTIALS.md
+
 # vercel
 .vercel
 
@@ -67,3 +70,4 @@ node_modules/
 
 # mcp config (contains API keys)
 .mcp.json 
+scripts/create-test-user.mjs

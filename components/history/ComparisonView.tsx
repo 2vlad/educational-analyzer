@@ -171,7 +171,7 @@ export default function ComparisonView({ analysisIds, analyses, onClose }: Compa
           </div>
 
           {/* Insights */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg">
             <h3 className="text-sm font-medium text-blue-900 mb-2">Key Insights</h3>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>

@@ -19,15 +19,17 @@ export type Metric = (typeof METRICS)[number]
 export type Provider = 'claude' | 'gpt' | 'gemini' | 'yandex'
 
 /**
- * Get the provider family from a model ID
+ * Get the provider family from a model ID or model name
+ * For OpenRouter models (e.g., "anthropic/claude-3-haiku"), extract the family
  */
-export function getProviderFamily(modelId: string): Provider {
-  if (modelId.includes('claude')) return 'claude'
-  if (modelId.includes('gpt-4')) return 'gpt'
-  if (modelId.includes('gemini')) return 'gemini'
-  if (modelId.includes('yandex')) return 'yandex'
+export function getProviderFamily(modelIdOrName: string): Provider {
+  // Check for direct model IDs
+  if (modelIdOrName.includes('claude') || modelIdOrName.includes('anthropic')) return 'claude'
+  if (modelIdOrName.includes('gpt-4') || modelIdOrName.includes('openai')) return 'gpt'
+  if (modelIdOrName.includes('gemini') || modelIdOrName.includes('google')) return 'gemini'
+  if (modelIdOrName.includes('yandex')) return 'yandex'
 
-  // Default fallback based on common patterns
+  // Default fallback
   return 'claude'
 }
 

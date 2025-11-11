@@ -9,7 +9,10 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
-      className={cn('relative flex h-[92px] w-[92px] shrink-0 overflow-hidden rounded-full', className)}
+      className={cn(
+        'relative flex h-[92px] w-[92px] shrink-0 overflow-hidden rounded-full',
+        className,
+      )}
       {...props}
     />
   )

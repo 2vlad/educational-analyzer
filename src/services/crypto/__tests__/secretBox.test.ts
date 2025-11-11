@@ -18,12 +18,12 @@ describe('SecretBox Encryption', () => {
   describe('encrypt/decrypt', () => {
     it('should encrypt and decrypt data successfully', () => {
       const encrypted = encrypt(testData, testPassword)
-      
+
       expect(encrypted).toHaveProperty('ciphertext')
       expect(encrypted).toHaveProperty('iv')
       expect(encrypted).toHaveProperty('tag')
       expect(encrypted.ciphertext).not.toBe(testData)
-      
+
       const decrypted = decrypt(encrypted, testPassword)
       expect(decrypted).toBe(testData)
     })
@@ -31,7 +31,7 @@ describe('SecretBox Encryption', () => {
     it('should produce different ciphertext for same data', () => {
       const encrypted1 = encrypt(testData, testPassword)
       const encrypted2 = encrypt(testData, testPassword)
-      
+
       expect(encrypted1.ciphertext).not.toBe(encrypted2.ciphertext)
       expect(encrypted1.iv).not.toBe(encrypted2.iv)
     })
@@ -39,7 +39,7 @@ describe('SecretBox Encryption', () => {
     it('should fail to decrypt with wrong password', () => {
       const encrypted = encrypt(testData, testPassword)
       const wrongPassword = 'wrong-password-that-is-long-enough-32ch'
-      
+
       expect(() => decrypt(encrypted, wrongPassword)).toThrow()
     })
 
@@ -66,10 +66,10 @@ describe('SecretBox Encryption', () => {
   describe('encryptForStorage/decryptFromStorage', () => {
     it('should encrypt and decrypt for storage as JSON string', () => {
       const encrypted = encryptForStorage(testData, testPassword)
-      
+
       expect(typeof encrypted).toBe('string')
       expect(() => JSON.parse(encrypted)).not.toThrow()
-      
+
       const decrypted = decryptFromStorage(encrypted, testPassword)
       expect(decrypted).toBe(testData)
     })
@@ -77,9 +77,9 @@ describe('SecretBox Encryption', () => {
     it('should handle round-trip with complex data', () => {
       const complexData = JSON.stringify({
         cookie: 'session=abc123; expires=2024-12-31',
-        metadata: { userId: 123, timestamp: Date.now() }
+        metadata: { userId: 123, timestamp: Date.now() },
       })
-      
+
       const encrypted = encryptForStorage(complexData, testPassword)
       const decrypted = decryptFromStorage(encrypted, testPassword)
       expect(decrypted).toBe(complexData)
@@ -117,7 +117,7 @@ describe('SecretBox Encryption', () => {
   describe('generateSecretKey', () => {
     it('should generate valid base64 keys', () => {
       const key = generateSecretKey()
-      
+
       expect(typeof key).toBe('string')
       expect(key.length).toBeGreaterThanOrEqual(32)
       expect(() => Buffer.from(key, 'base64')).not.toThrow()
@@ -140,7 +140,7 @@ describe('SecretBox Encryption', () => {
   describe('Error handling', () => {
     it('should throw descriptive errors for decryption failures', () => {
       const encrypted = encrypt(testData, testPassword)
-      
+
       // Tamper with tag
       const tamperedData = { ...encrypted, tag: 'invalid-tag' }
       expect(() => decrypt(tamperedData, testPassword)).toThrow('Decryption failed')
@@ -150,7 +150,7 @@ describe('SecretBox Encryption', () => {
       const invalidData = JSON.stringify({
         ciphertext: '!!!invalid-base64!!!',
         iv: 'valid-base64',
-        tag: 'valid-base64'
+        tag: 'valid-base64',
       })
       expect(() => decryptFromStorage(invalidData, testPassword)).toThrow()
     })

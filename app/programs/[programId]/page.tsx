@@ -44,8 +44,9 @@ const mockAnalysisResults = {
 export default function ProgramDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const programId = params.programId as string
-  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _programId = params.programId as string
+
   // Get lesson ID from query params or default to first lesson
   const lessonId = '1-1' // In real app, this would come from query params or state
   const analysis = mockAnalysisResults[lessonId as keyof typeof mockAnalysisResults]
@@ -74,14 +75,10 @@ export default function ProgramDetailPage() {
   return (
     <div className="min-h-screen bg-white">
       <UnifiedHeader />
-      
+
       <div className="container mx-auto px-4 py-8">
         {/* Back to programs */}
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/programs')}
-          className="mb-6"
-        >
+        <Button variant="ghost" onClick={() => router.push('/programs')} className="mb-6">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Вернуться к программам
         </Button>
@@ -100,10 +97,8 @@ export default function ProgramDetailPage() {
               className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {METRIC_NAMES[key] || key}
-                </h3>
-                <ScoreSpeedometer score={data.score} />
+                <h3 className="text-lg font-semibold text-gray-900">{METRIC_NAMES[key] || key}</h3>
+                <ScoreSpeedometer score={data.score + 2} maxScore={4} />
               </div>
               <p className="text-sm text-gray-600">{data.feedback}</p>
             </div>
@@ -111,12 +106,10 @@ export default function ProgramDetailPage() {
         </div>
 
         {/* Overall result */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 mb-8">
+        <div className="bg-gradient-to-r from-gray-100 to-gray-300 rounded-xl p-8 mb-8">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Общий результат</h2>
-            <div className="text-5xl font-bold text-blue-600">
-              {analysis.overallScore}/10
-            </div>
+            <div className="text-5xl font-bold text-blue-600">{analysis.overallScore}/10</div>
             <p className="text-gray-600 mt-4">
               Материал урока получил высокую оценку по всем критериям
             </p>
@@ -125,18 +118,11 @@ export default function ProgramDetailPage() {
 
         {/* Navigation buttons */}
         <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePreviousLesson}
-            disabled={lessonId === '1-1'}
-          >
+          <Button variant="outline" onClick={handlePreviousLesson} disabled={lessonId === '1-1'}>
             <ChevronLeft className="w-4 h-4 mr-2" />
             Предыдущий урок
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleNextLesson}
-          >
+          <Button variant="outline" onClick={handleNextLesson}>
             Следующий урок
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>

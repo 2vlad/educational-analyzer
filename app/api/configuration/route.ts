@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[CONFIG POST] Starting metric creation...')
     const supabase = await createClient()
 
     // Check authentication
@@ -73,15 +74,21 @@ export async function POST(request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser()
 
+    console.log('[CONFIG POST] User:', user?.id, 'Auth error:', authError?.message)
+
     if (authError || !user) {
+      console.error('[CONFIG POST] Authentication failed:', authError)
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     // Parse and validate request body
     const body = await request.json()
+    console.log('[CONFIG POST] Request body:', JSON.stringify(body, null, 2))
+    
     const validation = createMetricSchema.safeParse(body)
 
     if (!validation.success) {
+      console.error('[CONFIG POST] Validation failed:', validation.error.flatten())
       return NextResponse.json(
         { error: 'Invalid request', details: validation.error.flatten() },
         { status: 400 },
@@ -89,16 +96,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, prompt_text, display_order, is_active } = validation.data
+    console.log('[CONFIG POST] Validated data:', { name, prompt_text: prompt_text.substring(0, 50) + '...', display_order, is_active })
 
     // Check for duplicate metric name for this user
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('metric_configurations')
       .select('id')
       .eq('user_id', user.id)
       .eq('name', name)
       .single()
 
+    console.log('[CONFIG POST] Duplicate check - existing:', existing, 'error:', existingError?.message)
+
     if (existing) {
+      console.warn('[CONFIG POST] Duplicate metric name detected')
       return NextResponse.json({ error: 'A metric with this name already exists' }, { status: 409 })
     }
 
@@ -114,9 +125,11 @@ export async function POST(request: NextRequest) {
         .single()
 
       finalDisplayOrder = (maxOrder?.display_order || 0) + 1
+      console.log('[CONFIG POST] Calculated display_order:', finalDisplayOrder)
     }
 
     // Create the new configuration
+    console.log('[CONFIG POST] Attempting to insert metric...')
     const { data: newConfig, error: createError } = await supabase
       .from('metric_configurations')
       .insert({
@@ -130,10 +143,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (createError) {
-      console.error('Failed to create configuration:', createError)
-      return NextResponse.json({ error: 'Failed to create configuration' }, { status: 500 })
+      console.error('[CONFIG POST] Failed to create configuration:', createError)
+      console.error('[CONFIG POST] Error details:', JSON.stringify(createError, null, 2))
+      return NextResponse.json({ error: 'Failed to create configuration', details: createError.message }, { status: 500 })
     }
 
+    console.log('[CONFIG POST] ✅ Successfully created metric:', newConfig.id)
     return NextResponse.json(
       {
         message: 'Configuration created successfully',
@@ -142,7 +157,8 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     )
   } catch (error) {
-    console.error('Configuration POST error:', error)
+    console.error('[CONFIG POST] Unexpected error:', error)
+    console.error('[CONFIG POST] Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

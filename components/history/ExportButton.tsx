@@ -170,7 +170,7 @@ export default function ExportButton({ onExport, selectedCount, totalCount }: Ex
         <Download className="w-4 h-4" />
         Export
         {selectedCount > 0 && (
-          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+          <span className="px-2 py-0.5 bg-gray-200 text-blue-700 text-xs rounded-full">
             {selectedCount}
           </span>
         )}

@@ -12,9 +12,6 @@ export async function GET() {
     return NextResponse.json(config)
   } catch (error) {
     console.error('[Config API] Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch configuration' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch configuration' }, { status: 500 })
   }
 }

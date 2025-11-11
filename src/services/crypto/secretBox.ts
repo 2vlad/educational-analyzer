@@ -40,27 +40,24 @@ export function encrypt(plaintext: string, password: string): EncryptedData {
   // Generate random salt and IV
   const salt = crypto.randomBytes(SALT_LENGTH)
   const iv = crypto.randomBytes(IV_LENGTH)
-  
+
   // Derive key from password
   const key = deriveKey(password, salt)
-  
+
   // Create cipher
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
-  
+
   // Encrypt the plaintext
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, 'utf8'),
-    cipher.final()
-  ])
-  
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+
   // Get the authentication tag
   const tag = cipher.getAuthTag()
-  
+
   return {
     ciphertext: encrypted.toString('base64'),
     iv: iv.toString('base64'),
     tag: tag.toString('base64'),
-    salt: salt.toString('base64')
+    salt: salt.toString('base64'),
   }
 }
 
@@ -87,20 +84,17 @@ export function decrypt(encrypted: EncryptedData, password: string): string {
     const ivBuffer = Buffer.from(iv, 'base64')
     const tagBuffer = Buffer.from(tag, 'base64')
     const encryptedBuffer = Buffer.from(ciphertext, 'base64')
-    
+
     // Derive key from password
     const key = deriveKey(password, saltBuffer)
-    
+
     // Create decipher
     const decipher = crypto.createDecipheriv(ALGORITHM, key, ivBuffer)
     decipher.setAuthTag(tagBuffer)
-    
+
     // Decrypt
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedBuffer),
-      decipher.final()
-    ])
-    
+    const decrypted = Buffer.concat([decipher.update(encryptedBuffer), decipher.final()])
+
     return decrypted.toString('utf8')
   } catch (error) {
     // Don't expose details about decryption failures

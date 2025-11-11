@@ -13,9 +13,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createClient()
     const { id } = params
-    
+
     // Get user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -23,13 +26,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Fetch program with credential
     const { data: program, error: programError } = await supabase
       .from('programs')
-      .select(`
+      .select(
+        `
         *,
         external_credentials(
           id,
           cookie_encrypted
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .eq('user_id', user.id)
       .single()
@@ -43,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!adapter) {
       return NextResponse.json(
         { error: `No adapter found for source type: ${program.source_type}` },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -54,19 +59,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (!appSecretKey) {
         return NextResponse.json(
           { error: 'Server configuration error: APP_SECRET_KEY not set' },
-          { status: 500 }
+          { status: 500 },
         )
       }
 
       try {
         authContext.cookie = decryptFromStorage(
           program.external_credentials.cookie_encrypted,
-          appSecretKey
+          appSecretKey,
         )
       } catch (error) {
         return NextResponse.json(
           { error: 'Failed to decrypt credentials. Please update your Yonote connection.' },
-          { status: 401 }
+          { status: 401 },
         )
       }
     }
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (error.message === 'SESSION_EXPIRED') {
         return NextResponse.json(
           { error: 'Yonote session expired. Please update your credentials.' },
-          { status: 401 }
+          { status: 401 },
         )
       }
       throw error
@@ -111,22 +116,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (insertError) {
       console.error('Error inserting lessons:', insertError)
-      return NextResponse.json(
-        { error: 'Failed to save lessons' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to save lessons' }, { status: 500 })
     }
 
     return NextResponse.json({
       message: `Successfully enumerated ${lessons.length} lessons`,
       count: lessons.length,
-      lessons: insertedLessons
+      lessons: insertedLessons,
     })
   } catch (error: any) {
     console.error('Error in POST /api/programs/[id]/enumerate:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to enumerate lessons' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

@@ -75,30 +75,50 @@ export default function CustomMetricsPage() {
   useEffect(() => {
     // Fetch metrics when component mounts or user changes
     fetchMetrics()
+
+    // Clean up guest metrics from localStorage when user logs in
+    if (user && typeof window !== 'undefined') {
+      console.log('[CLIENT] User logged in, checking for old guest metrics in localStorage...')
+      const hasGuestData = window.localStorage.getItem('guest_custom_metrics')
+      if (hasGuestData) {
+        console.log(
+          '[CLIENT] Found guest metrics in localStorage, keeping them for now (can be cleared manually)',
+        )
+        // Note: We don't auto-clear to avoid data loss if user wants to migrate
+        // But we also never read from it when user is authenticated
+      }
+    }
   }, [user])
 
   const fetchMetrics = async () => {
     try {
       // Fetch metrics based on user authentication status
       if (user) {
-        // Authenticated: fetch from API
+        // Authenticated: fetch ONLY from API, ignore localStorage completely
+        console.log('[CLIENT] User authenticated, fetching metrics from API...')
         const response = await fetch('/api/configuration')
         if (!response.ok) throw new Error('Failed to fetch metrics')
         const data = await response.json()
         setMetrics(data.configurations || [])
+        console.log('[CLIENT] Loaded', data.configurations?.length || 0, 'metrics from API')
       } else {
         // Guest: load from LocalStorage
+        console.log('[CLIENT] Guest mode, loading metrics from localStorage...')
         const guestMetrics = loadGuestMetrics()
         setMetrics(guestMetrics)
+        console.log('[CLIENT] Loaded', guestMetrics.length, 'guest metrics from localStorage')
       }
     } catch (error) {
       console.error('Error fetching metrics:', error)
-      // Use LocalStorage as fallback for guests
-      if (!user) {
+      // For authenticated users: show error, don't fallback to localStorage
+      if (user) {
+        toast.error('Не удалось загрузить метрики из базы данных')
+        setMetrics([]) // Empty state instead of localStorage fallback
+      } else {
+        // For guests: fallback to localStorage
         const guestMetrics = loadGuestMetrics()
         setMetrics(guestMetrics)
       }
-      toast.error('Не удалось загрузить метрики')
     } finally {
       setLoading(false)
     }

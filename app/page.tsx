@@ -1268,7 +1268,7 @@ export default function EducationalAnalyzer() {
                                   } catch {
                                     results.push({
                                       fileName: file.file.name,
-                                      error: _err instanceof Error ? _err.message : 'Ошибка анализа',
+                                      error: err instanceof Error ? err.message : 'Ошибка анализа',
                                       status: 'error',
                                     })
                                   }
@@ -1283,7 +1283,7 @@ export default function EducationalAnalyzer() {
                                   setError('Не удалось запустить анализ файлов')
                                 }
                               } catch {
-                                console.error('Batch analysis error:', _err)
+                                console.error('Batch analysis error:', err)
                                 setError('Ошибка при запуске анализа')
                               } finally {
                                 setIsAnalyzing(false)

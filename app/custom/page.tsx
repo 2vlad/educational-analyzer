@@ -500,7 +500,37 @@ export default function CustomMetricsPage() {
     )
   }
 
+  // Loading screen with batch progress
   if (currentScreen === 'loading') {
+    // Show batch progress if analyzing multiple files
+    if (batchResults.length > 0) {
+      const completedCount = batchResults.filter((r) => r.status === 'completed').length
+      const errorCount = batchResults.filter((r) => r.status === 'error').length
+      const loadingCount = batchResults.filter((r) => r.status === 'loading').length
+      const totalCount = batchResults.length
+
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center max-w-2xl px-6">
+            <Loader2 className="h-16 w-16 animate-spin text-black mx-auto mb-6" />
+            <h2 className="text-[24px] font-semibold text-black mb-4">
+              Анализ {totalCount} файлов...
+            </h2>
+            <div className="space-y-2 text-[16px] text-gray-600">
+              <p>✅ Завершено: {completedCount}</p>
+              <p>⏳ В процессе: {loadingCount}</p>
+              {errorCount > 0 && <p className="text-red-600">❌ Ошибок: {errorCount}</p>}
+            </div>
+            <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-black h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((completedCount + errorCount) / totalCount) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
     return <SimpleLoader message={progressMessage} />
   }
 

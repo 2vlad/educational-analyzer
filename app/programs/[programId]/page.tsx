@@ -44,7 +44,8 @@ const mockAnalysisResults = {
 export default function ProgramDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const programId = params.programId as string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _programId = params.programId as string
 
   // Get lesson ID from query params or default to first lesson
   const lessonId = '1-1' // In real app, this would come from query params or state
@@ -97,7 +98,7 @@ export default function ProgramDetailPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">{METRIC_NAMES[key] || key}</h3>
-                <ScoreSpeedometer score={data.score} />
+                <ScoreSpeedometer score={data.score + 2} maxScore={4} />
               </div>
               <p className="text-sm text-gray-600">{data.feedback}</p>
             </div>

@@ -290,8 +290,11 @@ ${content.substring(0, 1500)}...
       return {
         score: 0,
         comment: 'Учебный материал',
+        examples: [],
         model: modelId,
         durationMs: 0,
+        raw: null,
+        provider: 'unknown',
       }
     }
   }
@@ -324,6 +327,116 @@ ${content.substring(0, 1500)}...
 
   getAvailableModels(): string[] {
     return modelsManager.getAvailableModels()
+  }
+
+  /**
+   * Analyze coherence and connections between multiple lessons
+   * @param lessons Array of lessons with titles and content
+   * @param providerId Optional specific model to use
+   * @returns Analysis of lesson coherence
+   */
+  async analyzeCoherence(
+    lessons: Array<{ title: string; content: string }>,
+    providerId?: string,
+  ): Promise<{
+    score: number
+    summary: string
+    strengths: string[]
+    issues: string[]
+    suggestions: string[]
+  }> {
+    const modelId = providerId || this.currentProviderId
+    const modelConfig = modelsManager.getModelConfig(modelId)
+    if (!modelConfig) {
+      throw new Error(`Model configuration not found: ${modelId}`)
+    }
+
+    // Create a compact representation of lessons for analysis
+    const lessonsOverview = lessons
+      .map((lesson, i) => {
+        // Take first 500 chars of each lesson for context
+        const preview = lesson.content.substring(0, 500)
+        return `${i + 1}. "${lesson.title}"\n${preview}...`
+      })
+      .join('\n\n')
+
+    const coherencePrompt = `Ты — эксперт по учебным программам. Проанализируй связность и последовательность уроков.
+
+Уроки для анализа:
+${lessonsOverview}
+
+Оцени по шкале от -2 до +2:
+- -2: Уроки совершенно не связаны, хаотичная последовательность
+- -1: Слабая связь, есть логические пробелы
+- 0: Нейтральная связь, материал разрозненный но понятный
+- +1: Хорошая связанность, логичная последовательность
+- +2: Отличная связность, каждый урок плавно продолжает предыдущий
+
+Ответь в формате JSON:
+\`\`\`json
+{
+  "score": -2|-1|0|1|2,
+  "summary": "Краткое описание общей связности (2-3 предложения)",
+  "strengths": ["Сильная сторона 1", "Сильная сторона 2"],
+  "issues": ["Проблема 1", "Проблема 2"],
+  "suggestions": ["Рекомендация 1", "Рекомендация 2"]
+}
+\`\`\``
+
+    try {
+      const provider = this.getProvider(modelId)
+      const result = await provider.generate(coherencePrompt, '', {
+        model: modelConfig.model,
+        temperature: 0.3,
+        maxTokens: 1000,
+        timeoutMs: 20000,
+      })
+
+      // Parse the response
+      let parsed: {
+        score?: number
+        summary?: string
+        strengths?: string[]
+        issues?: string[]
+        suggestions?: string[]
+      }
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = result.comment?.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0])
+        } else {
+          throw new Error('No JSON found in response')
+        }
+      } catch (parseError) {
+        console.error('Failed to parse coherence analysis:', parseError)
+        // Return default structure
+        return {
+          score: 0,
+          summary: result.comment || 'Не удалось проанализировать связность уроков',
+          strengths: [],
+          issues: [],
+          suggestions: [],
+        }
+      }
+
+      return {
+        score: parsed.score || 0,
+        summary: parsed.summary || 'Анализ связности выполнен',
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+        issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
+      }
+    } catch (error) {
+      console.error('Failed to analyze coherence:', error)
+      return {
+        score: 0,
+        summary: 'Не удалось выполнить анализ связности уроков',
+        strengths: [],
+        issues: [],
+        suggestions: [],
+      }
+    }
   }
 }
 

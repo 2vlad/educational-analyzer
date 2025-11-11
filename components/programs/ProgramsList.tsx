@@ -2,7 +2,7 @@
 
 import { Plus, Download, Play, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Program } from '@/app/programs/page'
+import type { Program } from '@/types/programs'
 
 interface ProgramsListProps {
   programs: Program[]

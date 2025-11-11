@@ -116,7 +116,7 @@ export default function CustomMetricsPage() {
   const handleAddMetric = async (metric: Omit<MetricConfig, 'id'>) => {
     try {
       console.log('[CLIENT] Adding metric:', { name: metric.name, user: user?.id })
-      
+
       if (user) {
         // Authenticated: save to API
         console.log('[CLIENT] User authenticated, calling API...')
@@ -127,7 +127,7 @@ export default function CustomMetricsPage() {
         })
 
         console.log('[CLIENT] Response status:', response.status)
-        
+
         if (!response.ok) {
           const error = await response.json()
           console.error('[CLIENT] API error response:', error)
@@ -325,7 +325,8 @@ export default function CustomMetricsPage() {
     }
   }
 
-  const loadPrompt = async (metric: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _loadPrompt = async (metric: string) => {
     try {
       setPromptsLoading(true)
       setPromptError(null)
@@ -891,6 +892,7 @@ export default function CustomMetricsPage() {
               onSubmit={(updates) => handleUpdateMetric(editingMetric.id, updates)}
               onCancel={() => setEditingMetric(null)}
               existingNames={metrics.filter((m) => m.id !== editingMetric.id).map((m) => m.name)}
+              isEdit={true}
             />
           )}
         </div>

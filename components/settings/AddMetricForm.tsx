@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MetricConfig } from '@/src/types/metrics'
 import { X, AlertCircle } from 'lucide-react'
 
@@ -208,7 +208,7 @@ export default function AddMetricForm({
               className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
-              {submitting ? 'Сохранение...' : isEdit ? 'Сохранить изменения' : 'Добавить метрику'}
+              {submitting ? 'Сохранение...' : isEdit ? 'Обновить метрику' : 'Добавить метрику'}
             </button>
           </div>
         </form>

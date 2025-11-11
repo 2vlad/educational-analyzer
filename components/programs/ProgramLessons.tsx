@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import UploadLessonsButton from '@/components/programs/UploadLessonsButton'
-import type { Program, Lesson } from '@/app/programs/page'
+import type { Program, Lesson } from '@/types/programs'
 
 interface ProgramLessonsProps {
   program: Program

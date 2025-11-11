@@ -102,7 +102,7 @@ export default function PromptGuide() {
             </p>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="bg-gray-100 p-4 rounded-lg">
             <p className="text-[14px] text-blue-800">
               <strong>Совет:</strong> Чем конкретнее ваш промпт, тем точнее будет анализ. Избегайте
               слишком общих формулировок вроде "оцени качество".

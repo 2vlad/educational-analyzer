@@ -135,10 +135,10 @@ export default function ProgressTracker({
 
   if (loading) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-gray-100 border border-gray-300 rounded-lg p-4">
         <div className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-          <span className="text-sm text-blue-900">Загрузка статуса...</span>
+          <span className="text-sm text-gray-900">Загрузка статуса...</span>
         </div>
       </div>
     )
@@ -164,7 +164,7 @@ export default function ProgressTracker({
   const getStatusColor = () => {
     switch (run.status) {
       case 'running':
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-gray-100 border-gray-300'
       case 'paused':
         return 'bg-yellow-50 border-yellow-200'
       case 'completed':
@@ -254,7 +254,7 @@ export default function ProgressTracker({
                   ? 'bg-red-500'
                   : run.status === 'paused'
                     ? 'bg-yellow-500'
-                    : 'bg-blue-500'
+                    : 'bg-gray-1000'
             }`}
             style={{ width: `${progress}%` }}
           />

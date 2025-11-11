@@ -255,7 +255,7 @@ export function FileUploadDropzone({
                 <FileText
                   className={cn(
                     'w-4 h-4 flex-shrink-0',
-                    uploadedFile.error ? 'text-red-500' : 'text-blue-500',
+                    uploadedFile.error ? 'text-red-500' : 'text-gray-800',
                   )}
                 />
 

@@ -90,7 +90,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
 
               <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-800 to-purple-600 rounded-full"
                   initial={{ width: '0%' }}
                   animate={{ width: `${displayProgress}%` }}
                   transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -131,7 +131,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                           metric.status === 'completed'
                             ? 'bg-green-50 border-green-300'
                             : metric.status === 'processing'
-                              ? 'bg-blue-50 border-blue-300 shadow-lg'
+                              ? 'bg-gray-100 border-gray-400 shadow-lg'
                               : metric.status === 'failed'
                                 ? 'bg-red-50 border-red-300'
                                 : 'bg-gray-50 border-gray-200'
@@ -175,7 +175,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                             <motion.div
                               animate={{ rotate: 360 }}
                               transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                              className="w-6 h-6 border-3 border-blue-500 border-t-transparent rounded-full"
+                              className="w-6 h-6 border-3 border-gray-800 border-t-transparent rounded-full"
                             />
                           )}
                           {metric.status === 'failed' && (
@@ -204,7 +204,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                         >
                           <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                             <motion.div
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"
+                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-600 to-blue-600 rounded-full"
                               initial={{ width: '0%' }}
                               animate={{ width: `${metric.progress}%` }}
                               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -228,7 +228,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg"
+                  className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-gray-100 rounded-lg"
                 >
                   <p className="text-sm text-gray-700 text-center">
                     <span className="inline-block mr-2">{getRandomEmoji()}</span>
@@ -267,7 +267,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
           transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
         />
         <motion.div
-          className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-200 rounded-full opacity-20"
+          className="absolute -bottom-10 -right-10 w-32 h-32 bg-gray-300 rounded-full opacity-20"
           animate={{
             scale: [1, 1.3, 1],
             rotate: [360, 180, 0],

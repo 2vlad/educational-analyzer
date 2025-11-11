@@ -200,7 +200,7 @@ export function MinimalProgressTracker({
                               stroke="currentColor"
                               strokeWidth="2"
                               strokeLinecap="round"
-                              className="text-blue-500"
+                              className="text-gray-800"
                             />
                           </svg>
                         </motion.div>

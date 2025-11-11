@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
             </Alert>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800">
+              <Link href="/login" className="text-sm text-gray-900 hover:text-gray-900">
                 Вернуться к входу
               </Link>
             </div>
@@ -146,7 +146,7 @@ export default function ForgotPasswordPage() {
 
             <div className="text-center text-sm text-gray-600">
               Вспомнили пароль?{' '}
-              <Link href="/login" className="text-blue-600 hover:text-blue-800 font-semibold">
+              <Link href="/login" className="text-gray-900 hover:text-gray-900 font-semibold">
                 Войти
               </Link>
             </div>

@@ -75,7 +75,7 @@ export default function SearchFilter({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             placeholder="Search content..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
           />
         </div>
 
@@ -83,7 +83,7 @@ export default function SearchFilter({
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
             hasActiveFilters
-              ? 'bg-blue-50 border-blue-300 text-blue-700'
+              ? 'bg-gray-100 border-gray-400 text-blue-700'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'
           }`}
         >
@@ -123,7 +123,7 @@ export default function SearchFilter({
                     const date = e.target.value ? new Date(e.target.value) : undefined
                     onDateRangeChange({ ...dateRange, start: date })
                   }}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
                 />
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function SearchFilter({
                     const date = e.target.value ? new Date(e.target.value) : undefined
                     onDateRangeChange({ ...dateRange, end: date })
                   }}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
                 />
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function SearchFilter({
                   onModelChange(e.target.value)
                   onApply()
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-1000 focus:border-gray-1000"
               >
                 {models.map((model) => (
                   <option key={model.value} value={model.value}>

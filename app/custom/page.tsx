@@ -799,10 +799,10 @@ export default function CustomMetricsPage() {
           {/* Info for guests */}
           {!user && (
             <div
-              className="bg-blue-50 border border-blue-200 p-4 mb-6"
+              className="bg-gray-100 border border-gray-200 p-4 mb-6"
               style={{ borderRadius: '20px' }}
             >
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-gray-800">
                 💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере.
                 Войдите в систему, чтобы синхронизировать метрики между устройствами.
               </p>

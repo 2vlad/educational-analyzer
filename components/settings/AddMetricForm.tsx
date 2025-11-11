@@ -104,7 +104,7 @@ export default function AddMetricForm({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-gray-900 focus:border-gray-900 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Например: Ясность, Вовлечённость, Техническая точность"
@@ -137,7 +137,7 @@ export default function AddMetricForm({
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
-              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-gray-900 focus:border-gray-900 resize-none ${
                 errors.prompt ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Введите критерии оценки для этой метрики. Укажите конкретно, какие аспекты следует оценивать и как."
@@ -167,7 +167,7 @@ export default function AddMetricForm({
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-gray-900"
                 disabled={submitting}
               />
               <div>
@@ -181,11 +181,11 @@ export default function AddMetricForm({
           </div>
 
           {/* Tips */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">
+          <div className="mb-6 p-4 bg-gray-100 rounded-lg">
+            <h3 className="text-sm font-medium text-black mb-2">
               Советы по написанию хороших метрик:
             </h3>
-            <ul className="text-xs text-blue-700 space-y-1">
+            <ul className="text-xs text-gray-700 space-y-1">
               <li>• Будьте конкретны в том, какие аспекты следует оценивать</li>
               <li>• Включите чёткие критерии оценки (что хорошо/плохо)</li>
               <li>• Учитывайте контекст и целевую аудиторию</li>
@@ -205,7 +205,7 @@ export default function AddMetricForm({
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={submitting}
             >
               {submitting ? 'Сохранение...' : isEdit ? 'Сохранить изменения' : 'Добавить метрику'}

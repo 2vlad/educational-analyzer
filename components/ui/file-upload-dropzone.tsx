@@ -161,8 +161,8 @@ export function FileUploadDropzone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={cn(
-          'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors',
-          isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400',
+          'relative h-[180px] px-6 py-6 rounded-[25px] text-center transition-colors cursor-pointer',
+          isDragging ? 'bg-gray-100' : 'bg-[#F2F2F2] hover:bg-gray-100',
           isProcessing && 'opacity-50 pointer-events-none',
         )}
       >
@@ -176,14 +176,14 @@ export function FileUploadDropzone({
           disabled={isProcessing}
         />
 
-        <div className="flex flex-col items-center gap-4">
-          <Upload className={cn('w-12 h-12', isDragging ? 'text-blue-500' : 'text-gray-400')} />
+        <div className="flex flex-col items-center justify-center gap-3 h-full">
+          <Upload className={cn('w-10 h-10', isDragging ? 'text-gray-600' : 'text-gray-400')} />
 
           <div>
-            <p className="text-lg font-medium text-gray-900">
+            <p className="text-[20px] font-light text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
               {isDragging ? 'Отпустите файлы сюда' : 'Перетащите файлы сюда'}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-[15px] text-gray-500 mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
               или{' '}
               <label
                 htmlFor="file-upload"
@@ -194,7 +194,7 @@ export function FileUploadDropzone({
             </p>
           </div>
 
-          <div className="text-xs text-gray-500">
+          <div className="text-[13px] text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
             <p>Поддерживаемые форматы: {acceptedFileTypes.join(', ')}</p>
             <p>
               Максимум {maxFiles} файлов, до {maxSizeMB}MB каждый
@@ -214,10 +214,11 @@ export function FileUploadDropzone({
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="p-4 bg-red-50 rounded-[20px] border border-red-200">
+          <p className="text-[14px] text-red-700" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {error}
+          </p>
+        </div>
       )}
 
       {/* Uploaded Files List */}

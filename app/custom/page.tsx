@@ -1392,9 +1392,55 @@ export default function CustomMetricsPage() {
                 )}
               </>
             ) : (
-              /* Single mode: Text Input Area */
+              /* Single mode: Text Input Area with Upload Button */
               <div className="relative">
-                <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[50px] px-3 py-3">
+                <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[25px] px-3 py-3">
+                  {/* Upload Button */}
+                  <button
+                    onClick={() => document.getElementById('custom-file-upload')?.click()}
+                    className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
+                       text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                    title="Загрузить файл"
+                  >
+                    <svg
+                      className="w-[30px] h-[30px]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+
+                      const reader = new FileReader()
+                      reader.onload = (ev) => {
+                        const text = ev.target?.result as string
+                        if (text.length <= 25000) {
+                          setContent(text)
+                          setError(null)
+                        } else {
+                          setError('Файл слишком большой. Максимум 25000 символов')
+                        }
+                      }
+                      reader.readAsText(file)
+                    }}
+                    className="hidden"
+                    id="custom-file-upload"
+                    accept=".txt,.md"
+                  />
+
                   <textarea
                     placeholder="Текст урока"
                     value={content}

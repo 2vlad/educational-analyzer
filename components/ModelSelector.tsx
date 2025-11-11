@@ -48,12 +48,20 @@ export default function ModelSelector({ onModelChange }: ModelSelectorProps = {}
         if (typeof window !== 'undefined') {
           window.localStorage.setItem('selectedModel', data.defaultModel)
         }
+        // Notify parent of default model
+        if (onModelChange) {
+          onModelChange(data.defaultModel)
+        }
       } else if (!selectedModel && data.models?.length > 0) {
         // Fallback to first available model if no default
         const defaultModel = data.models[0].id
         setSelectedModel(defaultModel)
         if (typeof window !== 'undefined') {
           window.localStorage.setItem('selectedModel', defaultModel)
+        }
+        // Notify parent of fallback model
+        if (onModelChange) {
+          onModelChange(defaultModel)
         }
       }
     } catch (error) {
@@ -71,6 +79,10 @@ export default function ModelSelector({ onModelChange }: ModelSelectorProps = {}
         setSelectedModel('yandex-gpt-pro')
         if (typeof window !== 'undefined') {
           window.localStorage.setItem('selectedModel', 'yandex-gpt-pro')
+        }
+        // Notify parent of fallback model
+        if (onModelChange) {
+          onModelChange('yandex-gpt-pro')
         }
       }
     }

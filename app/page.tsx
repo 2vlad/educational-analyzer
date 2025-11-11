@@ -1162,13 +1162,13 @@ export default function EducationalAnalyzer() {
                         value="single" 
                         className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
                       >
-                        Одиночный анализ
+                        Один урок
                       </TabsTrigger>
                       <TabsTrigger 
                         value="batch" 
                         className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
                       >
-                        Пакетный анализ
+                        Много уроков
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>

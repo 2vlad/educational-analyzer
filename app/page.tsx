@@ -156,7 +156,9 @@ export default function EducationalAnalyzer() {
   const [maxFileSizeMB, setMaxFileSizeMB] = useState<number>(10)
   const [maxTextLength, setMaxTextLength] = useState<number>(20000)
   // Batch analysis state
-  const [batchFiles, setBatchFiles] = useState<Array<{ file: globalThis.File; id: string; content?: string; error?: string }>>([])
+  const [batchFiles, setBatchFiles] = useState<
+    Array<{ file: globalThis.File; id: string; content?: string; error?: string }>
+  >([])
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -451,7 +453,7 @@ export default function EducationalAnalyzer() {
       ]
 
       // Update progress to 15% after initial delay
-      window.setTimeout(() => {
+      window.window.setTimeout(() => {
         setProgressMessage(progressMessages[0])
       }, 1000)
 
@@ -494,7 +496,7 @@ export default function EducationalAnalyzer() {
             setProgressMessage('Готово!')
             setAnalysisResult(result)
 
-            window.setTimeout(() => {
+            window.window.setTimeout(() => {
               setCurrentScreen('results')
               setIsAnalyzing(false)
             }, 500)
@@ -583,7 +585,10 @@ export default function EducationalAnalyzer() {
                     <div className="text-sm text-red-600">{promptError}</div>
                   ) : (
                     allPrompts.map(({ metric, prompt }) => (
-                      <div key={metric} className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3">
+                      <div
+                        key={metric}
+                        className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3"
+                      >
                         <div className="text-xs font-medium text-gray-600 mb-2">
                           {METRIC_NAMES[metric] || metric}
                         </div>
@@ -936,8 +941,13 @@ export default function EducationalAnalyzer() {
             </div>
 
             {/* Quick Win Section */}
-            <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-              <h2 className="text-[20px] font-semibold text-black dark:text-white mb-3">Quick Win</h2>
+            <div
+              className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-8"
+              style={{ width: '660px', borderRadius: '40px' }}
+            >
+              <h2 className="text-[20px] font-semibold text-black dark:text-white mb-3">
+                Quick Win
+              </h2>
               <p className="text-[14px] text-black dark:text-white leading-relaxed">
                 {overallScore > 0
                   ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
@@ -965,8 +975,13 @@ export default function EducationalAnalyzer() {
 
                       {/* Analysis Text */}
                       {data.detailed_analysis && (
-                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4" style={{ borderRadius: '40px' }}>
-                          <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">Анализ</h4>
+                        <div
+                          className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4"
+                          style={{ borderRadius: '40px' }}
+                        >
+                          <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">
+                            Анализ
+                          </h4>
                           {typeof data.detailed_analysis === 'string' ? (
                             <p className="text-[14px] text-black dark:text-white leading-relaxed">
                               {data.detailed_analysis}
@@ -978,7 +993,9 @@ export default function EducationalAnalyzer() {
                                   <h5 className="text-[14px] font-medium text-black mb-1">
                                     {key}:
                                   </h5>
-                                  <p className="text-[14px] text-black dark:text-white ml-4">{value}</p>
+                                  <p className="text-[14px] text-black dark:text-white ml-4">
+                                    {value}
+                                  </p>
                                 </div>
                               ))}
                             </div>
@@ -988,7 +1005,10 @@ export default function EducationalAnalyzer() {
 
                       {/* Examples */}
                       {data.examples && data.examples.length > 0 && (
-                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4" style={{ borderRadius: '40px' }}>
+                        <div
+                          className="bg-[#F5F5F5] dark:bg-gray-800 p-6 mb-4"
+                          style={{ borderRadius: '40px' }}
+                        >
                           <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">
                             Примеры из текста
                           </h4>
@@ -996,7 +1016,9 @@ export default function EducationalAnalyzer() {
                             {data.examples.map((example: string, index: number) => (
                               <li key={index} className="flex items-start">
                                 <span className="text-black mr-2">•</span>
-                                <span className="text-[14px] text-black dark:text-white italic">"{example}"</span>
+                                <span className="text-[14px] text-black dark:text-white italic">
+                                  "{example}"
+                                </span>
                               </li>
                             ))}
                           </ul>
@@ -1006,7 +1028,10 @@ export default function EducationalAnalyzer() {
                       {/* Suggestions - What to fix */}
                       {((data.suggestions && data.suggestions.length > 0) ||
                         data.recommendations) && (
-                        <div className="bg-[#F5F5F5] dark:bg-gray-800 p-6" style={{ borderRadius: '40px' }}>
+                        <div
+                          className="bg-[#F5F5F5] dark:bg-gray-800 p-6"
+                          style={{ borderRadius: '40px' }}
+                        >
                           <h4 className="text-[16px] font-semibold text-black dark:text-white mb-3">
                             Что поправить
                           </h4>
@@ -1015,7 +1040,9 @@ export default function EducationalAnalyzer() {
                               ? data.suggestions.map((suggestion: string, index: number) => (
                                   <li key={index} className="flex items-start">
                                     <span className="text-black mr-2">→</span>
-                                    <span className="text-[14px] text-black dark:text-white">{suggestion}</span>
+                                    <span className="text-[14px] text-black dark:text-white">
+                                      {suggestion}
+                                    </span>
                                   </li>
                                 ))
                               : data.recommendations
@@ -1024,7 +1051,9 @@ export default function EducationalAnalyzer() {
                                   .map((rec: string, index: number) => (
                                     <li key={index} className="flex items-start">
                                       <span className="text-black mr-2">→</span>
-                                      <span className="text-[14px] text-black dark:text-white">{rec.trim()}</span>
+                                      <span className="text-[14px] text-black dark:text-white">
+                                        {rec.trim()}
+                                      </span>
                                     </li>
                                   ))}
                           </ul>
@@ -1065,261 +1094,278 @@ export default function EducationalAnalyzer() {
       <div className="flex-1 flex justify-center p-6">
         <div className="w-full max-w-[900px] mt-[50px]">
           <div className="w-full max-w-[660px] mx-auto">
-              {/* Header with title, subtitle and image */}
-              <div className="flex justify-between mb-10">
-                <div>
-                  <h1
-                    className="text-[48px] font-bold text-black dark:text-white mb-3 leading-tight transition-colors"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    Лёха AI
-                  </h1>
-                  <p
-                    className="text-[20px] font-normal text-black dark:text-gray-300 transition-colors"
-                    style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
-                  >
-                    оценивает качество
-                    <br />
-                    контента на основе
-                    <br />
-                    lx-метрик
-                  </p>
-                </div>
-
-                {/* Image positioned to the right */}
-                <div className="flex items-center">
-                  <Image
-                    src="/lekha-illustration.png"
-                    alt="Лёха AI - Educational Content Analyzer"
-                    width={120}
-                    height={150}
-                    className="object-contain"
-                    priority
-                  />
-                </div>
+            {/* Header with title, subtitle and image */}
+            <div className="flex justify-between mb-10">
+              <div>
+                <h1
+                  className="text-[48px] font-bold text-black dark:text-white mb-3 leading-tight transition-colors"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Лёха AI
+                </h1>
+                <p
+                  className="text-[20px] font-normal text-black dark:text-gray-300 transition-colors"
+                  style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
+                >
+                  оценивает качество
+                  <br />
+                  контента на основе
+                  <br />
+                  lx-метрик
+                </p>
               </div>
 
-              {/* Form section */}
-              <div>
-                {/* Model Section */}
-                <div className="mb-6">
-                  <label
-                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    Модель
-                  </label>
-                  {models.length > 0 ? (
-                    <Select
-                      value={selectedModel}
-                      onValueChange={setSelectedModel}
-                      onOpenChange={setIsDropdownOpen}
-                    >
-                      <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 transition-colors rounded-[50px] border border-gray-200 dark:border-gray-200 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
-                        <SelectValue placeholder="Выберите модель" />
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <ChevronRight
-                            className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`}
-                          />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
-                        {models.map((model) => (
-                          <SelectItem
-                            key={model.id}
-                            value={model.id}
-                            className="text-[20px] text-black py-2"
-                          >
-                            {model.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="w-full h-14 px-6 flex items-center text-[20px] font-light text-black bg-[#F2F2F2] rounded-[50px]">
-                      Loading models...
-                    </div>
-                  )}
-                </div>
+              {/* Image positioned to the right */}
+              <div className="flex items-center">
+                <Image
+                  src="/lekha-illustration.png"
+                  alt="Лёха AI - Educational Content Analyzer"
+                  width={120}
+                  height={150}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
 
-                {/* Mode Toggle */}
-                <div className="mb-6">
-                  <label
-                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
+            {/* Form section */}
+            <div>
+              {/* Model Section */}
+              <div className="mb-6">
+                <label
+                  className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Модель
+                </label>
+                {models.length > 0 ? (
+                  <Select
+                    value={selectedModel}
+                    onValueChange={setSelectedModel}
+                    onOpenChange={setIsDropdownOpen}
                   >
-                    Режим анализа
-                  </label>
-                  <Tabs
-                    value={analysisMode}
-                    onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
-                  >
-                    <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] dark:bg-gray-800 rounded-[50px] p-[3px] transition-colors">
-                      <TabsTrigger 
-                        value="single" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
-                      >
-                        Один урок
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="batch" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
-                      >
-                        Много уроков
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-
-                {/* Prompt trigger on upload screen */}
-                <div className="flex justify-end -mt-2 mb-4">
-                  <button
-                    className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
-                    onClick={() => {
-                      const metricIds = Object.keys(METRIC_NAMES)
-                      loadAllPrompts(metricIds)
-                      setPromptOpen(true)
-                    }}
-                  >
-                    Посмотреть промпт
-                  </button>
-                </div>
-
-                {/* Prompt dialog on upload screen */}
-                {currentScreen === 'upload' && (
-                  <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
-                    <DialogContent className="sm:max-w-[760px]">
-                      <DialogHeader>
-                        <DialogTitle>Промпты всех метрик</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 max-h-[60vh] overflow-auto">
-                        {promptsLoading ? (
-                          <div className="text-sm text-gray-500">Загрузка…</div>
-                        ) : promptError ? (
-                          <div className="text-sm text-red-600">{promptError}</div>
-                        ) : (
-                          allPrompts.map(({ metric, prompt }) => (
-                            <div key={metric} className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3">
-                              <div className="text-xs font-medium text-gray-600 mb-2">
-                                {METRIC_NAMES[metric] || metric}
-                              </div>
-                              <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
-                            </div>
-                          ))
-                        )}
+                    <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-white dark:bg-white hover:bg-gray-50 dark:hover:bg-gray-50 transition-colors rounded-[50px] border border-gray-200 dark:border-gray-200 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+                      <SelectValue placeholder="Выберите модель" />
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <ChevronRight
+                          className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`}
+                        />
                       </div>
-                      <DialogFooter>
-                        <Button variant="ghost" onClick={() => setPromptOpen(false)}>
-                          Закрыть
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
+                      {models.map((model) => (
+                        <SelectItem
+                          key={model.id}
+                          value={model.id}
+                          className="text-[20px] text-black py-2"
+                        >
+                          {model.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="w-full h-14 px-6 flex items-center text-[20px] font-light text-black bg-[#F2F2F2] rounded-[50px]">
+                    Loading models...
+                  </div>
                 )}
+              </div>
 
-                {/* Content Section */}
-                <div className="mb-6 mt-[40px]">
-                  <label
-                    className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    Контент
-                  </label>
+              {/* Mode Toggle */}
+              <div className="mb-6">
+                <label
+                  className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Режим анализа
+                </label>
+                <Tabs
+                  value={analysisMode}
+                  onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
+                >
+                  <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] dark:bg-gray-800 rounded-[50px] p-[3px] transition-colors">
+                    <TabsTrigger
+                      value="single"
+                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
+                    >
+                      Один урок
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="batch"
+                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
+                    >
+                      Много уроков
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-                  {analysisMode === 'batch' ? (
-                    /* Batch mode: File upload dropzone */
-                    <>
-                      <FileUploadDropzone
-                        onFilesSelected={(files) => setBatchFiles(files)}
-                        maxFiles={50}
-                        maxSizeMB={10}
-                        acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
-                      />
-                      
-                      {/* Batch Analyze Button */}
-                      {batchFiles.filter((f) => !f.error && f.content).length > 0 && (
-                        <div className="mt-6 flex justify-center">
-                          <button
-                            onClick={async () => {
-                              const filesToAnalyze = batchFiles.filter((f) => !f.error && f.content)
-                              
-                              if (filesToAnalyze.length === 0) {
-                                setError('Нет файлов для анализа')
-                                return
+              {/* Prompt trigger on upload screen */}
+              <div className="flex justify-end -mt-2 mb-4">
+                <button
+                  className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                  onClick={() => {
+                    const metricIds = Object.keys(METRIC_NAMES)
+                    loadAllPrompts(metricIds)
+                    setPromptOpen(true)
+                  }}
+                >
+                  Посмотреть промпт
+                </button>
+              </div>
+
+              {/* Prompt dialog on upload screen */}
+              {currentScreen === 'upload' && (
+                <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
+                  <DialogContent className="sm:max-w-[760px]">
+                    <DialogHeader>
+                      <DialogTitle>Промпты всех метрик</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 max-h-[60vh] overflow-auto">
+                      {promptsLoading ? (
+                        <div className="text-sm text-gray-500">Загрузка…</div>
+                      ) : promptError ? (
+                        <div className="text-sm text-red-600">{promptError}</div>
+                      ) : (
+                        allPrompts.map(({ metric, prompt }) => (
+                          <div
+                            key={metric}
+                            className="border rounded-md bg-[#F5F5F5] dark:bg-gray-800 p-3"
+                          >
+                            <div className="text-xs font-medium text-gray-600 mb-2">
+                              {METRIC_NAMES[metric] || metric}
+                            </div>
+                            <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button variant="ghost" onClick={() => setPromptOpen(false)}>
+                        Закрыть
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Content Section */}
+              <div className="mb-6 mt-[40px]">
+                <label
+                  className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Контент
+                </label>
+
+                {analysisMode === 'batch' ? (
+                  /* Batch mode: File upload dropzone */
+                  <>
+                    <FileUploadDropzone
+                      onFilesSelected={(files) => setBatchFiles(files)}
+                      maxFiles={50}
+                      maxSizeMB={10}
+                      acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
+                    />
+
+                    {/* Batch Analyze Button */}
+                    {batchFiles.filter((f) => !f.error && f.content).length > 0 && (
+                      <div className="mt-6 flex justify-center">
+                        <button
+                          onClick={async () => {
+                            const filesToAnalyze = batchFiles.filter((f) => !f.error && f.content)
+
+                            if (filesToAnalyze.length === 0) {
+                              setError('Нет файлов для анализа')
+                              return
+                            }
+
+                            setIsAnalyzing(true)
+                            setError(null)
+
+                            try {
+                              const results = []
+                              for (const file of filesToAnalyze) {
+                                try {
+                                  const { analysisId } = await apiService.analyze({
+                                    content: file.content!,
+                                    modelId: selectedModel,
+                                    metricMode,
+                                  })
+                                  results.push({
+                                    fileName: file.file.name,
+                                    analysisId,
+                                    status: 'started',
+                                  })
+                                } catch (fileErr) {
+                                  results.push({
+                                    fileName: file.file.name,
+                                    error:
+                                      fileErr instanceof Error ? fileErr.message : 'Ошибка анализа',
+                                    status: 'error',
+                                  })
+                                }
                               }
 
-                              setIsAnalyzing(true)
-                              setError(null)
-                              
-                              try {
-                                const results = []
-                                for (const file of filesToAnalyze) {
-                                  try {
-                                    const { analysisId } = await apiService.analyze({
-                                      content: file.content!,
-                                      modelId: selectedModel,
-                                      metricMode,
-                                    })
-                                    results.push({
-                                      fileName: file.file.name,
-                                      analysisId,
-                                      status: 'started',
-                                    })
-                                  } catch {
-                                    results.push({
-                                      fileName: file.file.name,
-                                      error: err instanceof Error ? err.message : 'Ошибка анализа',
-                                      status: 'error',
-                                    })
-                                  }
-                                }
-                                
-                                // setBatchResults(results)
-                                const successCount = results.filter((r) => r.status === 'started').length
-                                
-                                if (successCount > 0) {
-                                  setError(`✓ Запущен анализ ${successCount} файлов. Проверьте историю для результатов.`)
-                                } else {
-                                  setError('Не удалось запустить анализ файлов')
-                                }
-                              } catch {
-                                console.error('Batch analysis error:', err)
-                                setError('Ошибка при запуске анализа')
-                              } finally {
-                                setIsAnalyzing(false)
+                              // setBatchResults(results)
+                              const successCount = results.filter(
+                                (r) => r.status === 'started',
+                              ).length
+
+                              if (successCount > 0) {
+                                setError(
+                                  `✓ Запущен анализ ${successCount} файлов. Перенаправляем в историю...`,
+                                )
+
+                                // Redirect to history after 1.5 seconds
+                                window.setTimeout(() => {
+                                  window.location.href = '/history'
+                                }, 1500)
+                              } else {
+                                setError('Не удалось запустить анализ файлов')
                               }
-                            }}
-                            disabled={isAnalyzing}
-                            className="px-10 py-4 text-[16px] font-medium bg-black text-white 
+                            } catch (err) {
+                              console.error('Batch analysis error:', err)
+                              setError('Ошибка при запуске анализа')
+                            } finally {
+                              setIsAnalyzing(false)
+                            }
+                          }}
+                          disabled={isAnalyzing}
+                          className="px-10 py-4 text-[16px] font-medium bg-black text-white 
                                hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed
                                rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {isAnalyzing ? (
-                              <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                Анализируем {batchFiles.filter((f) => !f.error && f.content).length} файлов...
-                              </>
-                            ) : (
-                              <>
-                                <ChevronRight className="w-5 h-5" />
-                                Проанализировать {batchFiles.filter((f) => !f.error && f.content).length} файлов
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    /* Single mode: Text Input Area with Upload Button */
-                    <div
-                      className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] dark:bg-gray-800 relative transition-all ${
-                        isDragOver ? 'bg-gray-100 dark:bg-gray-700' : ''
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              Анализируем {
+                                batchFiles.filter((f) => !f.error && f.content).length
+                              }{' '}
+                              файлов...
+                            </>
+                          ) : (
+                            <>
+                              <ChevronRight className="w-5 h-5" />
+                              Проанализировать{' '}
+                              {batchFiles.filter((f) => !f.error && f.content).length} файлов
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Single mode: Text Input Area with Upload Button */
+                  <div
+                    className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] dark:bg-gray-800 relative transition-all ${
+                      isDragOver ? 'bg-gray-100 dark:bg-gray-700' : ''
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     {progressMessage && progressMessage.includes('PDF') ? (
                       // Show loading state for PDF processing
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -1398,30 +1444,30 @@ export default function EducationalAnalyzer() {
                         </Button>
                       </>
                     )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Error Alert */}
-                {error && (
-                  <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                  </div>
                 )}
               </div>
 
-              {/* Illustration credit */}
-              <div className="mt-8 text-center">
-                <p
-                  className="text-[10px] text-[#9F9F9F]"
-                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-                >
-                  иллюстрация
-                  <br />
-                  pinterest.com/miapasfield/
-                </p>
-              </div>
+              {/* Error Alert */}
+              {error && (
+                <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
             </div>
+
+            {/* Illustration credit */}
+            <div className="mt-8 text-center">
+              <p
+                className="text-[10px] text-[#9F9F9F]"
+                style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+              >
+                иллюстрация
+                <br />
+                pinterest.com/miapasfield/
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

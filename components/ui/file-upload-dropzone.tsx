@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react'
 import { Upload, X, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 
 interface UploadedFile {
   file: globalThis.File
@@ -265,67 +264,108 @@ export function FileUploadDropzone({
         </div>
       )}
 
-      {/* Uploaded Files List */}
+      {/* Uploaded Files List - Apple Design */}
       {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-900">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3
+              className="text-[15px] font-semibold text-gray-900"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+            >
               Загружено файлов: {uploadedFiles.filter((f) => !f.error).length}
               {uploadedFiles.some((f) => f.error) && (
-                <span className="text-red-600 ml-2">
+                <span className="text-red-600 ml-2 font-normal">
                   ({uploadedFiles.filter((f) => f.error).length} с ошибками)
                 </span>
               )}
             </h3>
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={clearAll}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-[14px] text-gray-500 hover:text-gray-900 transition-colors duration-200"
+              style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
               Очистить всё
-            </Button>
+            </button>
           </div>
 
-          <div className="max-h-64 overflow-y-auto space-y-2 border rounded-lg p-2">
+          <div className="max-h-[400px] overflow-y-auto space-y-3">
             {uploadedFiles.map((uploadedFile) => (
               <div
                 key={uploadedFile.id}
                 className={cn(
-                  'flex items-center gap-3 p-2 rounded border',
-                  uploadedFile.error ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200',
+                  'group relative flex items-start gap-4 p-4 rounded-[16px] transition-all duration-200',
+                  uploadedFile.error
+                    ? 'bg-red-50 hover:bg-red-100'
+                    : 'bg-white hover:bg-gray-50 shadow-sm hover:shadow-md',
                 )}
+                style={{
+                  border: uploadedFile.error ? '1px solid #fecaca' : '1px solid #f3f4f6',
+                }}
               >
-                <FileText
-                  className={cn(
-                    'w-4 h-4 flex-shrink-0',
-                    uploadedFile.error ? 'text-red-500' : 'text-gray-800',
-                  )}
-                />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {uploadedFile.file.name}
-                  </p>
+                {/* Success/Error Icon */}
+                <div className="flex-shrink-0 mt-0.5">
                   {uploadedFile.error ? (
-                    <p className="text-xs text-red-600">{uploadedFile.error}</p>
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <X className="w-5 h-5 text-red-600" />
+                    </div>
                   ) : (
-                    <p className="text-xs text-gray-500">
-                      {formatFileSize(uploadedFile.file.size)}
-                      {uploadedFile.content &&
-                        ` • ${uploadedFile.content.length.toLocaleString()} символов`}
-                    </p>
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
                   )}
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
+                {/* File Icon & Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[15px] font-medium text-gray-900 truncate"
+                        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        {uploadedFile.file.name}
+                      </p>
+                      {uploadedFile.error ? (
+                        <p
+                          className="text-[13px] text-red-600 mt-1"
+                          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                        >
+                          {uploadedFile.error}
+                        </p>
+                      ) : (
+                        <p
+                          className="text-[13px] text-gray-500 mt-1"
+                          style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                        >
+                          {formatFileSize(uploadedFile.file.size)}
+                          {uploadedFile.content &&
+                            ` • ${uploadedFile.content.length.toLocaleString()} символов`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remove Button */}
+                <button
                   onClick={() => removeFile(uploadedFile.id)}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors duration-200 opacity-0 group-hover:opacity-100"
                 >
-                  <X className="w-4 h-4" />
-                </Button>
+                  <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                </button>
               </div>
             ))}
           </div>

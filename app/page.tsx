@@ -29,10 +29,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import BatchAnalysisSection from '@/components/BatchAnalysisSection'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileUploadDropzone } from '@/components/ui/file-upload-dropzone'
-import { ApiService } from '@/src/services/api'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -159,7 +157,6 @@ export default function EducationalAnalyzer() {
   const [maxTextLength, setMaxTextLength] = useState<number>(20000)
   // Batch analysis state
   const [batchFiles, setBatchFiles] = useState<Array<{ file: globalThis.File; id: string; content?: string; error?: string }>>([])
-  const [batchResults, setBatchResults] = useState<any[]>([])
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -203,7 +200,7 @@ export default function EducationalAnalyzer() {
             } else {
               throw new Error('not found')
             }
-          } catch (err) {
+          } catch {
             results.push({ metric, prompt: 'Промпт не найден' })
           }
         }),
@@ -569,7 +566,7 @@ export default function EducationalAnalyzer() {
     }
 
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col transition-colors">
+      <div className="min-h-screen bg-white dark:bg-[#1a1d2e] flex flex-col transition-colors">
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
@@ -1231,12 +1228,88 @@ export default function EducationalAnalyzer() {
 
                   {analysisMode === 'batch' ? (
                     /* Batch mode: File upload dropzone */
-                    <FileUploadDropzone
-                      onFilesSelected={(files) => setBatchFiles(files)}
-                      maxFiles={50}
-                      maxSizeMB={10}
-                      acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
-                    />
+                    <>
+                      <FileUploadDropzone
+                        onFilesSelected={(files) => setBatchFiles(files)}
+                        maxFiles={50}
+                        maxSizeMB={10}
+                        acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
+                      />
+                      
+                      {/* Batch Analyze Button */}
+                      {batchFiles.filter((f) => !f.error && f.content).length > 0 && (
+                        <div className="mt-6 flex justify-center">
+                          <button
+                            onClick={async () => {
+                              const filesToAnalyze = batchFiles.filter((f) => !f.error && f.content)
+                              
+                              if (filesToAnalyze.length === 0) {
+                                setError('Нет файлов для анализа')
+                                return
+                              }
+
+                              setIsAnalyzing(true)
+                              setError(null)
+                              
+                              try {
+                                const results = []
+                                for (const file of filesToAnalyze) {
+                                  try {
+                                    const { analysisId } = await apiService.analyze({
+                                      content: file.content!,
+                                      modelId: selectedModel,
+                                      metricMode,
+                                    })
+                                    results.push({
+                                      fileName: file.file.name,
+                                      analysisId,
+                                      status: 'started',
+                                    })
+                                  } catch {
+                                    results.push({
+                                      fileName: file.file.name,
+                                      error: _err instanceof Error ? _err.message : 'Ошибка анализа',
+                                      status: 'error',
+                                    })
+                                  }
+                                }
+                                
+                                // setBatchResults(results)
+                                const successCount = results.filter((r) => r.status === 'started').length
+                                
+                                if (successCount > 0) {
+                                  setError(`✓ Запущен анализ ${successCount} файлов. Проверьте историю для результатов.`)
+                                } else {
+                                  setError('Не удалось запустить анализ файлов')
+                                }
+                              } catch {
+                                console.error('Batch analysis error:', _err)
+                                setError('Ошибка при запуске анализа')
+                              } finally {
+                                setIsAnalyzing(false)
+                              }
+                            }}
+                            disabled={isAnalyzing}
+                            className="px-10 py-4 text-[16px] font-medium bg-black text-white 
+                               hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed
+                               rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                            style={{ fontFamily: 'Inter, sans-serif' }}
+                          >
+                            {isAnalyzing ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                Анализируем {batchFiles.filter((f) => !f.error && f.content).length} файлов...
+                              </>
+                            ) : (
+                              <>
+                                <ChevronRight className="w-5 h-5" />
+                                Проанализировать {batchFiles.filter((f) => !f.error && f.content).length} файлов
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     /* Single mode: Text Input Area with Upload Button */
                     <div

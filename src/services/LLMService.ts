@@ -351,46 +351,71 @@ ${content.substring(0, 1500)}...
       throw new Error(`Model configuration not found: ${modelId}`)
     }
 
-    // Create a compact representation of lessons for analysis
-    const lessonsOverview = lessons
-      .map((lesson, i) => {
-        // Take first 500 chars of each lesson for context
-        const preview = lesson.content.substring(0, 500)
-        return `${i + 1}. "${lesson.title}"\n${preview}...`
-      })
-      .join('\n\n')
+    console.log('[Coherence Analysis] Starting analysis...')
+    console.log('[Coherence Analysis] Model:', modelId)
+    console.log('[Coherence Analysis] Number of lessons:', lessons.length)
 
-    const coherencePrompt = `Ты — эксперт по учебным программам. Проанализируй связность и последовательность уроков.
+    // Validate lesson content
+    const validLessons = lessons.filter(
+      (lesson) => lesson.content && lesson.content.trim().length > 0,
+    )
+    console.log('[Coherence Analysis] Valid lessons with content:', validLessons.length)
+
+    if (validLessons.length < 2) {
+      console.error('[Coherence Analysis] Not enough lessons with content')
+      return {
+        score: 0,
+        summary: `Недостаточно уроков с содержимым для анализа связности (найдено ${validLessons.length} из ${lessons.length})`,
+        strengths: [],
+        issues: ['Большинство уроков не содержат текст или содержимое не было загружено'],
+        suggestions: ['Убедитесь, что все файлы уроков содержат текст и были успешно загружены'],
+      }
+    }
+
+    // Create a compact representation of lessons for analysis
+    const lessonsOverview = validLessons
+      .map((lesson, i) => {
+        // Take first 800 chars of each lesson for better context
+        const preview = lesson.content.substring(0, 800)
+        return `Урок ${i + 1}: "${lesson.title}"\n${preview}${lesson.content.length > 800 ? '...' : ''}`
+      })
+      .join('\n\n---\n\n')
+
+    console.log('[Coherence Analysis] Overview length:', lessonsOverview.length, 'chars')
+
+    const coherencePrompt = `Ты — эксперт по учебным программам. Проанализируй связность и последовательность ${validLessons.length} уроков.
 
 Уроки для анализа:
 ${lessonsOverview}
 
-Оцени по шкале от -2 до +2:
+Оцени связность по шкале от -2 до +2:
 - -2: Уроки совершенно не связаны, хаотичная последовательность
 - -1: Слабая связь, есть логические пробелы
 - 0: Нейтральная связь, материал разрозненный но понятный
 - +1: Хорошая связанность, логичная последовательность
 - +2: Отличная связность, каждый урок плавно продолжает предыдущий
 
-Ответь в формате JSON:
-\`\`\`json
+ВАЖНО: Ответь ТОЛЬКО в формате JSON, без дополнительного текста:
 {
-  "score": -2|-1|0|1|2,
+  "score": -2,
   "summary": "Краткое описание общей связности (2-3 предложения)",
   "strengths": ["Сильная сторона 1", "Сильная сторона 2"],
   "issues": ["Проблема 1", "Проблема 2"],
   "suggestions": ["Рекомендация 1", "Рекомендация 2"]
-}
-\`\`\``
+}`
 
     try {
       const provider = this.getProvider(modelId)
+      console.log('[Coherence Analysis] Calling LLM provider...')
+
       const result = await provider.generate(coherencePrompt, '', {
         model: modelConfig.model,
         temperature: 0.3,
-        maxTokens: 1000,
-        timeoutMs: 20000,
+        maxTokens: 1500,
+        timeoutMs: 30000, // Increased timeout
       })
+
+      console.log('[Coherence Analysis] Raw LLM response:', result.comment?.substring(0, 200))
 
       // Parse the response
       let parsed: {
@@ -400,41 +425,60 @@ ${lessonsOverview}
         issues?: string[]
         suggestions?: string[]
       }
+
       try {
-        // Try to extract JSON from the response
-        const jsonMatch = result.comment?.match(/\{[\s\S]*\}/)
+        // Try to extract JSON from the response - support multiple formats
+        let jsonText = result.comment || ''
+
+        // Remove markdown code blocks
+        jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+
+        // Try to find JSON object
+        const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
+          console.log('[Coherence Analysis] Found JSON in response')
           parsed = JSON.parse(jsonMatch[0])
+          console.log('[Coherence Analysis] Parsed successfully:', parsed)
         } else {
+          console.error('[Coherence Analysis] No JSON found in response')
           throw new Error('No JSON found in response')
         }
       } catch (parseError) {
-        console.error('Failed to parse coherence analysis:', parseError)
-        // Return default structure
+        console.error('[Coherence Analysis] Failed to parse JSON:', parseError)
+        console.error('[Coherence Analysis] Raw response:', result.comment)
+
+        // Return a fallback analysis with the raw comment
         return {
           score: 0,
-          summary: result.comment || 'Не удалось проанализировать связность уроков',
+          summary:
+            result.comment || 'Не удалось получить структурированный анализ связности уроков',
           strengths: [],
           issues: [],
-          suggestions: [],
+          suggestions: [
+            'Ответ AI не был в правильном формате. Попробуйте повторить анализ или выбрать другую модель',
+          ],
         }
       }
 
+      // Validate and return parsed data
       return {
-        score: parsed.score || 0,
+        score: typeof parsed.score === 'number' ? parsed.score : 0,
         summary: parsed.summary || 'Анализ связности выполнен',
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
         issues: Array.isArray(parsed.issues) ? parsed.issues : [],
         suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       }
     } catch (error) {
-      console.error('Failed to analyze coherence:', error)
+      console.error('[Coherence Analysis] Error:', error)
       return {
         score: 0,
         summary: 'Не удалось выполнить анализ связности уроков',
         strengths: [],
         issues: [],
-        suggestions: [],
+        suggestions: [
+          'Произошла ошибка при обращении к AI модели',
+          'Попробуйте повторить попытку или выбрать другую модель',
+        ],
       }
     }
   }

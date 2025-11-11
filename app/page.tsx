@@ -29,8 +29,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileUploadDropzone } from '@/components/ui/file-upload-dropzone'
+import { AnalysisModeTabs } from '@/components/AnalysisModeTabs'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -788,15 +788,12 @@ export default function EducationalAnalyzer() {
                   })(),
                 }}
               >
-                <div className="flex items-center mb-4">
-                  <h3
-                    className="text-[24px] font-bold text-black mr-4"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    Связность уроков
-                  </h3>
-                  <ScoreSpeedometer score={coherenceAnalysis.score + 2} maxScore={4} />
-                </div>
+                <h3
+                  className="text-[24px] font-bold text-black mb-4"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Связность уроков
+                </h3>
 
                 <p className="text-[16px] text-gray-800 mb-6">{coherenceAnalysis.summary}</p>
 
@@ -1673,33 +1670,7 @@ export default function EducationalAnalyzer() {
               </div>
 
               {/* Mode Toggle */}
-              <div className="mb-6">
-                <label
-                  className="block text-[15px] font-normal text-gray-500 dark:text-gray-400 mb-3 transition-colors"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  Режим анализа
-                </label>
-                <Tabs
-                  value={analysisMode}
-                  onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
-                >
-                  <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] dark:bg-gray-800 rounded-[50px] p-[3px] transition-colors">
-                    <TabsTrigger
-                      value="single"
-                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors cursor-pointer"
-                    >
-                      Один урок
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="batch"
-                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors cursor-pointer"
-                    >
-                      Много уроков
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
+              <AnalysisModeTabs value={analysisMode} onChange={setAnalysisMode} className="mb-6" />
 
               {/* Prompt trigger on upload screen */}
               <div className="flex justify-end -mt-2 mb-4">

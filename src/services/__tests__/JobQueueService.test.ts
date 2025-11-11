@@ -13,7 +13,7 @@ const mockSupabase = {
 describe('JobQueueService', () => {
   let service: JobQueueService
   const workerId = 'test-worker-123'
-  
+
   beforeEach(() => {
     jest.clearAllMocks()
     service = new JobQueueService(mockSupabase, workerId)
@@ -52,7 +52,7 @@ describe('JobQueueService', () => {
         expect.objectContaining({
           status: 'running',
           locked_by: workerId,
-        })
+        }),
       )
       expect(mockQuery.eq).toHaveBeenCalledWith('status', 'queued')
     })
@@ -110,7 +110,7 @@ describe('JobQueueService', () => {
 
       // Should include TTL check in the or clause
       expect(mockQuery.or).toHaveBeenCalledWith(
-        expect.stringContaining('locked_at.is.null,locked_at.lt.')
+        expect.stringContaining('locked_at.is.null,locked_at.lt.'),
       )
     })
   })
@@ -149,7 +149,7 @@ describe('JobQueueService', () => {
           status: 'succeeded',
           locked_by: null,
           locked_at: null,
-        })
+        }),
       )
     })
 
@@ -186,7 +186,7 @@ describe('JobQueueService', () => {
           status: 'queued', // Should requeue
           attempt_count: 2,
           last_error: 'Test error',
-        })
+        }),
       )
     })
 
@@ -222,7 +222,7 @@ describe('JobQueueService', () => {
         expect.objectContaining({
           status: 'failed', // Should stay failed
           last_error: 'Final error',
-        })
+        }),
       )
     })
 
@@ -235,9 +235,9 @@ describe('JobQueueService', () => {
 
       ;(mockSupabase.from as jest.Mock).mockReturnValue(selectQuery)
 
-      await expect(
-        service.updateJobStatus('non-existent', 'succeeded')
-      ).rejects.toThrow('Job non-existent not found')
+      await expect(service.updateJobStatus('non-existent', 'succeeded')).rejects.toThrow(
+        'Job non-existent not found',
+      )
     })
   })
 
@@ -246,7 +246,7 @@ describe('JobQueueService', () => {
       const text = 'This is test content with spaces   and\nnewlines'
       const hash1 = service.createContentHash(text)
       const hash2 = service.createContentHash(text)
-      
+
       expect(hash1).toBe(hash2)
       expect(hash1).toMatch(/^[a-f0-9]{64}$/) // SHA-256 hex format
     })
@@ -254,27 +254,27 @@ describe('JobQueueService', () => {
     it('should normalize whitespace', () => {
       const text1 = 'Multiple   spaces    between'
       const text2 = 'Multiple spaces between'
-      
+
       const hash1 = service.createContentHash(text1)
       const hash2 = service.createContentHash(text2)
-      
+
       expect(hash1).toBe(hash2)
     })
 
     it('should be case-insensitive', () => {
       const text1 = 'UPPERCASE text'
       const text2 = 'uppercase text'
-      
+
       const hash1 = service.createContentHash(text1)
       const hash2 = service.createContentHash(text2)
-      
+
       expect(hash1).toBe(hash2)
     })
 
     it('should produce different hashes for different content', () => {
       const hash1 = service.createContentHash('Content A')
       const hash2 = service.createContentHash('Content B')
-      
+
       expect(hash1).not.toBe(hash2)
     })
   })
@@ -290,7 +290,7 @@ describe('JobQueueService', () => {
       ;(mockSupabase.from as jest.Mock).mockReturnValue(mockQuery)
 
       const result = await service.checkContentHash('lesson-1', 'hash123')
-      
+
       expect(result).toBe(true)
       expect(mockQuery.eq).toHaveBeenCalledWith('lesson_id', 'lesson-1')
       expect(mockQuery.eq).toHaveBeenCalledWith('content_hash', 'hash123')
@@ -319,11 +319,8 @@ describe('JobQueueService', () => {
       ;(mockSupabase.from as jest.Mock).mockReturnValue(mockQuery)
 
       await service.checkContentHash('lesson-1', 'hash123', 'config-1')
-      
-      expect(mockQuery.eq).toHaveBeenCalledWith(
-        'configuration_snapshot->id',
-        'config-1'
-      )
+
+      expect(mockQuery.eq).toHaveBeenCalledWith('configuration_snapshot->id', 'config-1')
     })
   })
 
@@ -342,7 +339,7 @@ describe('JobQueueService', () => {
         expect.objectContaining({
           status: 'paused',
           finished_at: null,
-        })
+        }),
       )
     })
 
@@ -368,12 +365,12 @@ describe('JobQueueService', () => {
         expect.objectContaining({
           status: 'failed',
           last_error: 'Run was stopped by user',
-        })
+        }),
       )
       expect(runsQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
           status: 'stopped',
-        })
+        }),
       )
     })
   })
@@ -384,9 +381,9 @@ describe('JobQueueService', () => {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         lt: jest.fn().mockReturnThis(),
-        select: jest.fn().mockResolvedValue({ 
-          data: [{ id: '1' }, { id: '2' }], 
-          error: null 
+        select: jest.fn().mockResolvedValue({
+          data: [{ id: '1' }, { id: '2' }],
+          error: null,
         }),
       }
 
@@ -400,7 +397,7 @@ describe('JobQueueService', () => {
           status: 'queued',
           locked_by: null,
           locked_at: null,
-        })
+        }),
       )
     })
 

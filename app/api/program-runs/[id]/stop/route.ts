@@ -6,57 +6,56 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/src/lib/supabase/server'
 import { JobQueueService } from '@/src/services/JobQueueService'
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id: runId } = await context.params
     const supabase = await createClient()
-    
+
     // Get user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
+
     // Verify user owns the run
     const { data: run, error: runError } = await supabase
       .from('program_runs')
-      .select(`
+      .select(
+        `
         *,
         program:programs(user_id)
-      `)
+      `,
+      )
       .eq('id', runId)
       .single()
-    
+
     if (runError || !run) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
-    
+
     if (run.program.user_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    
+
     // Check if run can be stopped
     if (run.status === 'completed' || run.status === 'failed' || run.status === 'stopped') {
-      return NextResponse.json(
-        { error: `Run already ${run.status}` },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: `Run already ${run.status}` }, { status: 400 })
     }
-    
+
     // Update run status to stopped and cancel queued jobs
     const jobQueue = new JobQueueService(supabase)
     await jobQueue.updateRunStatus(runId, 'stopped')
-    
+
     // Get final stats
     const { data: finalRun } = await supabase
       .from('program_runs')
       .select('*')
       .eq('id', runId)
       .single()
-    
+
     return NextResponse.json({
       message: 'Run stopped successfully',
       runId,
@@ -66,14 +65,10 @@ export async function POST(
         succeeded: finalRun?.succeeded || 0,
         failed: finalRun?.failed || 0,
         cancelled: finalRun?.queued || 0,
-      }
+      },
     })
-    
   } catch (error) {
     console.error('Error stopping run:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

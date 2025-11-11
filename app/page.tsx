@@ -22,7 +22,15 @@ import {
 } from '@/src/services/api'
 import { SimpleLoader } from '@/components/SimpleLoader'
 import Image from 'next/image'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import BatchAnalysisSection from '@/components/BatchAnalysisSection'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {
@@ -33,7 +41,6 @@ const METRIC_NAMES: Record<string, string> = {
   care: 'Забота',
   cognitive_load: 'Когнитивная нагрузка',
 }
-
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Speedometer = ({ score }: { score: number | undefined | null }) => {
@@ -135,6 +142,7 @@ const Speedometer = ({ score }: { score: number | undefined | null }) => {
 
 export default function EducationalAnalyzer() {
   const { metricMode } = useMetricMode()
+  const [analysisMode, setAnalysisMode] = useState<'single' | 'batch'>('single')
   const [currentScreen, setCurrentScreen] = useState<'upload' | 'loading' | 'results'>('upload')
   const [content, setContent] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -181,7 +189,9 @@ export default function EducationalAnalyzer() {
       await Promise.all(
         metricIds.map(async (metric) => {
           try {
-            const res = await fetch(`/api/prompt?metric=${encodeURIComponent(metric)}&model=${encodeURIComponent(modelId)}`)
+            const res = await fetch(
+              `/api/prompt?metric=${encodeURIComponent(metric)}&model=${encodeURIComponent(modelId)}`,
+            )
             if (res.ok) {
               const data = await res.json()
               results.push({ metric, prompt: data.prompt || '' })
@@ -191,7 +201,7 @@ export default function EducationalAnalyzer() {
           } catch (err) {
             results.push({ metric, prompt: 'Промпт не найден' })
           }
-        })
+        }),
       )
       setAllPrompts(results)
     } catch (e: any) {
@@ -256,7 +266,9 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
+            setError(
+              `PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`,
+            )
           } else {
             setError(null)
           }
@@ -331,7 +343,9 @@ export default function EducationalAnalyzer() {
           setProgressMessage('')
 
           if (result.truncated) {
-            setError(`PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`)
+            setError(
+              `PDF содержит ${result.pages} страниц. Текст обрезан до ${maxTextLength} символов`,
+            )
           } else {
             setError(null)
           }
@@ -518,20 +532,20 @@ export default function EducationalAnalyzer() {
     // Calculate overall score and count metrics
     let overallScore = 0
     let metricCount = 0
-    
+
     if (analysisResult.results) {
       Object.entries(analysisResult.results).forEach(([key, data]) => {
         // Skip non-metric fields like lessonTitle
         if (data && typeof data === 'object' && 'score' in data && key !== 'lessonTitle') {
-          overallScore += (data.score || 0)
+          overallScore += data.score || 0
           metricCount++
         }
       })
     }
-    
+
     // Calculate total possible score based on number of metrics
     const totalPossibleScore = metricCount * 5 // Range is -2 to +2, total spread is 5
-    const adjustedScore = overallScore + (metricCount * 2) // Shift from -2..+2 to 0..4 per metric
+    const adjustedScore = overallScore + metricCount * 2 // Shift from -2..+2 to 0..4 per metric
 
     // Get shortened comment for metric cards (max 150 chars)
     const getShortComment = (comment: string | undefined) => {
@@ -554,565 +568,7 @@ export default function EducationalAnalyzer() {
         <UnifiedHeader />
         <div className="flex-1 p-6">
           <div className="max-w-[660px] mx-auto">
-          {/* Prompt dialog (global in results) */}
-          <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
-            <DialogContent className="sm:max-w-[760px]">
-              <DialogHeader>
-                <DialogTitle>Промпты всех метрик</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 max-h-[60vh] overflow-auto">
-                {promptsLoading ? (
-                  <div className="text-sm text-gray-500">Загрузка…</div>
-                ) : promptError ? (
-                  <div className="text-sm text-red-600">{promptError}</div>
-                ) : (
-                  allPrompts.map(({ metric, prompt }) => (
-                    <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
-                      <div className="text-xs font-medium text-gray-600 mb-2">{METRIC_NAMES[metric] || metric}</div>
-                      <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
-                    </div>
-                  ))
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setPromptOpen(false)}>Закрыть</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          {/* Prompt trigger on results */}
-          {currentScreen === 'results' && (
-            <div className="flex justify-end mb-2">
-              <button
-                className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
-                onClick={() => {
-                  const metricIds = Object.keys(analysisResult?.results || {}).filter((k) => k !== 'lessonTitle')
-                  loadAllPrompts(metricIds)
-                  setPromptOpen(true)
-                }}
-              >
-                Посмотреть промпт
-              </button>
-            </div>
-          )}
-          {/* Metrics Grid - 2x3 layout */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            {/* Overall Result - Moved to first position */}
-            <div
-              className="p-6 flex flex-col items-center justify-center"
-              style={{ 
-                minWidth: '320px', 
-                minHeight: '320px', 
-                borderRadius: '40px',
-                backgroundColor: (() => {
-                  const percentage = ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100;
-                  if (percentage < 40) return '#FFE5E5'; // Light pink
-                  if (percentage < 70) return '#FFF9E5'; // Light yellow
-                  return '#E5FFE5'; // Light green
-                })()
-              }}
-            >
-              <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
-            </div>
-
-            {/* Logic */}
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Логика
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.logic?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.logic?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.logic?.comment)}
-                </p>
-                {console.log('Logic full data:', JSON.stringify(analysisResult.results?.logic, null, 2))}
-                {analysisResult.results?.logic?.suggestions && 
-                 analysisResult.results.logic.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.logic.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Practical */}
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Польза
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.practical?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.practical?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.practical?.comment)}
-                </p>
-                {console.log('Practical full data:', JSON.stringify(analysisResult.results?.practical, null, 2))}
-                {analysisResult.results?.practical?.suggestions && 
-                 analysisResult.results.practical.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.practical.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Interest */}
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Интерес
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.interest?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.interest?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.interest?.comment)}
-                </p>
-                {console.log('Interest full data:', JSON.stringify(analysisResult.results?.interest, null, 2))}
-                {analysisResult.results?.interest?.suggestions && 
-                 analysisResult.results.interest.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.interest.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Care */}
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Забота
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.care?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.care?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.care?.comment)}
-                </p>
-                {console.log('Care full data:', JSON.stringify(analysisResult.results?.care, null, 2))}
-                {analysisResult.results?.care?.suggestions && 
-                 analysisResult.results.care.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.care.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Complexity */}
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                Сложность
-              </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.complexity?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.complexity?.comment)}
-                </p>
-                {console.log('Complexity full data:', JSON.stringify(analysisResult.results?.complexity, null, 2))}
-                {analysisResult.results?.complexity?.suggestions && 
-                 analysisResult.results.complexity.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.complexity.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Cognitive Load */}
-            {analysisResult.results?.cognitive_load && (
-            <div
-              className="bg-[#F5F5F5] p-6 flex flex-col"
-              style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
-            >
-              <div
-                className="flex justify-between items-start"
-                style={{ marginTop: '20px', marginBottom: '8px' }}
-              >
-                <h3
-                  className="text-black"
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '32px',
-                    marginTop: '-5px',
-                    lineHeight: '90%',
-                  }}
-                >
-                  Когнитивная нагрузка
-                </h3>
-                <div
-                  style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
-                  className="text-black"
-                >
-                  {analysisResult.results?.cognitive_load?.score > 0 ? '+' : ''}
-                  {analysisResult.results?.cognitive_load?.score || 0}
-                </div>
-              </div>
-              <div className="flex-grow" />
-              <div className="space-y-3">
-                <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
-                  {getShortComment(analysisResult.results?.cognitive_load?.comment)}
-                </p>
-                {analysisResult.results?.cognitive_load && 
-                 typeof analysisResult.results.cognitive_load === 'object' && 
-                 'suggestions' in analysisResult.results.cognitive_load && 
-                 Array.isArray(analysisResult.results.cognitive_load.suggestions) && 
-                 analysisResult.results.cognitive_load.suggestions.length > 0 && (
-                  <div>
-                    <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
-                    <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
-                      → {analysisResult.results.cognitive_load.suggestions[0]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            )}
-
-          </div>
-
-          {/* Quick Win Section */}
-          <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
-            <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
-            <p className="text-[14px] text-black leading-relaxed">
-              {overallScore > 0
-                ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
-                : overallScore < 0
-                  ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
-                  : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
-            </p>
-          </div>
-
-          {/* Detailed Analysis Sections */}
-          <div className="space-y-8" style={{ width: '660px' }}>
-            {analysisResult.results &&
-              Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
-                // Skip lessonTitle as it's not a metric
-                if (!data || data.error || metric === 'lessonTitle') return null
-
-                return (
-                  <div key={metric} className="bg-white rounded-lg">
-                    <div className="flex items-start gap-4 mb-4">
-                      <h3 className="text-[24px] font-bold text-black">
-                        {METRIC_NAMES[metric] || metric} ({data.score > 0 ? '+' : ''}
-                        {data.score})
-                      </h3>
-                    </div>
-
-                    {/* Analysis Text */}
-                    {data.detailed_analysis && (
-                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
-                        <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
-                        {typeof data.detailed_analysis === 'string' ? (
-                          <p className="text-[14px] text-black leading-relaxed">
-                            {data.detailed_analysis}
-                          </p>
-                        ) : (
-                          <div className="space-y-3">
-                            {Object.entries(data.detailed_analysis).map(([key, value]) => (
-                              <div key={key}>
-                                <h5 className="text-[14px] font-medium text-black mb-1">{key}:</h5>
-                                <p className="text-[14px] text-black ml-4">{value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Examples */}
-                    {data.examples && data.examples.length > 0 && (
-                      <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
-                        <h4 className="text-[16px] font-semibold text-black mb-3">
-                          Примеры из текста
-                        </h4>
-                        <ul className="space-y-3">
-                          {data.examples.map((example: string, index: number) => (
-                            <li key={index} className="flex items-start">
-                              <span className="text-black mr-2">•</span>
-                              <span className="text-[14px] text-black italic">"{example}"</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Suggestions - What to fix */}
-                    {((data.suggestions && data.suggestions.length > 0) || data.recommendations) && (
-                      <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
-                        <h4 className="text-[16px] font-semibold text-black mb-3">
-                          Что поправить
-                        </h4>
-                        <ul className="space-y-3">
-                          {data.suggestions ? 
-                            data.suggestions.map((suggestion: string, index: number) => (
-                              <li key={index} className="flex items-start">
-                                <span className="text-black mr-2">→</span>
-                                <span className="text-[14px] text-black">{suggestion}</span>
-                              </li>
-                            )) :
-                            data.recommendations?.split(/\d+\)/).filter(Boolean).map((rec: string, index: number) => (
-                              <li key={index} className="flex items-start">
-                                <span className="text-black mr-2">→</span>
-                                <span className="text-[14px] text-black">{rec.trim()}</span>
-                              </li>
-                            ))
-                          }
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-          </div>
-
-          {/* Return Button */}
-          <div className="mt-12 text-center">
-            <Button
-              onClick={() => {
-                setCurrentScreen('upload')
-                setContent('')
-                setAnalysisResult(null)
-                setError(null)
-                setProgressMessage('')
-              }}
-              className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition-colors rounded-lg"
-            >
-              Новый анализ
-            </Button>
-          </div>
-        </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Upload screen - New design based on Figma
-  return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Unified Header with Toggle */}
-      <UnifiedHeader />
-      
-      <div className="flex-1 flex justify-center p-6">
-        <div className="w-full max-w-[660px] mt-[50px]">
-        {/* Header with title, subtitle and image */}
-        <div className="flex justify-between mb-10">
-          <div>
-            <h1
-              className="text-[48px] font-bold text-black mb-3 leading-tight"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Лёха AI
-            </h1>
-            <p
-              className="text-[20px] font-normal text-black"
-              style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
-            >
-              оценивает качество
-              <br />
-              контента на основе
-              <br />
-              lx-метрик
-            </p>
-          </div>
-
-          {/* Image positioned to the right */}
-          <div className="flex items-center">
-            <Image
-              src="/lekha-illustration.png"
-              alt="Лёха AI - Educational Content Analyzer"
-              width={120}
-              height={150}
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Form section */}
-        <div>
-          {/* Model Section */}
-          <div className="mb-6">
-            <label
-              className="block text-[15px] font-normal text-gray-500 mb-3"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Модель
-            </label>
-            {models.length > 0 ? (
-              <Select
-                value={selectedModel}
-                onValueChange={setSelectedModel}
-                onOpenChange={setIsDropdownOpen}
-              >
-                <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-[#F2F2F2] hover:bg-gray-100 transition-colors rounded-[50px] border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
-                  <SelectValue placeholder="Выберите модель" />
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronRight
-                      className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`}
-                    />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
-                  {models.map((model) => (
-                    <SelectItem
-                      key={model.id}
-                      value={model.id}
-                      className="text-[20px] text-black py-2"
-                    >
-                      {model.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="w-full h-14 px-6 flex items-center text-[20px] font-light text-black bg-[#F2F2F2] rounded-[50px]">
-                Loading models...
-              </div>
-            )}
-          </div>
-
-          {/* Prompt trigger on upload screen */}
-          <div className="flex justify-end -mt-2 mb-4">
-            <button
-              className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
-              onClick={() => {
-                const metricIds = Object.keys(METRIC_NAMES)
-                loadAllPrompts(metricIds)
-                setPromptOpen(true)
-              }}
-            >
-              Посмотреть промпт
-            </button>
-          </div>
-
-          {/* Prompt dialog on upload screen */}
-          {currentScreen === 'upload' && (
+            {/* Prompt dialog (global in results) */}
             <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
               <DialogContent className="sm:max-w-[760px]">
                 <DialogHeader>
@@ -1126,135 +582,750 @@ export default function EducationalAnalyzer() {
                   ) : (
                     allPrompts.map(({ metric, prompt }) => (
                       <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
-                        <div className="text-xs font-medium text-gray-600 mb-2">{METRIC_NAMES[metric] || metric}</div>
+                        <div className="text-xs font-medium text-gray-600 mb-2">
+                          {METRIC_NAMES[metric] || metric}
+                        </div>
                         <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
                       </div>
                     ))
                   )}
                 </div>
                 <DialogFooter>
-                  <Button variant="ghost" onClick={() => setPromptOpen(false)}>Закрыть</Button>
+                  <Button variant="ghost" onClick={() => setPromptOpen(false)}>
+                    Закрыть
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          )}
+            {/* Prompt trigger on results */}
+            {currentScreen === 'results' && (
+              <div className="flex justify-end mb-2">
+                <button
+                  className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                  onClick={() => {
+                    const metricIds = Object.keys(analysisResult?.results || {}).filter(
+                      (k) => k !== 'lessonTitle',
+                    )
+                    loadAllPrompts(metricIds)
+                    setPromptOpen(true)
+                  }}
+                >
+                  Посмотреть промпт
+                </button>
+              </div>
+            )}
+            {/* Metrics Grid - 2x3 layout */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {/* Overall Result - Moved to first position */}
+              <div
+                className="p-6 flex flex-col items-center justify-center"
+                style={{
+                  minWidth: '320px',
+                  minHeight: '320px',
+                  borderRadius: '40px',
+                  backgroundColor: (() => {
+                    const percentage =
+                      ((adjustedScore + totalPossibleScore) / (totalPossibleScore * 2)) * 100
+                    if (percentage < 40) return '#FFE5E5' // Light pink
+                    if (percentage < 70) return '#FFF9E5' // Light yellow
+                    return '#E5FFE5' // Light green
+                  })(),
+                }}
+              >
+                <ScoreSpeedometer score={adjustedScore} maxScore={totalPossibleScore} />
+              </div>
 
-          {/* Content Section */}
-          <div className="mb-6 mt-[40px]">
-            <label
-              className="block text-[15px] font-normal text-gray-500 mb-3"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Контент
-            </label>
-
-            {/* Text Input Area with Upload Button */}
-            <div
-              className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
-                isDragOver ? 'bg-gray-100' : ''
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              {progressMessage && progressMessage.includes('PDF') ? (
-                // Show loading state for PDF processing
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
-                  <p className="text-[18px] text-black" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {progressMessage}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Plus/Upload Button */}
-                  <button
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
-                             text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
-                    title="Загрузить файл"
-                  >
-                    <CloudUpload className="w-[30px] h-[30px]" />
-                  </button>
-
-                  {/* Hidden file input */}
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                    accept=".txt,.md,.pdf"
-                  />
-
-                  {/* Textarea */}
-                  <textarea
-                    placeholder="Текст урока"
-                    value={content}
-                    onChange={(e) => {
-                      const text = e.target.value
-                      if (text.length <= maxTextLength) {
-                        setContent(text)
-                        setError(null)
-                      } else {
-                        setError(`Текст должен быть менее ${maxTextLength} символов`)
-                      }
+              {/* Logic */}
+              <div
+                className="bg-[#F5F5F5] p-6 flex flex-col"
+                style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+              >
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginTop: '20px', marginBottom: '8px' }}
+                >
+                  <h3
+                    className="text-black"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '32px',
+                      marginTop: '-5px',
+                      lineHeight: '90%',
                     }}
-                    className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
-                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                    maxLength={maxTextLength}
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  />
-
-                  {/* Character Counter */}
-                  {content && (
-                    <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                      {content.length} / {maxTextLength}
-                    </div>
-                  )}
-
-                  {/* Analyze Button inside textarea */}
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={!content.trim() || isAnalyzing}
-                    className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
-                             hover:opacity-80
-                             rounded-full transition-opacity duration-200 flex items-center justify-center"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
                   >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Анализируем...
-                      </>
-                    ) : (
-                      'Проанализировать'
+                    Логика
+                  </h3>
+                  <div
+                    style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                    className="text-black"
+                  >
+                    {analysisResult.results?.logic?.score > 0 ? '+' : ''}
+                    {analysisResult.results?.logic?.score || 0}
+                  </div>
+                </div>
+                <div className="flex-grow" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                    {getShortComment(analysisResult.results?.logic?.comment)}
+                  </p>
+                  {console.log(
+                    'Logic full data:',
+                    JSON.stringify(analysisResult.results?.logic, null, 2),
+                  )}
+                  {analysisResult.results?.logic?.suggestions &&
+                    analysisResult.results.logic.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                        <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                          → {analysisResult.results.logic.suggestions[0]}
+                        </p>
+                      </div>
                     )}
-                  </Button>
-                </>
+                </div>
+              </div>
+
+              {/* Practical */}
+              <div
+                className="bg-[#F5F5F5] p-6 flex flex-col"
+                style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+              >
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginTop: '20px', marginBottom: '8px' }}
+                >
+                  <h3
+                    className="text-black"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '32px',
+                      marginTop: '-5px',
+                      lineHeight: '90%',
+                    }}
+                  >
+                    Польза
+                  </h3>
+                  <div
+                    style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                    className="text-black"
+                  >
+                    {analysisResult.results?.practical?.score > 0 ? '+' : ''}
+                    {analysisResult.results?.practical?.score || 0}
+                  </div>
+                </div>
+                <div className="flex-grow" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                    {getShortComment(analysisResult.results?.practical?.comment)}
+                  </p>
+                  {console.log(
+                    'Practical full data:',
+                    JSON.stringify(analysisResult.results?.practical, null, 2),
+                  )}
+                  {analysisResult.results?.practical?.suggestions &&
+                    analysisResult.results.practical.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                        <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                          → {analysisResult.results.practical.suggestions[0]}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </div>
+
+              {/* Interest */}
+              <div
+                className="bg-[#F5F5F5] p-6 flex flex-col"
+                style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+              >
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginTop: '20px', marginBottom: '8px' }}
+                >
+                  <h3
+                    className="text-black"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '32px',
+                      marginTop: '-5px',
+                      lineHeight: '90%',
+                    }}
+                  >
+                    Интерес
+                  </h3>
+                  <div
+                    style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                    className="text-black"
+                  >
+                    {analysisResult.results?.interest?.score > 0 ? '+' : ''}
+                    {analysisResult.results?.interest?.score || 0}
+                  </div>
+                </div>
+                <div className="flex-grow" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                    {getShortComment(analysisResult.results?.interest?.comment)}
+                  </p>
+                  {console.log(
+                    'Interest full data:',
+                    JSON.stringify(analysisResult.results?.interest, null, 2),
+                  )}
+                  {analysisResult.results?.interest?.suggestions &&
+                    analysisResult.results.interest.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                        <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                          → {analysisResult.results.interest.suggestions[0]}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </div>
+
+              {/* Care */}
+              <div
+                className="bg-[#F5F5F5] p-6 flex flex-col"
+                style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+              >
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginTop: '20px', marginBottom: '8px' }}
+                >
+                  <h3
+                    className="text-black"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '32px',
+                      marginTop: '-5px',
+                      lineHeight: '90%',
+                    }}
+                  >
+                    Забота
+                  </h3>
+                  <div
+                    style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                    className="text-black"
+                  >
+                    {analysisResult.results?.care?.score > 0 ? '+' : ''}
+                    {analysisResult.results?.care?.score || 0}
+                  </div>
+                </div>
+                <div className="flex-grow" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                    {getShortComment(analysisResult.results?.care?.comment)}
+                  </p>
+                  {console.log(
+                    'Care full data:',
+                    JSON.stringify(analysisResult.results?.care, null, 2),
+                  )}
+                  {analysisResult.results?.care?.suggestions &&
+                    analysisResult.results.care.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                        <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                          → {analysisResult.results.care.suggestions[0]}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </div>
+
+              {/* Complexity */}
+              <div
+                className="bg-[#F5F5F5] p-6 flex flex-col"
+                style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+              >
+                <div
+                  className="flex justify-between items-start"
+                  style={{ marginTop: '20px', marginBottom: '8px' }}
+                >
+                  <h3
+                    className="text-black"
+                    style={{
+                      fontWeight: 600,
+                      fontSize: '32px',
+                      marginTop: '-5px',
+                      lineHeight: '90%',
+                    }}
+                  >
+                    Сложность
+                  </h3>
+                  <div
+                    style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                    className="text-black"
+                  >
+                    {analysisResult.results?.complexity?.score > 0 ? '+' : ''}
+                    {analysisResult.results?.complexity?.score || 0}
+                  </div>
+                </div>
+                <div className="flex-grow" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                    {getShortComment(analysisResult.results?.complexity?.comment)}
+                  </p>
+                  {console.log(
+                    'Complexity full data:',
+                    JSON.stringify(analysisResult.results?.complexity, null, 2),
+                  )}
+                  {analysisResult.results?.complexity?.suggestions &&
+                    analysisResult.results.complexity.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[12px] font-medium text-black/60 mb-1">Что поправить:</p>
+                        <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                          → {analysisResult.results.complexity.suggestions[0]}
+                        </p>
+                      </div>
+                    )}
+                </div>
+              </div>
+
+              {/* Cognitive Load */}
+              {analysisResult.results?.cognitive_load && (
+                <div
+                  className="bg-[#F5F5F5] p-6 flex flex-col"
+                  style={{ minWidth: '320px', minHeight: '320px', borderRadius: '40px' }}
+                >
+                  <div
+                    className="flex justify-between items-start"
+                    style={{ marginTop: '20px', marginBottom: '8px' }}
+                  >
+                    <h3
+                      className="text-black"
+                      style={{
+                        fontWeight: 600,
+                        fontSize: '32px',
+                        marginTop: '-5px',
+                        lineHeight: '90%',
+                      }}
+                    >
+                      Когнитивная нагрузка
+                    </h3>
+                    <div
+                      style={{ fontWeight: 400, fontSize: '50px', marginTop: '-30px' }}
+                      className="text-black"
+                    >
+                      {analysisResult.results?.cognitive_load?.score > 0 ? '+' : ''}
+                      {analysisResult.results?.cognitive_load?.score || 0}
+                    </div>
+                  </div>
+                  <div className="flex-grow" />
+                  <div className="space-y-3">
+                    <p className="text-[15px] text-black" style={{ lineHeight: '120%' }}>
+                      {getShortComment(analysisResult.results?.cognitive_load?.comment)}
+                    </p>
+                    {analysisResult.results?.cognitive_load &&
+                      typeof analysisResult.results.cognitive_load === 'object' &&
+                      'suggestions' in analysisResult.results.cognitive_load &&
+                      Array.isArray(analysisResult.results.cognitive_load.suggestions) &&
+                      analysisResult.results.cognitive_load.suggestions.length > 0 && (
+                        <div>
+                          <p className="text-[12px] font-medium text-black/60 mb-1">
+                            Что поправить:
+                          </p>
+                          <p className="text-[13px] text-black/80" style={{ lineHeight: '120%' }}>
+                            → {analysisResult.results.cognitive_load.suggestions[0]}
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Quick Win Section */}
+            <div className="bg-[#F5F5F5] p-6 mb-8" style={{ width: '660px', borderRadius: '40px' }}>
+              <h2 className="text-[20px] font-semibold text-black mb-3">Quick Win</h2>
+              <p className="text-[14px] text-black leading-relaxed">
+                {overallScore > 0
+                  ? `Контент набрал ${overallScore > 0 ? '+' : ''}${overallScore} баллов. Материал хорошо структурирован и будет полезен для изучения.`
+                  : overallScore < 0
+                    ? `Контент набрал ${overallScore} баллов. Материал требует доработки для лучшего восприятия студентами.`
+                    : 'Контент набрал 0 баллов. Материал имеет сбалансированные характеристики.'}
+              </p>
+            </div>
+
+            {/* Detailed Analysis Sections */}
+            <div className="space-y-8" style={{ width: '660px' }}>
+              {analysisResult.results &&
+                Object.entries(analysisResult.results).map(([metric, data]: [string, any]) => {
+                  // Skip lessonTitle as it's not a metric
+                  if (!data || data.error || metric === 'lessonTitle') return null
+
+                  return (
+                    <div key={metric} className="bg-white rounded-lg">
+                      <div className="flex items-start gap-4 mb-4">
+                        <h3 className="text-[24px] font-bold text-black">
+                          {METRIC_NAMES[metric] || metric} ({data.score > 0 ? '+' : ''}
+                          {data.score})
+                        </h3>
+                      </div>
+
+                      {/* Analysis Text */}
+                      {data.detailed_analysis && (
+                        <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black mb-3">Анализ</h4>
+                          {typeof data.detailed_analysis === 'string' ? (
+                            <p className="text-[14px] text-black leading-relaxed">
+                              {data.detailed_analysis}
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              {Object.entries(data.detailed_analysis).map(([key, value]) => (
+                                <div key={key}>
+                                  <h5 className="text-[14px] font-medium text-black mb-1">
+                                    {key}:
+                                  </h5>
+                                  <p className="text-[14px] text-black ml-4">{value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Examples */}
+                      {data.examples && data.examples.length > 0 && (
+                        <div className="bg-[#F5F5F5] p-6 mb-4" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black mb-3">
+                            Примеры из текста
+                          </h4>
+                          <ul className="space-y-3">
+                            {data.examples.map((example: string, index: number) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-black mr-2">•</span>
+                                <span className="text-[14px] text-black italic">"{example}"</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Suggestions - What to fix */}
+                      {((data.suggestions && data.suggestions.length > 0) ||
+                        data.recommendations) && (
+                        <div className="bg-[#F5F5F5] p-6" style={{ borderRadius: '40px' }}>
+                          <h4 className="text-[16px] font-semibold text-black mb-3">
+                            Что поправить
+                          </h4>
+                          <ul className="space-y-3">
+                            {data.suggestions
+                              ? data.suggestions.map((suggestion: string, index: number) => (
+                                  <li key={index} className="flex items-start">
+                                    <span className="text-black mr-2">→</span>
+                                    <span className="text-[14px] text-black">{suggestion}</span>
+                                  </li>
+                                ))
+                              : data.recommendations
+                                  ?.split(/\d+\)/)
+                                  .filter(Boolean)
+                                  .map((rec: string, index: number) => (
+                                    <li key={index} className="flex items-start">
+                                      <span className="text-black mr-2">→</span>
+                                      <span className="text-[14px] text-black">{rec.trim()}</span>
+                                    </li>
+                                  ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+            </div>
+
+            {/* Return Button */}
+            <div className="mt-12 text-center">
+              <Button
+                onClick={() => {
+                  setCurrentScreen('upload')
+                  setContent('')
+                  setAnalysisResult(null)
+                  setError(null)
+                  setProgressMessage('')
+                }}
+                className="px-8 py-3 bg-black text-white hover:bg-gray-800 transition-colors rounded-lg"
+              >
+                Новый анализ
+              </Button>
+            </div>
           </div>
-
-          {/* Error Alert */}
-          {error && (
-            <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        {/* Illustration credit */}
-        <div className="mt-8 text-center">
-          <p
-            className="text-[10px] text-[#9F9F9F]"
-            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
-          >
-            иллюстрация
-            <br />
-            pinterest.com/miapasfield/
-          </p>
         </div>
       </div>
+    )
+  }
+
+  // Upload screen - New design based on Figma
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Unified Header with Toggle */}
+      <UnifiedHeader />
+
+      <div className="flex-1 flex justify-center p-6">
+        <div className="w-full max-w-[900px] mt-[50px]">
+          {/* Mode Toggle */}
+          <div className="mb-8">
+            <Tabs
+              value={analysisMode}
+              onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
+            >
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="single">Одиночный анализ</TabsTrigger>
+                <TabsTrigger value="batch">Пакетный анализ</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {analysisMode === 'batch' ? (
+            <BatchAnalysisSection
+              metricMode={metricMode}
+              onSwitchMode={() => setAnalysisMode('single')}
+            />
+          ) : (
+            <div className="w-full max-w-[660px] mx-auto">
+              {/* Header with title, subtitle and image */}
+              <div className="flex justify-between mb-10">
+                <div>
+                  <h1
+                    className="text-[48px] font-bold text-black mb-3 leading-tight"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Лёха AI
+                  </h1>
+                  <p
+                    className="text-[20px] font-normal text-black"
+                    style={{ fontFamily: 'Inter, sans-serif', lineHeight: '120%' }}
+                  >
+                    оценивает качество
+                    <br />
+                    контента на основе
+                    <br />
+                    lx-метрик
+                  </p>
+                </div>
+
+                {/* Image positioned to the right */}
+                <div className="flex items-center">
+                  <Image
+                    src="/lekha-illustration.png"
+                    alt="Лёха AI - Educational Content Analyzer"
+                    width={120}
+                    height={150}
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              </div>
+
+              {/* Form section */}
+              <div>
+                {/* Model Section */}
+                <div className="mb-6">
+                  <label
+                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Модель
+                  </label>
+                  {models.length > 0 ? (
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                      onOpenChange={setIsDropdownOpen}
+                    >
+                      <SelectTrigger className="relative w-full !h-14 !px-6 !pr-14 text-[20px] font-light text-black bg-[#F2F2F2] hover:bg-gray-100 transition-colors rounded-[50px] border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0">
+                        <SelectValue placeholder="Выберите модель" />
+                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <ChevronRight
+                            className={`h-5 w-5 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-90' : ''}`}
+                          />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black rounded-2xl border-gray-200">
+                        {models.map((model) => (
+                          <SelectItem
+                            key={model.id}
+                            value={model.id}
+                            className="text-[20px] text-black py-2"
+                          >
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="w-full h-14 px-6 flex items-center text-[20px] font-light text-black bg-[#F2F2F2] rounded-[50px]">
+                      Loading models...
+                    </div>
+                  )}
+                </div>
+
+                {/* Prompt trigger on upload screen */}
+                <div className="flex justify-end -mt-2 mb-4">
+                  <button
+                    className="text-sm text-gray-500 underline underline-offset-2 decoration-gray-300 hover:text-gray-700 hover:decoration-gray-400"
+                    onClick={() => {
+                      const metricIds = Object.keys(METRIC_NAMES)
+                      loadAllPrompts(metricIds)
+                      setPromptOpen(true)
+                    }}
+                  >
+                    Посмотреть промпт
+                  </button>
+                </div>
+
+                {/* Prompt dialog on upload screen */}
+                {currentScreen === 'upload' && (
+                  <Dialog open={promptOpen} onOpenChange={(o) => setPromptOpen(o)}>
+                    <DialogContent className="sm:max-w-[760px]">
+                      <DialogHeader>
+                        <DialogTitle>Промпты всех метрик</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 max-h-[60vh] overflow-auto">
+                        {promptsLoading ? (
+                          <div className="text-sm text-gray-500">Загрузка…</div>
+                        ) : promptError ? (
+                          <div className="text-sm text-red-600">{promptError}</div>
+                        ) : (
+                          allPrompts.map(({ metric, prompt }) => (
+                            <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                              <div className="text-xs font-medium text-gray-600 mb-2">
+                                {METRIC_NAMES[metric] || metric}
+                              </div>
+                              <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="ghost" onClick={() => setPromptOpen(false)}>
+                          Закрыть
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                {/* Content Section */}
+                <div className="mb-6 mt-[40px]">
+                  <label
+                    className="block text-[15px] font-normal text-gray-500 mb-3"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Контент
+                  </label>
+
+                  {/* Text Input Area with Upload Button */}
+                  <div
+                    className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
+                      isDragOver ? 'bg-gray-100' : ''
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    {progressMessage && progressMessage.includes('PDF') ? (
+                      // Show loading state for PDF processing
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
+                        <p
+                          className="text-[18px] text-black"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          {progressMessage}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Plus/Upload Button */}
+                        <button
+                          onClick={() => document.getElementById('file-upload')?.click()}
+                          className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
+                             text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                          title="Загрузить файл"
+                        >
+                          <CloudUpload className="w-[30px] h-[30px]" />
+                        </button>
+
+                        {/* Hidden file input */}
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="file-upload"
+                          accept=".txt,.md,.pdf"
+                        />
+
+                        {/* Textarea */}
+                        <textarea
+                          placeholder="Текст урока"
+                          value={content}
+                          onChange={(e) => {
+                            const text = e.target.value
+                            if (text.length <= maxTextLength) {
+                              setContent(text)
+                              setError(null)
+                            } else {
+                              setError(`Текст должен быть менее ${maxTextLength} символов`)
+                            }
+                          }}
+                          className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                          maxLength={maxTextLength}
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        />
+
+                        {/* Character Counter */}
+                        {content && (
+                          <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                            {content.length} / {maxTextLength}
+                          </div>
+                        )}
+
+                        {/* Analyze Button inside textarea */}
+                        <Button
+                          onClick={handleAnalyze}
+                          disabled={!content.trim() || isAnalyzing}
+                          className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                             hover:opacity-80
+                             rounded-full transition-opacity duration-200 flex items-center justify-center"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Анализируем...
+                            </>
+                          ) : (
+                            'Проанализировать'
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Error Alert */}
+                {error && (
+                  <Alert className="border-red-200 bg-red-50 text-red-700 mb-4 mt-4">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+
+              {/* Illustration credit */}
+              <div className="mt-8 text-center">
+                <p
+                  className="text-[10px] text-[#9F9F9F]"
+                  style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
+                >
+                  иллюстрация
+                  <br />
+                  pinterest.com/miapasfield/
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

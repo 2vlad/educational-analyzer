@@ -76,7 +76,7 @@ export default function ProgramsList({
                   </div>
                 </div>
               )}
-              
+
               {/* Action buttons */}
               {selectedProgram?.id === program.id && (
                 <div className="mt-3 flex gap-2">
@@ -94,7 +94,7 @@ export default function ProgramsList({
                       Загрузить уроки
                     </Button>
                   )}
-                  
+
                   {program.lessonsCount > 0 && program.status !== 'active' && onStartAnalysis && (
                     <Button
                       size="sm"
@@ -109,7 +109,7 @@ export default function ProgramsList({
                       Запустить
                     </Button>
                   )}
-                  
+
                   {onDeleteProgram && (
                     <Button
                       size="sm"
@@ -132,10 +132,7 @@ export default function ProgramsList({
 
       {/* Add program button */}
       <div className="p-4 border-t border-gray-200">
-        <Button
-          onClick={onAddProgram}
-          className="w-full bg-black text-white hover:bg-gray-800"
-        >
+        <Button onClick={onAddProgram} className="w-full bg-black text-white hover:bg-gray-800">
           <Plus className="w-4 h-4 mr-2" />
           Добавить новую программу
         </Button>

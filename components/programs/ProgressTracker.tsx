@@ -11,7 +11,11 @@ interface ProgressTrackerProps {
   onComplete?: () => void
 }
 
-export default function ProgressTracker({ programId, programName, onComplete }: ProgressTrackerProps) {
+export default function ProgressTracker({
+  programId,
+  programName,
+  onComplete,
+}: ProgressTrackerProps) {
   const [run, setRun] = useState<ProgramRun | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,20 +49,20 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
     try {
       setLoading(true)
       setError(null)
-      
+
       // Get all runs for this program
       const response = await fetch(`/api/programs/${programId}/runs`)
       if (!response.ok) {
         throw new Error('Failed to fetch runs')
       }
-      
+
       const { runs } = await response.json()
-      
+
       // Find active run
-      const activeRun = runs.find((r: ProgramRun) => 
-        r.status === 'running' || r.status === 'queued' || r.status === 'paused'
+      const activeRun = runs.find(
+        (r: ProgramRun) => r.status === 'running' || r.status === 'queued' || r.status === 'paused',
       )
-      
+
       if (activeRun) {
         setRun(activeRun)
       } else {
@@ -85,7 +89,7 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
 
   const handlePause = async () => {
     if (!run) return
-    
+
     try {
       setActionLoading(true)
       await apiService.pauseRun(run.id)
@@ -99,7 +103,7 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
 
   const handleResume = async () => {
     if (!run) return
-    
+
     try {
       setActionLoading(true)
       await apiService.resumeRun(run.id)
@@ -113,11 +117,11 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
 
   const handleStop = async () => {
     if (!run) return
-    
+
     if (!confirm('Вы уверены, что хотите остановить анализ?')) {
       return
     }
-    
+
     try {
       setActionLoading(true)
       await apiService.stopRun(run.id)
@@ -144,12 +148,7 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-sm text-red-900">Ошибка: {error}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={loadActiveRun}
-          className="mt-2"
-        >
+        <Button size="sm" variant="outline" onClick={loadActiveRun} className="mt-2">
           Попробовать снова
         </Button>
       </div>
@@ -160,9 +159,7 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
     return null // No active run
   }
 
-  const progress = run.total_lessons > 0 
-    ? Math.round((run.processed / run.total_lessons) * 100)
-    : 0
+  const progress = run.total_lessons > 0 ? Math.round((run.processed / run.total_lessons) * 100) : 0
 
   const getStatusColor = () => {
     switch (run.status) {
@@ -210,33 +207,23 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
             Статус: <span className="font-medium">{getStatusText()}</span>
           </p>
         </div>
-        
+
         {/* Action buttons */}
         <div className="flex gap-2">
           {run.status === 'running' && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handlePause}
-              disabled={actionLoading}
-            >
+            <Button size="sm" variant="outline" onClick={handlePause} disabled={actionLoading}>
               <Pause className="w-4 h-4 mr-1" />
               Пауза
             </Button>
           )}
-          
+
           {run.status === 'paused' && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleResume}
-              disabled={actionLoading}
-            >
+            <Button size="sm" variant="outline" onClick={handleResume} disabled={actionLoading}>
               <Play className="w-4 h-4 mr-1" />
               Продолжить
             </Button>
           )}
-          
+
           {(run.status === 'running' || run.status === 'paused') && (
             <Button
               size="sm"
@@ -261,10 +248,13 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div
             className={`h-2.5 rounded-full transition-all ${
-              run.status === 'completed' ? 'bg-green-500' :
-              run.status === 'failed' ? 'bg-red-500' :
-              run.status === 'paused' ? 'bg-yellow-500' :
-              'bg-blue-500'
+              run.status === 'completed'
+                ? 'bg-green-500'
+                : run.status === 'failed'
+                  ? 'bg-red-500'
+                  : run.status === 'paused'
+                    ? 'bg-yellow-500'
+                    : 'bg-blue-500'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -295,7 +285,9 @@ export default function ProgressTracker({ programId, programName, onComplete }: 
       <div className="mt-3 pt-3 border-t border-gray-300">
         <div className="flex justify-between text-sm text-gray-600">
           <span>Режим метрик:</span>
-          <span className="font-medium">{run.metrics_mode === 'lx' ? 'LX (стандартные)' : 'Пользовательские'}</span>
+          <span className="font-medium">
+            {run.metrics_mode === 'lx' ? 'LX (стандартные)' : 'Пользовательские'}
+          </span>
         </div>
         <div className="flex justify-between text-sm text-gray-600 mt-1">
           <span>Параллелизм:</span>

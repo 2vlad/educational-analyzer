@@ -6,7 +6,12 @@ import ProgramsList from '@/components/programs/ProgramsList'
 import ProgramLessons from '@/components/programs/ProgramLessons'
 import AddProgramModal from '@/components/programs/AddProgramModal'
 import ProgressTracker from '@/components/programs/ProgressTracker'
-import { apiService, type Program, type ProgramLesson, type CreateProgramRequest } from '@/src/services/api'
+import {
+  apiService,
+  type Program,
+  type ProgramLesson,
+  type CreateProgramRequest,
+} from '@/src/services/api'
 import { useRouter } from 'next/navigation'
 
 export default function ProgramsPage() {
@@ -39,7 +44,7 @@ export default function ProgramsPage() {
       setError(null)
       const { programs: loadedPrograms } = await apiService.getPrograms()
       setPrograms(loadedPrograms)
-      
+
       // Auto-select first program if available
       if (loadedPrograms.length > 0 && !selectedProgram) {
         setSelectedProgram(loadedPrograms[0])
@@ -47,7 +52,7 @@ export default function ProgramsPage() {
     } catch (err: any) {
       console.error('Failed to load programs:', err)
       setError(err.message || 'Не удалось загрузить программы')
-      
+
       // If unauthorized, redirect to login
       if (err.message.includes('Unauthorized')) {
         router.push('/login')
@@ -89,7 +94,7 @@ export default function ProgramsPage() {
       const { count, lessons: enumeratedLessons } = await apiService.enumerateLessons(programId)
       setLessons(enumeratedLessons)
       alert(`Загружено ${count} уроков`)
-      
+
       // Reload programs to update lesson counts
       await loadPrograms()
     } catch (err: any) {
@@ -104,10 +109,10 @@ export default function ProgramsPage() {
         metricsMode: 'lx',
         maxConcurrency: 3,
       })
-      
+
       // Don't show alert, ProgressTracker will appear automatically
       console.log(message)
-      
+
       // Reload programs to update run status and trigger ProgressTracker
       await loadPrograms()
     } catch (err: any) {
@@ -131,8 +136,8 @@ export default function ProgramsPage() {
 
     try {
       await apiService.deleteProgram(programId)
-      setPrograms(programs.filter(p => p.id !== programId))
-      
+      setPrograms(programs.filter((p) => p.id !== programId))
+
       if (selectedProgram?.id === programId) {
         setSelectedProgram(programs[0] || null)
       }
@@ -178,28 +183,40 @@ export default function ProgramsPage() {
   return (
     <div className="min-h-screen bg-white">
       <UnifiedHeader />
-      
+
       <div className="flex h-[calc(100vh-64px)]">
         {/* Sidebar with programs list */}
         <ProgramsList
-          programs={programs.map(p => ({
+          programs={programs.map((p) => ({
             id: p.id,
             title: p.name,
             lessonsCount: p.lastRun?.totalLessons || 0,
             completedCount: p.lastRun?.succeeded || 0,
-            status: p.lastRun?.status === 'completed' ? 'completed' : 
-                    p.lastRun?.status === 'running' ? 'active' : 'draft'
+            status:
+              p.lastRun?.status === 'completed'
+                ? 'completed'
+                : p.lastRun?.status === 'running'
+                  ? 'active'
+                  : 'draft',
           }))}
-          selectedProgram={selectedProgram ? {
-            id: selectedProgram.id,
-            title: selectedProgram.name,
-            lessonsCount: selectedProgram.lastRun?.totalLessons || 0,
-            completedCount: selectedProgram.lastRun?.succeeded || 0,
-            status: selectedProgram.lastRun?.status === 'completed' ? 'completed' : 
-                    selectedProgram.lastRun?.status === 'running' ? 'active' : 'draft'
-          } : null}
+          selectedProgram={
+            selectedProgram
+              ? {
+                  id: selectedProgram.id,
+                  title: selectedProgram.name,
+                  lessonsCount: selectedProgram.lastRun?.totalLessons || 0,
+                  completedCount: selectedProgram.lastRun?.succeeded || 0,
+                  status:
+                    selectedProgram.lastRun?.status === 'completed'
+                      ? 'completed'
+                      : selectedProgram.lastRun?.status === 'running'
+                        ? 'active'
+                        : 'draft',
+                }
+              : null
+          }
           onSelectProgram={(program) => {
-            const fullProgram = programs.find(p => p.id === program.id)
+            const fullProgram = programs.find((p) => p.id === program.id)
             if (fullProgram) {
               setSelectedProgram(fullProgram)
             }
@@ -215,14 +232,14 @@ export default function ProgramsPage() {
           {selectedProgram && (
             <div className="p-6 space-y-6">
               {/* Progress Tracker - показываем если есть активный run */}
-              {selectedProgram.lastRun && 
-               ['running', 'paused', 'queued'].includes(selectedProgram.lastRun.status) && (
-                <ProgressTracker
-                  programId={selectedProgram.id}
-                  programName={selectedProgram.name}
-                  onComplete={handleProgressComplete}
-                />
-              )}
+              {selectedProgram.lastRun &&
+                ['running', 'paused', 'queued'].includes(selectedProgram.lastRun.status) && (
+                  <ProgressTracker
+                    programId={selectedProgram.id}
+                    programName={selectedProgram.name}
+                    onComplete={handleProgressComplete}
+                  />
+                )}
 
               {/* Lessons list */}
               <ProgramLessons
@@ -231,8 +248,12 @@ export default function ProgramsPage() {
                   title: selectedProgram.name,
                   lessonsCount: lessons.length,
                   completedCount: selectedProgram.lastRun?.succeeded || 0,
-                  status: selectedProgram.lastRun?.status === 'completed' ? 'completed' : 
-                          selectedProgram.lastRun?.status === 'running' ? 'active' : 'draft'
+                  status:
+                    selectedProgram.lastRun?.status === 'completed'
+                      ? 'completed'
+                      : selectedProgram.lastRun?.status === 'running'
+                        ? 'active'
+                        : 'draft',
                 }}
                 lessons={lessons.map((lesson, index) => ({
                   id: lesson.id,
@@ -245,7 +266,7 @@ export default function ProgramsPage() {
               />
             </div>
           )}
-          
+
           {!selectedProgram && programs.length === 0 && (
             <div className="flex items-center justify-center h-full p-6">
               <div className="text-center">

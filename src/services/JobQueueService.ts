@@ -57,7 +57,7 @@ export class JobQueueService {
       const { data, error } = await this.supabase
         .rpc('pick_next_analysis_job', {
           worker_id_param: this.workerId,
-          run_id_param: runId || null
+          run_id_param: runId || null,
         })
         .single()
 
@@ -85,7 +85,7 @@ export class JobQueueService {
         locked_by: this.workerId,
         locked_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }
 
       return job
@@ -101,7 +101,7 @@ export class JobQueueService {
   async updateJobStatus(
     jobId: string,
     status: 'succeeded' | 'failed' | 'skipped',
-    error?: string
+    error?: string,
   ): Promise<void> {
     const { data: job, error: fetchError } = await this.supabase
       .from('analysis_jobs')
@@ -127,7 +127,7 @@ export class JobQueueService {
           last_error: error,
           locked_by: null,
           locked_at: nextAttemptTime, // Use locked_at as a "not before" timestamp
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', jobId)
     } else {
@@ -139,7 +139,7 @@ export class JobQueueService {
           last_error: status === 'failed' ? error : null,
           locked_by: null,
           locked_at: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', jobId)
     }
@@ -167,10 +167,10 @@ export class JobQueueService {
       queued: 0,
       processed: 0,
       succeeded: 0,
-      failed: 0
+      failed: 0,
     }
 
-    stats?.forEach(job => {
+    stats?.forEach((job) => {
       if (job.status === 'queued') {
         counters.queued++
       } else {
@@ -202,9 +202,8 @@ export class JobQueueService {
         succeeded: counters.succeeded,
         failed: counters.failed,
         status: runStatus,
-        finished_at: runStatus === 'completed' || runStatus === 'failed' 
-          ? new Date().toISOString() 
-          : null
+        finished_at:
+          runStatus === 'completed' || runStatus === 'failed' ? new Date().toISOString() : null,
       })
       .eq('id', runId)
   }
@@ -215,7 +214,7 @@ export class JobQueueService {
   async checkContentHash(
     lessonId: string,
     contentHash: string,
-    metricConfigurationId?: string
+    metricConfigurationId?: string,
   ): Promise<boolean> {
     const query = this.supabase
       .from('analyses')
@@ -238,23 +237,15 @@ export class JobQueueService {
    */
   createContentHash(text: string): string {
     // Normalize text: trim, collapse whitespace
-    const normalized = text
-      .trim()
-      .replace(/\s+/g, ' ')
-      .toLowerCase()
+    const normalized = text.trim().replace(/\s+/g, ' ').toLowerCase()
 
-    return createHash('sha256')
-      .update(normalized)
-      .digest('hex')
+    return createHash('sha256').update(normalized).digest('hex')
   }
 
   /**
    * Handle pause/resume/stop signals for a run
    */
-  async updateRunStatus(
-    runId: string,
-    status: 'paused' | 'running' | 'stopped'
-  ): Promise<void> {
+  async updateRunStatus(runId: string, status: 'paused' | 'running' | 'stopped'): Promise<void> {
     if (status === 'stopped') {
       // Cancel all queued jobs
       await this.supabase
@@ -262,7 +253,7 @@ export class JobQueueService {
         .update({
           status: 'failed',
           last_error: 'Run was stopped by user',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('program_run_id', runId)
         .eq('status', 'queued')
@@ -272,7 +263,7 @@ export class JobQueueService {
       .from('program_runs')
       .update({
         status,
-        finished_at: status === 'stopped' ? new Date().toISOString() : null
+        finished_at: status === 'stopped' ? new Date().toISOString() : null,
       })
       .eq('id', runId)
   }
@@ -289,7 +280,7 @@ export class JobQueueService {
         status: 'queued',
         locked_by: null,
         locked_at: null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('status', 'running')
       .lt('locked_at', ttlTimestamp)

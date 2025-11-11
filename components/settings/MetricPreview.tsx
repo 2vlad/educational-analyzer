@@ -42,7 +42,7 @@ function PreviewCard({ metric, score = 0 }: PreviewCardProps) {
 export default function MetricPreview({ metrics }: MetricPreviewProps) {
   // Simulate different scores for preview
   const sampleScores = [2, 1, 0, -1, -2]
-  
+
   // Calculate max possible score based on number of metrics
   const maxScore = metrics.length * 2
   const totalPossibleScore = metrics.length * 5 // Since range is -2 to +2, total spread is 5

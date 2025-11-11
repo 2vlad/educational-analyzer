@@ -85,7 +85,8 @@ function getMetrics(
     defaultMetrics.push({
       id: 'cognitive_load',
       name: 'cognitive_load',
-      prompt_text: 'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
+      prompt_text:
+        'Оцените когнитивную нагрузку (баланс сложности темы, удаление лишнего, примеры/структура)',
       display_order: 6,
     })
   }
@@ -217,7 +218,14 @@ export async function runAnalysisInternal(
       // Determine if we should use custom prompt text
       // Standard metrics (logic, practical, complexity, interest, care) use prompt files
       // Custom metrics use prompt_text from database
-  const standardMetrics = ['logic', 'practical', 'complexity', 'interest', 'care', 'cognitive_load']
+      const standardMetrics = [
+        'logic',
+        'practical',
+        'complexity',
+        'interest',
+        'care',
+        'cognitive_load',
+      ]
       const isStandardMetric = standardMetrics.includes(metric.name)
       const customPromptText =
         !isStandardMetric && metric.prompt_text ? metric.prompt_text : undefined

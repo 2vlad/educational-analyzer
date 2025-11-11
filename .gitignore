@@ -70,3 +70,4 @@ node_modules/
 
 # mcp config (contains API keys)
 .mcp.json 
+scripts/create-test-user.mjs

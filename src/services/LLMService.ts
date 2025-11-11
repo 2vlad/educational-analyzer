@@ -28,7 +28,7 @@ export class LLMService {
     console.log('Environment check:')
     console.log('- env.isServer:', env.isServer)
     console.log('- env.server exists:', !!env.server)
-    
+
     // Initialize available providers based on API keys
     if (env.isServer && env.server) {
       if (env.server.ANTHROPIC_API_KEY) {
@@ -37,21 +37,21 @@ export class LLMService {
       } else {
         console.log('⚠️ Anthropic API key not found')
       }
-      
+
       if (env.server.OPENAI_API_KEY) {
         console.log('✅ Initializing OpenAI provider')
         this.providers.set('openai', new OpenAIProvider())
       } else {
         console.log('⚠️ OpenAI API key not found')
       }
-      
+
       if (env.server.GOOGLE_API_KEY) {
         console.log('✅ Initializing Google provider')
         this.providers.set('google', new GeminiProvider())
       } else {
         console.log('⚠️ Google API key not found')
       }
-      
+
       if (env.server.YANDEX_API_KEY && env.server.YANDEX_FOLDER_ID) {
         console.log('✅ Initializing Yandex provider')
         console.log('  - API Key length:', env.server.YANDEX_API_KEY.length)
@@ -67,7 +67,7 @@ export class LLMService {
     }
 
     console.log('🤖 LLMService initialized with providers:', Array.from(this.providers.keys()))
-    
+
     if (this.providers.size === 0) {
       console.error('❌ CRITICAL: No LLM providers available! Analysis will fail.')
     }
@@ -101,7 +101,7 @@ export class LLMService {
     const providerFamily = getProviderFamily(this.currentProviderId)
     // Use custom prompt text if provided, otherwise load from file
     let prompt = customPromptText || getPrompt(providerFamily, metric)
-    
+
     // For custom prompts, ensure JSON format for proper parsing
     if (customPromptText && !customPromptText.includes('json')) {
       prompt = `${customPromptText}
@@ -126,7 +126,7 @@ export class LLMService {
 Материал для анализа:
 {{content}}`
     }
-    
+
     const filledPrompt = fillPromptTemplate(prompt, content)
 
     console.log('\n📝 LLMService.analyze()')

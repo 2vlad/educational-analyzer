@@ -61,7 +61,9 @@ const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
 // Validate that at least one Supabase service key is configured
 const validateSupabaseKeys = (env: z.infer<typeof serverEnvSchema>) => {
   if (!env.SUPABASE_SERVICE_ROLE_KEY && !env.SUPABASE_SERVICE_KEY) {
-    console.warn('⚠️ Warning: No SUPABASE_SERVICE_ROLE_KEY configured. Database operations may fail.')
+    console.warn(
+      '⚠️ Warning: No SUPABASE_SERVICE_ROLE_KEY configured. Database operations may fail.',
+    )
   }
 }
 
@@ -78,20 +80,23 @@ if (typeof window === 'undefined') {
     console.log('- GOOGLE_API_KEY:', process.env.GOOGLE_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_API_KEY:', process.env.YANDEX_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_FOLDER_ID:', process.env.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
-    console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET')
+    console.log(
+      '- SUPABASE_SERVICE_ROLE_KEY:',
+      process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET',
+    )
     console.log('- SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT SET')
     console.log('- RATE_LIMIT_SALT:', process.env.RATE_LIMIT_SALT ? 'SET' : 'NOT SET')
-    
+
     serverEnv = serverEnvSchema.parse(process.env)
-    
+
     console.log('✅ Schema validation passed')
-    
+
     validateLLMProviders(serverEnv)
     console.log('✅ LLM providers validated')
-    
+
     validateSupabaseKeys(serverEnv)
     console.log('✅ Supabase keys checked')
-    
+
     console.log('✅ Environment validated successfully')
     console.log('Available API providers:')
     if (serverEnv.ANTHROPIC_API_KEY) console.log('  - Anthropic')

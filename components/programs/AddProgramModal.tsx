@@ -28,19 +28,23 @@ interface AddProgramModalProps {
 
 export default function AddProgramModal({ isOpen, onClose, onAdd }: AddProgramModalProps) {
   const [name, setName] = useState('')
-  const [sourceType, setSourceType] = useState<'yonote' | 'generic_list'>('yonote')
+  const [sourceType, setSourceType] = useState<'yonote' | 'generic_list' | 'manual'>('manual')
   const [rootUrl, setRootUrl] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim() && rootUrl.trim()) {
+    // For manual type, rootUrl is not required
+    const isValidManual = sourceType === 'manual' && name.trim()
+    const isValidUrl = sourceType !== 'manual' && name.trim() && rootUrl.trim()
+
+    if (isValidManual || isValidUrl) {
       setLoading(true)
       try {
         await onAdd({
           name: name.trim(),
           sourceType,
-          rootUrl: rootUrl.trim(),
+          rootUrl: sourceType === 'manual' ? undefined : rootUrl.trim(),
         })
         handleClose()
       } catch (error) {
@@ -54,11 +58,11 @@ export default function AddProgramModal({ isOpen, onClose, onAdd }: AddProgramMo
   const handleClose = () => {
     setName('')
     setRootUrl('')
-    setSourceType('yonote')
+    setSourceType('manual')
     onClose()
   }
 
-  const isValid = name.trim() && rootUrl.trim()
+  const isValid = sourceType === 'manual' ? name.trim() : name.trim() && rootUrl.trim()
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -84,38 +88,45 @@ export default function AddProgramModal({ isOpen, onClose, onAdd }: AddProgramMo
               <Label htmlFor="sourceType">Тип источника</Label>
               <Select
                 value={sourceType}
-                onValueChange={(value) => setSourceType(value as 'yonote' | 'generic_list')}
+                onValueChange={(value) =>
+                  setSourceType(value as 'yonote' | 'generic_list' | 'manual')
+                }
                 disabled={loading}
               >
                 <SelectTrigger id="sourceType">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="manual">Ручная загрузка файлов</SelectItem>
                   <SelectItem value="yonote">Yonote/Practicum</SelectItem>
                   <SelectItem value="generic_list">Список URL</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                {sourceType === 'yonote'
-                  ? 'Ссылка на курс в Yonote или Practicum'
-                  : 'Ссылка на .txt, .json или .csv файл со списком уроков'}
+                {sourceType === 'manual'
+                  ? 'Загрузите файлы уроков после создания программы'
+                  : sourceType === 'yonote'
+                    ? 'Ссылка на курс в Yonote или Practicum'
+                    : 'Ссылка на .txt, .json или .csv файл со списком уроков'}
               </p>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="rootUrl">URL источника</Label>
-              <Input
-                id="rootUrl"
-                value={rootUrl}
-                onChange={(e) => setRootUrl(e.target.value)}
-                placeholder={
-                  sourceType === 'yonote'
-                    ? 'https://practicum.yandex.ru/trainer/...'
-                    : 'https://example.com/lessons.txt'
-                }
-                disabled={loading}
-              />
-            </div>
+            {sourceType !== 'manual' && (
+              <div className="grid gap-2">
+                <Label htmlFor="rootUrl">URL источника</Label>
+                <Input
+                  id="rootUrl"
+                  value={rootUrl}
+                  onChange={(e) => setRootUrl(e.target.value)}
+                  placeholder={
+                    sourceType === 'yonote'
+                      ? 'https://practicum.yandex.ru/trainer/...'
+                      : 'https://example.com/lessons.txt'
+                  }
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>

@@ -27,8 +27,10 @@ export default function ResetPasswordPage() {
     const checkSession = async () => {
       try {
         const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
         if (!session) {
           setError('Ссылка недействительна или истекла. Пожалуйста, запросите новую.')
         }
@@ -45,7 +47,7 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation
     if (!password || !confirmPassword) {
       setError('Пожалуйста, заполните все поля')
@@ -65,12 +67,12 @@ export default function ResetPasswordPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const supabase = createClient()
-      
+
       // Update password
       const { error: updateError } = await supabase.auth.updateUser({
-        password: password
+        password: password,
       })
 
       if (updateError) {
@@ -78,7 +80,7 @@ export default function ResetPasswordPage() {
       }
 
       setSuccess(true)
-      
+
       // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push('/login')
@@ -137,9 +139,7 @@ export default function ResetPasswordPage() {
           {/* Header */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900">Новый пароль</h2>
-            <p className="text-gray-600 mt-2">
-              Введите новый пароль для вашего аккаунта
-            </p>
+            <p className="text-gray-600 mt-2">Введите новый пароль для вашего аккаунта</p>
           </div>
 
           {/* Error Alert */}
@@ -191,7 +191,11 @@ export default function ResetPasswordPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>

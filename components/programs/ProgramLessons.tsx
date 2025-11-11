@@ -10,15 +10,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import UploadLessonsButton from '@/components/programs/UploadLessonsButton'
 import type { Program, Lesson } from '@/app/programs/page'
 
 interface ProgramLessonsProps {
   program: Program
   lessons: Lesson[]
   loading?: boolean
+  onRefresh?: () => void
 }
 
-export default function ProgramLessons({ program, lessons, loading = false }: ProgramLessonsProps) {
+export default function ProgramLessons({
+  program,
+  lessons,
+  loading = false,
+  onRefresh,
+}: ProgramLessonsProps) {
   const router = useRouter()
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set())
 
@@ -106,6 +113,8 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
   }
 
   if (lessons.length === 0) {
+    const isManual = program.sourceType === 'manual'
+
     return (
       <div>
         <div className="mb-6">
@@ -115,8 +124,17 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-gray-500 mb-4">
-              Нажмите "Загрузить уроки" в списке программ, чтобы загрузить список уроков
+              {isManual
+                ? 'Загрузите файлы уроков для начала работы'
+                : 'Нажмите "Загрузить уроки" в списке программ, чтобы загрузить список уроков'}
             </p>
+            {isManual && onRefresh && (
+              <UploadLessonsButton
+                programId={program.id}
+                programName={program.title}
+                onSuccess={onRefresh}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -201,19 +219,11 @@ export default function ProgramLessons({ program, lessons, loading = false }: Pr
                 )}
                 {lesson.status === 'completed' && (
                   <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewResults(lesson)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => handleViewResults(lesson)}>
                       <Eye className="w-4 h-4 mr-2" />
                       Результаты
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleReanalyze(lesson)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => handleReanalyze(lesson)}>
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Переанализировать
                     </Button>

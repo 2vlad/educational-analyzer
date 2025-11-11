@@ -72,8 +72,8 @@ export interface Program {
   id: string
   user_id: string
   name: string
-  source_type: 'yonote' | 'generic_list'
-  root_url: string
+  source_type: 'yonote' | 'generic_list' | 'manual'
+  root_url?: string
   credential_id?: string
   created_at: string
   updated_at: string
@@ -94,12 +94,15 @@ export interface ProgramLesson {
   program_id: string
   parent_id?: string
   title: string
-  source_url: string
+  source_url?: string
   sort_order: number
   content_hash?: string
   last_fetched_at?: string
   is_active: boolean
   created_at: string
+  content?: string
+  file_name?: string
+  file_size?: number
 }
 
 export interface ProgramRun {
@@ -122,8 +125,8 @@ export interface ProgramRun {
 
 export interface CreateProgramRequest {
   name: string
-  sourceType: 'yonote' | 'generic_list'
-  rootUrl: string
+  sourceType: 'yonote' | 'generic_list' | 'manual'
+  rootUrl?: string
   credentialId?: string
 }
 
@@ -148,7 +151,7 @@ class ApiService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     }
-    
+
     if (typeof window !== 'undefined') {
       const sessionId = localStorage.getItem('session_id')
       if (sessionId) {
@@ -172,12 +175,12 @@ class ApiService {
 
     const data = await response.json()
     console.log('[API] /api/analyze success, analysis ID:', data.analysisId)
-    
+
     // Store session ID for guest users
     if (data.sessionId && typeof window !== 'undefined') {
       localStorage.setItem('session_id', data.sessionId)
     }
-    
+
     return data
   }
 
@@ -295,6 +298,24 @@ class ApiService {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.error || 'Failed to fetch lessons')
+    }
+    return response.json()
+  }
+
+  async uploadLessons(
+    programId: string,
+    files: Array<{ fileName: string; content: string; fileSize: number }>,
+  ): Promise<{ success: boolean; lessonsCreated: number; lessons: ProgramLesson[] }> {
+    const response = await fetch(`/api/programs/${programId}/upload-lessons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ files }),
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to upload lessons')
     }
     return response.json()
   }

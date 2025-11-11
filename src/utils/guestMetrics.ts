@@ -22,7 +22,7 @@ export function loadGuestMetrics(): MetricConfig[] {
     }
 
     const parsed = JSON.parse(stored)
-    
+
     // Validate that it's an array
     if (!Array.isArray(parsed)) {
       console.warn('Invalid metrics format in LocalStorage, resetting to defaults')
@@ -85,18 +85,18 @@ export function saveGuestMetrics(metrics: MetricConfig[]): void {
  */
 export function addGuestMetric(metric: Omit<MetricConfig, 'id'>): MetricConfig {
   const current = loadGuestMetrics()
-  
+
   // Generate a unique ID
   const id = `custom_${Date.now()}_${Math.random().toString(36).substring(7)}`
-  
+
   const newMetric: MetricConfig = {
     ...metric,
     id,
   }
-  
+
   const updated = [...current, newMetric]
   saveGuestMetrics(updated)
-  
+
   return newMetric
 }
 
@@ -106,12 +106,12 @@ export function addGuestMetric(metric: Omit<MetricConfig, 'id'>): MetricConfig {
 export function updateGuestMetric(id: string, updates: Partial<MetricConfig>): boolean {
   const current = loadGuestMetrics()
   const index = current.findIndex((m) => m.id === id)
-  
+
   if (index === -1) return false
-  
+
   current[index] = { ...current[index], ...updates }
   saveGuestMetrics(current)
-  
+
   return true
 }
 
@@ -121,9 +121,9 @@ export function updateGuestMetric(id: string, updates: Partial<MetricConfig>): b
 export function deleteGuestMetric(id: string): boolean {
   const current = loadGuestMetrics()
   const filtered = current.filter((m) => m.id !== id)
-  
+
   if (filtered.length === current.length) return false
-  
+
   saveGuestMetrics(filtered)
   return true
 }
@@ -137,7 +137,7 @@ export function reorderGuestMetrics(metrics: MetricConfig[]): void {
     ...m,
     display_order: index + 1,
   }))
-  
+
   saveGuestMetrics(updated)
 }
 
@@ -174,14 +174,14 @@ export function importMetricsConfig(jsonString: string): {
 } {
   try {
     const parsed = JSON.parse(jsonString)
-    
+
     if (!parsed.metrics || !Array.isArray(parsed.metrics)) {
       return {
         success: false,
         error: 'Invalid format: missing or invalid metrics array',
       }
     }
-    
+
     // Validate metric structure
     const valid = parsed.metrics.every(
       (m: any) =>
@@ -192,14 +192,14 @@ export function importMetricsConfig(jsonString: string): {
         typeof m.is_active === 'boolean' &&
         typeof m.display_order === 'number',
     )
-    
+
     if (!valid) {
       return {
         success: false,
         error: 'Invalid format: metrics have incorrect structure',
       }
     }
-    
+
     return {
       success: true,
       metrics: parsed.metrics,

@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!email.trim()) {
       setError('Пожалуйста, введите email')
       return
@@ -29,9 +29,9 @@ export default function ForgotPasswordPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const supabase = createClient()
-      
+
       // Send password reset email
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: getAuthCallbackUrl('/reset-password'),
@@ -78,8 +78,8 @@ export default function ForgotPasswordPage() {
 
             <Alert>
               <AlertDescription>
-                Проверьте почту и перейдите по ссылке для установки нового пароля.
-                Ссылка действительна в течение 1 часа.
+                Проверьте почту и перейдите по ссылке для установки нового пароля. Ссылка
+                действительна в течение 1 часа.
               </AlertDescription>
             </Alert>
 

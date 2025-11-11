@@ -137,7 +137,7 @@ export default function CustomMetricsPage() {
         setMetrics([...metrics, newMetric])
         toast.success('Метрика добавлена')
       }
-      
+
       setShowAddForm(false)
     } catch (error) {
       console.error('Error adding metric:', error)
@@ -718,8 +718,6 @@ export default function CustomMetricsPage() {
             <ModelSelector />
           </div>
 
-          
-
           {/* Main Content - Metric List */}
           <div
             className="bg-white border border-gray-200 p-6 mb-6"
@@ -750,54 +748,60 @@ export default function CustomMetricsPage() {
                   </button>
                 </div>
               </div>
-                {/* Prompts dialog attached to metrics box */}
-                <Dialog open={promptOpen && currentScreen === 'input'} onOpenChange={(o) => setPromptOpen(o)}>
-                  <DialogContent className="sm:max-w-[760px]">
-                    <DialogHeader>
-                      <DialogTitle>Промпты всех метрик</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 max-h-[60vh] overflow-auto">
-                      {promptsLoading ? (
-                        <div className="text-sm text-gray-500">Загрузка…</div>
-                      ) : promptError ? (
-                        <div className="text-sm text-red-600">{promptError}</div>
-                      ) : (
-                        allPrompts.map(({ metric, prompt }) => (
-                          <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
-                            <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
-                            <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
-                        Закрыть
-                      </button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <PromptGuide />
-              </div>
-
-              <MetricListView
-                metrics={metrics}
-                onReorder={handleReorder}
-                onEdit={setEditingMetric}
-                onDelete={handleDeleteMetric}
-                onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
-              />
+              {/* Prompts dialog attached to metrics box */}
+              <Dialog
+                open={promptOpen && currentScreen === 'input'}
+                onOpenChange={(o) => setPromptOpen(o)}
+              >
+                <DialogContent className="sm:max-w-[760px]">
+                  <DialogHeader>
+                    <DialogTitle>Промпты всех метрик</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 max-h-[60vh] overflow-auto">
+                    {promptsLoading ? (
+                      <div className="text-sm text-gray-500">Загрузка…</div>
+                    ) : promptError ? (
+                      <div className="text-sm text-red-600">{promptError}</div>
+                    ) : (
+                      allPrompts.map(({ metric, prompt }) => (
+                        <div key={metric} className="border rounded-md bg-[#F5F5F5] p-3">
+                          <div className="text-xs font-medium text-gray-600 mb-2">{metric}</div>
+                          <pre className="text-xs whitespace-pre-wrap text-black">{prompt}</pre>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <button className="px-3 py-1.5 text-sm" onClick={() => setPromptOpen(false)}>
+                      Закрыть
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <PromptGuide />
             </div>
 
-            {/* Info for guests */}
-            {!user && (
-              <div className="bg-blue-50 border border-blue-200 p-4 mb-6" style={{ borderRadius: '20px' }}>
-                <p className="text-sm text-blue-800">
-                  💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере. 
-                  Войдите в систему, чтобы синхронизировать метрики между устройствами.
-                </p>
-              </div>
-            )}
+            <MetricListView
+              metrics={metrics}
+              onReorder={handleReorder}
+              onEdit={setEditingMetric}
+              onDelete={handleDeleteMetric}
+              onToggleActive={(id, active) => handleUpdateMetric(id, { is_active: active })}
+            />
+          </div>
+
+          {/* Info for guests */}
+          {!user && (
+            <div
+              className="bg-blue-50 border border-blue-200 p-4 mb-6"
+              style={{ borderRadius: '20px' }}
+            >
+              <p className="text-sm text-blue-800">
+                💡 <strong>Гостевой режим:</strong> Ваши настройки сохраняются локально в браузере.
+                Войдите в систему, чтобы синхронизировать метрики между устройствами.
+              </p>
+            </div>
+          )}
 
           {/* Content Analysis Section - label placed just above textarea */}
           <div className="mb-6">

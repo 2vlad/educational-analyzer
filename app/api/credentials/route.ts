@@ -4,9 +4,12 @@ import { createClient } from '@/src/lib/supabase/server'
 export async function GET() {
   try {
     const supabase = await createClient()
-    
+
     // Get user session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -24,14 +27,14 @@ export async function GET() {
     }
 
     // Format response
-    const formattedCredentials = credentials?.map(cred => ({
+    const formattedCredentials = credentials?.map((cred) => ({
       id: cred.id,
       name: cred.name,
       provider: cred.provider,
       expiresAt: cred.cookie_expires_at,
       createdAt: cred.created_at,
       updatedAt: cred.updated_at,
-      isExpired: cred.cookie_expires_at ? new Date(cred.cookie_expires_at) < new Date() : false
+      isExpired: cred.cookie_expires_at ? new Date(cred.cookie_expires_at) < new Date() : false,
     }))
 
     return NextResponse.json({ credentials: formattedCredentials || [] })

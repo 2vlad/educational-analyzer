@@ -15,8 +15,8 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     // For guest users, we'll use session-based tracking
-    const sessionId = request.headers.get('x-session-id') || 
-                     request.cookies.get('session_id')?.value
+    const sessionId =
+      request.headers.get('x-session-id') || request.cookies.get('session_id')?.value
 
     // Parse query parameters
     const { searchParams } = new globalThis.URL(request.url)

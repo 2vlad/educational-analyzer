@@ -1157,16 +1157,16 @@ export default function EducationalAnalyzer() {
                     value={analysisMode}
                     onValueChange={(v) => setAnalysisMode(v as 'single' | 'batch')}
                   >
-                    <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] rounded-[50px] p-[3px]">
+                    <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] dark:bg-gray-800 rounded-[50px] p-[3px] transition-colors">
                       <TabsTrigger 
                         value="single" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
+                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
                       >
                         Один урок
                       </TabsTrigger>
                       <TabsTrigger 
                         value="batch" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
+                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
                       >
                         Много уроков
                       </TabsTrigger>
@@ -1235,13 +1235,13 @@ export default function EducationalAnalyzer() {
                       onFilesSelected={(files) => setBatchFiles(files)}
                       maxFiles={50}
                       maxSizeMB={10}
-                      acceptedFileTypes={['.txt', '.md', '.html']}
+                      acceptedFileTypes={['.txt', '.md', '.html', '.pdf']}
                     />
                   ) : (
                     /* Single mode: Text Input Area with Upload Button */
                     <div
-                      className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] relative transition-all ${
-                        isDragOver ? 'bg-gray-100' : ''
+                      className={`h-[180px] px-4 py-3 rounded-[25px] bg-[#F2F2F2] dark:bg-gray-800 relative transition-all ${
+                        isDragOver ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
@@ -1250,9 +1250,9 @@ export default function EducationalAnalyzer() {
                     {progressMessage && progressMessage.includes('PDF') ? (
                       // Show loading state for PDF processing
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
+                        <Loader2 className="h-8 w-8 animate-spin text-black dark:text-white mb-4 transition-colors" />
                         <p
-                          className="text-[18px] text-black"
+                          className="text-[18px] text-black dark:text-white transition-colors"
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         >
                           {progressMessage}
@@ -1264,7 +1264,7 @@ export default function EducationalAnalyzer() {
                         <button
                           onClick={() => document.getElementById('file-upload')?.click()}
                           className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
-                             text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                             text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700"
                           title="Загрузить файл"
                         >
                           <CloudUpload className="w-[30px] h-[30px]" />
@@ -1292,15 +1292,15 @@ export default function EducationalAnalyzer() {
                               setError(`Текст должен быть менее ${maxTextLength} символов`)
                             }
                           }}
-                          className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
-                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                          className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black dark:text-white leading-relaxed 
+                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60 dark:placeholder:text-gray-500/60 transition-colors"
                           maxLength={maxTextLength}
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         />
 
                         {/* Character Counter */}
                         {content && (
-                          <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                          <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400 dark:text-gray-500 transition-colors">
                             {content.length} / {maxTextLength}
                           </div>
                         )}
@@ -1309,9 +1309,9 @@ export default function EducationalAnalyzer() {
                         <Button
                           onClick={handleAnalyze}
                           disabled={!content.trim() || isAnalyzing}
-                          className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
-                             hover:opacity-80
-                             rounded-full transition-opacity duration-200 flex items-center justify-center"
+                          className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] dark:bg-gray-700 text-white 
+                             hover:opacity-80 dark:hover:bg-gray-600
+                             rounded-full transition-all duration-200 flex items-center justify-center"
                           style={{ fontFamily: 'Inter, sans-serif' }}
                         >
                           {isAnalyzing ? (

@@ -290,17 +290,22 @@ export default function EducationalAnalyzer() {
 
   const loadModels = async () => {
     try {
+      console.log('[DEBUG] Starting to load models...')
       const response = await apiService.getModels()
-      console.log('Models response:', response)
+      console.log('[DEBUG] Models response:', response)
       console.log(
-        'Available models:',
+        '[DEBUG] Available models:',
         response.models.filter((m) => m.available),
       )
-      console.log('Default model:', response.defaultModel)
-      setModels(response.models.filter((m) => m.available))
+      console.log('[DEBUG] Default model:', response.defaultModel)
+
+      const availableModels = response.models.filter((m) => m.available)
+      console.log('[DEBUG] Setting models state with', availableModels.length, 'models')
+      setModels(availableModels)
       setSelectedModel(response.defaultModel)
+      console.log('[DEBUG] Models loaded successfully!')
     } catch (error) {
-      console.error('Failed to load models:', error)
+      console.error('[DEBUG] Failed to load models:', error)
       // Continue with default model
       // Set a fallback model if API fails
       setSelectedModel('claude-haiku')
@@ -1682,13 +1687,13 @@ export default function EducationalAnalyzer() {
                   <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] dark:bg-gray-800 rounded-[50px] p-[3px] transition-colors">
                     <TabsTrigger
                       value="single"
-                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
+                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors cursor-pointer"
                     >
                       Один урок
                     </TabsTrigger>
                     <TabsTrigger
                       value="batch"
-                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors"
+                      className="text-[20px] font-light h-full rounded-[46px] text-gray-400 dark:text-gray-500 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white border-0 shadow-none transition-colors cursor-pointer"
                     >
                       Много уроков
                     </TabsTrigger>

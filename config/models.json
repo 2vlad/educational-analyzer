@@ -3,7 +3,7 @@
   "models": {
     "claude-haiku": {
       "provider": "openrouter",
-      "model": "anthropic/claude-3-haiku",
+      "model": "anthropic/claude-3.5-haiku",
       "maxTokens": 1000,
       "temperature": 0.3
     },

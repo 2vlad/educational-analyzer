@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/dialog'
 import BatchAnalysisSection from '@/components/BatchAnalysisSection'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FileUploadDropzone } from '@/components/ui/file-upload-dropzone'
+import { ApiService } from '@/src/services/api'
 
 // Metric name mapping
 const METRIC_NAMES: Record<string, string> = {

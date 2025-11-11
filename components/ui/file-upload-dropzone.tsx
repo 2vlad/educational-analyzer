@@ -187,14 +187,14 @@ export function FileUploadDropzone({
               или{' '}
               <label
                 htmlFor="file-upload"
-                className="text-blue-600 hover:text-blue-700 cursor-pointer font-medium"
+                className="text-black hover:text-gray-700 cursor-pointer font-normal"
               >
                 выберите файлы
               </label>
             </p>
           </div>
 
-          <div className="text-[13px] text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <div className="text-[12px] text-gray-400" style={{ fontFamily: 'Inter, sans-serif' }}>
             <p>Поддерживаемые форматы: {acceptedFileTypes.join(', ')}</p>
             <p>
               Максимум {maxFiles} файлов, до {maxSizeMB}MB каждый

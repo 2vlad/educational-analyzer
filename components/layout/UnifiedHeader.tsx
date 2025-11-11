@@ -40,7 +40,7 @@ export default function UnifiedHeader() {
           {/* Logo */}
           <button
             onClick={handleLogoClick}
-            className="text-xl font-bold text-foreground hover:opacity-80 transition-all cursor-pointer hover:underline"
+            className="text-xl font-bold text-foreground hover:opacity-80 transition-all cursor-pointer"
           >
             Лёха AI
           </button>

@@ -104,7 +104,7 @@ export default function AddMetricForm({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Например: Ясность, Вовлечённость, Техническая точность"
@@ -137,7 +137,7 @@ export default function AddMetricForm({
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={6}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
+              className={`w-full px-4 py-2 border rounded-lg text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
                 errors.prompt ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Введите критерии оценки для этой метрики. Укажите конкретно, какие аспекты следует оценивать и как."

@@ -72,11 +72,11 @@ export default function ModelSelector({ onModelChange }: ModelSelectorProps = {}
       console.error('Error fetching models:', error)
       // Set default models if API fails
       setModels([
-        { id: 'yandex-gpt-pro', name: 'YandexGPT' },
-        { id: 'claude-haiku', name: 'Claude Haiku' },
-        { id: 'claude-sonnet-4', name: 'Claude Sonnet' },
+        { id: 'yandex-gpt-pro', name: 'YandexGPT Pro' },
+        { id: 'claude-haiku', name: 'Claude 3.5 Haiku' },
+        { id: 'claude-sonnet-4', name: 'Claude 3.5 Sonnet' },
         { id: 'gpt-4o', name: 'GPT-4o' },
-        { id: 'gemini-pro', name: 'Gemini Pro' },
+        { id: 'gemini-pro', name: 'Gemini 2.5 Flash' },
       ])
       // Set default to yandex-gpt-pro on API failure
       if (!selectedModel) {

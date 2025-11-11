@@ -29,10 +29,10 @@ export async function GET() {
     const models = Object.entries(allModels.models).map(([id, config]) => {
       // Format names properly without descriptions
       let name = id
-      if (id === 'claude-haiku') name = 'Claude 3 Haiku'
+      if (id === 'claude-haiku') name = 'Claude 3.5 Haiku'
       else if (id === 'claude-sonnet-4') name = 'Claude 3.5 Sonnet'
       else if (id === 'gpt-4o') name = 'GPT-4o'
-      else if (id === 'gemini-pro') name = 'Gemini 1.5 Pro'
+      else if (id === 'gemini-pro') name = 'Gemini 2.5 Flash'
       else if (id === 'yandex-gpt-pro') name = 'YandexGPT Pro'
       else name = id.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 

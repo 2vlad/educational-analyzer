@@ -1160,13 +1160,13 @@ export default function EducationalAnalyzer() {
                     <TabsList className="grid w-full grid-cols-2 !h-14 bg-[#F2F2F2] rounded-[50px] p-[3px]">
                       <TabsTrigger 
                         value="single" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 bg-[#F2F2F2] data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-none border-0"
+                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
                       >
                         Одиночный анализ
                       </TabsTrigger>
                       <TabsTrigger 
                         value="batch" 
-                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 bg-[#F2F2F2] data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-none border-0"
+                        className="text-[20px] font-light h-full rounded-[46px] text-gray-400 data-[state=active]:bg-white data-[state=active]:text-black border-0 shadow-none"
                       >
                         Пакетный анализ
                       </TabsTrigger>

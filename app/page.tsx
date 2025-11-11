@@ -1058,7 +1058,7 @@ export default function EducationalAnalyzer() {
 
   // Upload screen - New design based on Figma
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="min-h-screen bg-white dark:bg-[#1a1d2e] flex flex-col transition-colors">
       {/* Unified Header with Toggle */}
       <UnifiedHeader />
 

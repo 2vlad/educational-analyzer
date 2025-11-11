@@ -197,12 +197,21 @@ export default function CustomMetricsPage() {
           const error = await response.json()
           throw new Error(error.error || 'Failed to update metric')
         }
+
+        // Get updated configuration from response to ensure consistency
+        const responseData = await response.json()
+        if (responseData.configuration) {
+          setMetrics(metrics.map((m) => (m.id === id ? responseData.configuration : m)))
+        }
+
         toast.success('Метрика обновлена')
+        setEditingMetric(null)
       } else {
         // Guest: save to LocalStorage
         const success = updateGuestMetric(id, updates)
         if (!success) throw new Error('Metric not found')
         toast.success('Метрика обновлена')
+        setEditingMetric(null)
       }
     } catch (error) {
       // Rollback on error

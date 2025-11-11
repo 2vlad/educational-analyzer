@@ -44,6 +44,7 @@ export default function CustomMetricsPage() {
   const [analysisResult, setAnalysisResult] = useState<ApiAnalysisResult | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState<string>('')
   // Batch analysis state
   const [batchFiles, setBatchFiles] = useState<
     Array<{ file: globalThis.File; id: string; content?: string; error?: string }>
@@ -57,16 +58,14 @@ export default function CustomMetricsPage() {
       error?: string
     }>
   >([])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [coherenceAnalysis, _setCoherenceAnalysis] = useState<{
+  const [coherenceAnalysis, setCoherenceAnalysis] = useState<{
     score: number
     summary: string
     strengths: string[]
     issues: string[]
     suggestions: string[]
   } | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [coherenceLoading, _setCoherenceLoading] = useState(false)
+  const [coherenceLoading, setCoherenceLoading] = useState(false)
   // Prompt viewer state
   const [promptOpen, setPromptOpen] = useState(false)
   const [promptError, setPromptError] = useState<string | null>(null)
@@ -493,6 +492,64 @@ export default function CustomMetricsPage() {
     }
   }
 
+  // Analyze coherence when batch results are all completed
+  useEffect(() => {
+    const analyzeCoherence = async () => {
+      // Only analyze if we have batch results and they're all completed
+      if (
+        batchResults.length < 2 ||
+        coherenceLoading ||
+        coherenceAnalysis ||
+        currentScreen !== 'results'
+      ) {
+        return
+      }
+
+      const completedResults = batchResults.filter((r) => r.status === 'completed' && r.result)
+      if (completedResults.length < 2 || completedResults.length !== batchResults.length) {
+        return
+      }
+
+      setCoherenceLoading(true)
+
+      try {
+        // Prepare lessons data
+        const lessons = completedResults.map((r, idx) => ({
+          filename: r.fileName || batchFiles[idx]?.name || `Урок ${idx + 1}`,
+          content: batchFiles[idx]
+            ? typeof batchFiles[idx].content === 'string'
+              ? batchFiles[idx].content
+              : ''
+            : '',
+        }))
+
+        // Call coherence analysis API
+        const response = await fetch('/api/analyze-coherence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lessons,
+            modelId: selectedModel,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Coherence analysis failed')
+        }
+
+        const data = await response.json()
+        setCoherenceAnalysis(data.analysis)
+      } catch (error) {
+        console.error('Failed to analyze coherence:', error)
+        // Silently fail - coherence is optional
+      } finally {
+        setCoherenceLoading(false)
+      }
+    }
+
+    analyzeCoherence()
+  }, [batchResults, currentScreen, coherenceLoading, coherenceAnalysis, batchFiles, selectedModel])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -529,9 +586,92 @@ export default function CustomMetricsPage() {
               >
                 Результаты анализа: {completedResults.length} из {batchResults.length} уроков
               </h2>
-              <p className="text-[16px] text-gray-700">
-                Анализ завершён с использованием ваших пользовательских метрик
-              </p>
+
+              {/* Coherence Analysis Loading/Results */}
+              {coherenceLoading && (
+                <div className="flex items-center gap-3 text-gray-600 mt-4">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-[16px]">Анализ связности уроков...</span>
+                </div>
+              )}
+
+              {!coherenceLoading && coherenceAnalysis && (
+                <div
+                  className="mt-6 p-6 rounded-[32px]"
+                  style={{
+                    backgroundColor:
+                      coherenceAnalysis.score >= 80
+                        ? '#d4f4dd'
+                        : coherenceAnalysis.score >= 60
+                          ? '#fff4cc'
+                          : '#ffe6e6',
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[20px] font-semibold text-gray-900">
+                      Анализ связности уроков
+                    </h3>
+                    <span
+                      className="text-[24px] font-bold"
+                      style={{
+                        color:
+                          coherenceAnalysis.score >= 80
+                            ? '#10b981'
+                            : coherenceAnalysis.score >= 60
+                              ? '#f59e0b'
+                              : '#ef4444',
+                      }}
+                    >
+                      {coherenceAnalysis.score}/100
+                    </span>
+                  </div>
+
+                  <p className="text-[15px] text-gray-700 mb-4">{coherenceAnalysis.summary}</p>
+
+                  {coherenceAnalysis.strengths.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">
+                        ✅ Сильные стороны:
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.strengths.map((strength, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {coherenceAnalysis.issues.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">⚠️ Проблемы:</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.issues.map((issue, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {issue}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {coherenceAnalysis.suggestions.length > 0 && (
+                    <div>
+                      <h4 className="text-[16px] font-semibold text-gray-800 mb-2">
+                        💡 Рекомендации:
+                      </h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {coherenceAnalysis.suggestions.map((suggestion, idx) => (
+                          <li key={idx} className="text-[14px] text-gray-700">
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Individual Lesson Results */}
@@ -707,7 +847,7 @@ export default function CustomMetricsPage() {
                 setBatchResults([])
                 setBatchFiles([])
                 setAnalysisResult(null)
-                _setCoherenceAnalysis(null)
+                setCoherenceAnalysis(null)
               }}
               className="mt-12 px-8 py-3.5 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
             >
@@ -1060,7 +1200,7 @@ export default function CustomMetricsPage() {
             >
               Модель
             </label>
-            <ModelSelector />
+            <ModelSelector onModelChange={setSelectedModel} />
           </div>
 
           {/* Main Content - Metric List */}

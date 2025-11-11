@@ -355,34 +355,44 @@ export default function CustomMetricsPage() {
   const pollBatchResults = async (
     analyses: Array<{ fileName: string; analysisId: string; status: string }>,
   ) => {
+    console.log('[BATCH] Starting to poll for', analyses.length, 'analyses')
     const maxPolls = 60 // 3 minutes maximum
     let pollCount = 0
 
     const checkResults = async () => {
+      console.log('[BATCH] Poll attempt', pollCount + 1, 'of', maxPolls)
+
       const updatedResults = await Promise.all(
         analyses.map(async (analysis) => {
           try {
+            console.log('[BATCH] Fetching status for', analysis.fileName, analysis.analysisId)
             const result = await apiService.getAnalysis(analysis.analysisId)
+            console.log('[BATCH] Status for', analysis.fileName, ':', result.status)
 
             if (result.status === 'completed') {
+              console.log('[BATCH] ✅ Completed:', analysis.fileName)
+              console.log('[BATCH] Results:', result.results ? Object.keys(result.results) : 'none')
               return {
                 ...analysis,
                 result,
                 status: 'completed' as const,
               }
             } else if (result.status === 'failed') {
+              console.log('[BATCH] ❌ Failed:', analysis.fileName)
               return {
                 ...analysis,
                 status: 'error' as const,
                 error: 'Анализ не удался',
               }
             } else {
+              console.log('[BATCH] ⏳ Still processing:', analysis.fileName, result.status)
               return {
                 ...analysis,
                 status: 'loading' as const,
               }
             }
-          } catch {
+          } catch (error) {
+            console.error('[BATCH] ❌ Error fetching result for', analysis.fileName, error)
             return {
               ...analysis,
               status: 'error' as const,
@@ -398,7 +408,16 @@ export default function CustomMetricsPage() {
         (r) => r.status === 'completed' || r.status === 'error',
       )
 
+      const completedCount = updatedResults.filter((r) => r.status === 'completed').length
+      const errorCount = updatedResults.filter((r) => r.status === 'error').length
+      const loadingCount = updatedResults.filter((r) => r.status === 'loading').length
+
+      console.log(
+        `[BATCH] Status: ${completedCount} completed, ${errorCount} errors, ${loadingCount} loading`,
+      )
+
       if (allCompleted) {
+        console.log('[BATCH] All analyses completed! Showing results screen.')
         setCurrentScreen('results')
         setProgressMessage('')
         setIsAnalyzing(false)
@@ -407,8 +426,10 @@ export default function CustomMetricsPage() {
 
       pollCount++
       if (pollCount < maxPolls) {
+        console.log('[BATCH] Waiting 3 seconds before next check...')
         window.setTimeout(checkResults, 3000)
       } else {
+        console.error('[BATCH] Timeout! Exceeded max polls.')
         setError('Превышено время ожидания результатов')
         setCurrentScreen('input')
         setIsAnalyzing(false)

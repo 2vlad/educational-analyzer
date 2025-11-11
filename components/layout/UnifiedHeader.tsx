@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Settings, History, LogOut, User, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function UnifiedHeader() {
   const { user, signOut } = useAuth()
@@ -26,24 +27,24 @@ export default function UnifiedHeader() {
   }
 
   return (
-    <header className="bg-white">
+    <header className="bg-background border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold text-black">
+          <Link href="/" className="text-xl font-bold text-foreground">
             Лёха AI
           </Link>
 
           {/* Centered Toggle */}
           <div className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
             {/* Metric Mode Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-full p-1">
+            <div className="flex items-center bg-secondary rounded-full p-1">
               <button
                 onClick={() => handleModeChange('lx')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                   metricMode === 'lx'
-                    ? 'bg-white text-black shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 LX
@@ -52,8 +53,8 @@ export default function UnifiedHeader() {
                 onClick={() => handleModeChange('custom')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer ${
                   metricMode === 'custom'
-                    ? 'bg-white text-black shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Мой сет
@@ -62,10 +63,12 @@ export default function UnifiedHeader() {
           </div>
 
           {/* User Menu */}
-          <div className="relative">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <div className="relative">
             {!user ? (
               <Link href="/login">
-                <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-6">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
                   Войти
                 </Button>
               </Link>
@@ -73,34 +76,34 @@ export default function UnifiedHeader() {
               <>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
                 >
-                  <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-primary-foreground" />
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700">
+                  <span className="hidden md:block text-sm font-medium text-foreground">
                     {user?.email}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
 
                 {showUserMenu && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="p-3 border-b border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">{user?.email}</p>
+                    <div className="absolute right-0 mt-2 w-56 bg-background rounded-lg shadow-lg border border-border z-20">
+                      <div className="p-3 border-b border-border">
+                        <p className="text-sm font-medium text-foreground">{user?.email}</p>
                       </div>
 
                       {/* Toggle for Mobile */}
-                      <div className="p-3 border-b border-gray-200 md:hidden">
-                        <div className="flex items-center bg-gray-100 rounded-full p-1">
+                      <div className="p-3 border-b border-border md:hidden">
+                        <div className="flex items-center bg-secondary rounded-full p-1">
                           <button
                             onClick={() => handleModeChange('lx')}
                             className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                               metricMode === 'lx'
-                                ? 'bg-white text-black shadow-sm'
-                                : 'text-gray-600'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground'
                             }`}
                           >
                             LX
@@ -109,8 +112,8 @@ export default function UnifiedHeader() {
                             onClick={() => handleModeChange('custom')}
                             className={`flex-1 px-2 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                               metricMode === 'custom'
-                                ? 'bg-white text-black shadow-sm'
-                                : 'text-gray-600'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground'
                             }`}
                           >
                             Мой сет
@@ -119,14 +122,14 @@ export default function UnifiedHeader() {
                       </div>
 
                       {/* Desktop Menu Items - History and Programs */}
-                      <div className="border-b border-gray-200">
+                      <div className="border-b border-border">
                         <Link
                           href="/programs"
                           onClick={() => setShowUserMenu(false)}
                           className={`flex items-center gap-3 px-4 py-2 text-sm ${
                             pathname.startsWith('/programs')
-                              ? 'bg-gray-100 text-black font-medium'
-                              : 'text-gray-700 hover:bg-gray-50'
+                              ? 'bg-secondary text-foreground font-medium'
+                              : 'text-foreground hover:bg-secondary/50'
                           }`}
                         >
                           <svg
@@ -149,8 +152,8 @@ export default function UnifiedHeader() {
                           onClick={() => setShowUserMenu(false)}
                           className={`flex items-center gap-3 px-4 py-2 text-sm ${
                             pathname === '/history'
-                              ? 'bg-gray-100 text-black font-medium'
-                              : 'text-gray-700 hover:bg-gray-50'
+                              ? 'bg-secondary text-foreground font-medium'
+                              : 'text-foreground hover:bg-secondary/50'
                           }`}
                         >
                           <History className="w-4 h-4" />
@@ -163,7 +166,7 @@ export default function UnifiedHeader() {
                           setShowUserMenu(false)
                           signOut()
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-destructive/10"
                       >
                         <LogOut className="w-4 h-4" />
                         Выйти
@@ -173,6 +176,7 @@ export default function UnifiedHeader() {
                 )}
               </>
             )}
+            </div>
           </div>
         </div>
       </div>

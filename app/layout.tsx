@@ -5,6 +5,7 @@ import type React from 'react'
 import { AuthProvider } from '@/src/providers/AuthProvider'
 import { QueryProvider } from '@/src/providers/QueryProvider'
 import { MetricModeProvider } from '@/src/providers/MetricModeProvider'
+import { ThemeProvider } from '@/components/theme-provider'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -24,12 +25,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="font-sans bg-white" suppressHydrationWarning>
-        <AuthProvider>
-          <MetricModeProvider>
-            <QueryProvider>{children}</QueryProvider>
-          </MetricModeProvider>
-        </AuthProvider>
+      <body className="font-sans" suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <MetricModeProvider>
+              <QueryProvider>{children}</QueryProvider>
+            </MetricModeProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

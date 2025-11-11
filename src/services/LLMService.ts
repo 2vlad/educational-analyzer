@@ -434,9 +434,9 @@ ${lessonsOverview}
 
       const result = await provider.generate(coherencePrompt, '', {
         model: modelConfig.model,
-        temperature: 0.3,
-        maxTokens: 1500,
-        timeoutMs: 30000, // Increased timeout
+        temperature: 0.1, // Lower temperature for more consistent JSON output
+        maxTokens: 2000, // Increased for longer analysis
+        timeoutMs: 45000, // Longer timeout
       })
 
       console.log('[Coherence Analysis] Raw LLM response:', result.comment?.substring(0, 200))
@@ -457,23 +457,45 @@ ${lessonsOverview}
         console.log('[Coherence Analysis] Original response length:', jsonText.length)
         console.log('[Coherence Analysis] First 500 chars:', jsonText.substring(0, 500))
 
-        // Remove markdown code blocks
+        // Multiple cleaning steps for better compatibility
+        // 1. Remove markdown code blocks
         jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
 
-        // Trim whitespace
+        // 2. Remove any text before first {
+        const firstBrace = jsonText.indexOf('{')
+        if (firstBrace > 0) {
+          jsonText = jsonText.substring(firstBrace)
+        }
+
+        // 3. Remove any text after last }
+        const lastBrace = jsonText.lastIndexOf('}')
+        if (lastBrace > 0 && lastBrace < jsonText.length - 1) {
+          jsonText = jsonText.substring(0, lastBrace + 1)
+        }
+
+        // 4. Trim whitespace
         jsonText = jsonText.trim()
 
-        // Try to find JSON object
-        const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          console.log('[Coherence Analysis] Found JSON in response, length:', jsonMatch[0].length)
-          console.log('[Coherence Analysis] JSON to parse:', jsonMatch[0].substring(0, 300))
-          parsed = JSON.parse(jsonMatch[0])
-          console.log('[Coherence Analysis] Parsed successfully:', JSON.stringify(parsed))
-        } else {
-          console.error('[Coherence Analysis] No JSON found in response')
-          console.error('[Coherence Analysis] Full response:', jsonText)
-          throw new Error('No JSON found in response')
+        console.log('[Coherence Analysis] Cleaned JSON length:', jsonText.length)
+        console.log('[Coherence Analysis] Cleaned JSON (first 500):', jsonText.substring(0, 500))
+
+        // Try to parse directly
+        try {
+          parsed = JSON.parse(jsonText)
+          console.log('[Coherence Analysis] Direct parse successful:', JSON.stringify(parsed))
+        } catch {
+          // If direct parse fails, try to find JSON object with regex
+          console.log('[Coherence Analysis] Direct parse failed, trying regex extraction...')
+          const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            console.log('[Coherence Analysis] Found JSON with regex, length:', jsonMatch[0].length)
+            parsed = JSON.parse(jsonMatch[0])
+            console.log('[Coherence Analysis] Regex parse successful:', JSON.stringify(parsed))
+          } else {
+            console.error('[Coherence Analysis] No JSON found in response')
+            console.error('[Coherence Analysis] Full cleaned response:', jsonText)
+            throw new Error('No JSON found in response')
+          }
         }
       } catch (parseError) {
         console.error('[Coherence Analysis] Failed to parse JSON:', parseError)

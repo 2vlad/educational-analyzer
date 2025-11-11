@@ -6,7 +6,7 @@ import { MetricConfig } from '@/src/types/metrics'
 import MetricListView from '@/components/settings/MetricListView'
 import AddMetricForm from '@/components/settings/AddMetricForm'
 import { Toaster, toast } from 'react-hot-toast'
-import { Loader2, Plus, ChevronRight } from 'lucide-react'
+import { Loader2, Plus, ChevronRight, CloudUpload } from 'lucide-react'
 import ModelSelector from '@/components/ModelSelector'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ScoreSpeedometer from '@/components/ScoreSpeedometer'
@@ -1395,92 +1395,144 @@ export default function CustomMetricsPage() {
               /* Single mode: Text Input Area with Upload Button */
               <div className="relative">
                 <div className="w-full h-48 relative bg-[#F2F2F2] rounded-[25px] px-3 py-3">
-                  {/* Upload Button */}
-                  <button
-                    onClick={() => document.getElementById('custom-file-upload')?.click()}
-                    className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
-                       text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
-                    title="Загрузить файл"
-                  >
-                    <svg
-                      className="w-[30px] h-[30px]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                      />
-                    </svg>
-                  </button>
-
-                  {/* Hidden file input */}
-                  <input
-                    type="file"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-
-                      const reader = new FileReader()
-                      reader.onload = (ev) => {
-                        const text = ev.target?.result as string
-                        if (text.length <= 25000) {
-                          setContent(text)
-                          setError(null)
-                        } else {
-                          setError('Файл слишком большой. Максимум 25000 символов')
-                        }
-                      }
-                      reader.readAsText(file)
-                    }}
-                    className="hidden"
-                    id="custom-file-upload"
-                    accept=".txt,.md"
-                  />
-
-                  <textarea
-                    placeholder="Текст урока"
-                    value={content}
-                    onChange={(e) => {
-                      const text = e.target.value
-                      if (text.length <= 25000) {
-                        setContent(text)
-                      }
-                    }}
-                    className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
-                            bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
-                    maxLength={25000}
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  />
-
-                  {/* Character Counter */}
-                  {content && (
-                    <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
-                      {content.length} / 25000
+                  {progressMessage && progressMessage.includes('PDF') ? (
+                    // Show loading state for PDF processing
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-black mb-4" />
+                      <p
+                        className="text-[18px] text-black"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {progressMessage}
+                      </p>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* Upload Button */}
+                      <button
+                        onClick={() => document.getElementById('custom-file-upload')?.click()}
+                        className="absolute left-3 bottom-3 w-10 h-10 flex items-center justify-center 
+                           text-black hover:text-gray-700 transition-colors cursor-pointer rounded-lg hover:bg-gray-200"
+                        title="Загрузить файл"
+                      >
+                        <CloudUpload className="w-[30px] h-[30px]" />
+                      </button>
 
-                  {/* Analyze Button inside textarea */}
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={!content.trim() || isAnalyzing}
-                    className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
-                           hover:opacity-80 disabled:opacity-50
-                           rounded-full transition-opacity duration-200 flex items-center justify-center"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Анализируем...
-                      </>
-                    ) : (
-                      'Проанализировать'
-                    )}
-                  </button>
+                      {/* Hidden file input */}
+                      <input
+                        type="file"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+
+                          // Check file size
+                          const maxSizeBytes = 10 * 1024 * 1024 // 10MB
+                          if (file.size > maxSizeBytes) {
+                            setError('Размер файла должен быть менее 10МБ')
+                            return
+                          }
+
+                          // Handle PDF files
+                          if (file.name.toLowerCase().endsWith('.pdf')) {
+                            setError(null)
+                            setProgressMessage('Извлекаем текст из PDF...')
+
+                            try {
+                              const formData = new globalThis.FormData()
+                              formData.append('file', file)
+
+                              const response = await fetch('/api/parse-pdf', {
+                                method: 'POST',
+                                body: formData,
+                              })
+
+                              if (!response.ok) {
+                                const errorData = await response.json()
+                                setError(errorData.error || 'Ошибка обработки PDF')
+                                setProgressMessage('')
+                                return
+                              }
+
+                              const data = await response.json()
+                              const extractedText = data.text
+
+                              if (extractedText.length <= 25000) {
+                                setContent(extractedText)
+                                setError(null)
+                              } else {
+                                setError(
+                                  'Извлеченный текст слишком большой. Максимум 25000 символов',
+                                )
+                              }
+                              setProgressMessage('')
+                            } catch (err) {
+                              console.error('PDF parsing error:', err)
+                              setError('Не удалось обработать PDF файл')
+                              setProgressMessage('')
+                            }
+                            return
+                          }
+
+                          // Handle text files
+                          const reader = new FileReader()
+                          reader.onload = (ev) => {
+                            const text = ev.target?.result as string
+                            if (text.length <= 25000) {
+                              setContent(text)
+                              setError(null)
+                            } else {
+                              setError('Файл слишком большой. Максимум 25000 символов')
+                            }
+                          }
+                          reader.readAsText(file)
+                        }}
+                        className="hidden"
+                        id="custom-file-upload"
+                        accept=".txt,.md,.pdf"
+                      />
+
+                      <textarea
+                        placeholder="Текст урока"
+                        value={content}
+                        onChange={(e) => {
+                          const text = e.target.value
+                          if (text.length <= 25000) {
+                            setContent(text)
+                          }
+                        }}
+                        className="w-full h-[140px] pl-2 pr-20 pb-24 pt-2 text-[20px] font-light text-black leading-relaxed 
+                              bg-transparent border-0 outline-none focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400/60"
+                        maxLength={25000}
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      />
+
+                      {/* Character Counter */}
+                      {content && (
+                        <div className="absolute bottom-3 right-[200px] text-[12px] text-gray-400">
+                          {content.length} / 25000
+                        </div>
+                      )}
+
+                      {/* Analyze Button inside textarea */}
+                      <button
+                        onClick={handleAnalyze}
+                        disabled={!content.trim() || isAnalyzing}
+                        className="absolute bottom-3 right-3 px-8 py-3.5 h-[42px] text-[14px] font-normal bg-[#1a1a1a] text-white 
+                             hover:opacity-80 disabled:opacity-50
+                             rounded-full transition-opacity duration-200 flex items-center justify-center"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Анализируем...
+                          </>
+                        ) : (
+                          'Проанализировать'
+                        )}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}

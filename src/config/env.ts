@@ -12,6 +12,7 @@ const serverEnvSchema = z.object({
   GOOGLE_API_KEY: z.string().optional(),
   YANDEX_API_KEY: z.string().optional(),
   YANDEX_FOLDER_ID: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
 
   // LLM Config
   DEFAULT_MODEL: z.string().default('yandex-gpt-pro'),
@@ -53,7 +54,13 @@ const clientEnvSchema = z.object({
 
 // Validate that at least one LLM provider is configured
 const validateLLMProviders = (env: z.infer<typeof serverEnvSchema>) => {
-  if (!env.ANTHROPIC_API_KEY && !env.OPENAI_API_KEY && !env.GOOGLE_API_KEY && !env.YANDEX_API_KEY) {
+  if (
+    !env.ANTHROPIC_API_KEY &&
+    !env.OPENAI_API_KEY &&
+    !env.GOOGLE_API_KEY &&
+    !env.YANDEX_API_KEY &&
+    !env.OPENROUTER_API_KEY
+  ) {
     throw new Error('At least one LLM provider API key must be configured')
   }
 }
@@ -80,6 +87,7 @@ if (typeof window === 'undefined') {
     console.log('- GOOGLE_API_KEY:', process.env.GOOGLE_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_API_KEY:', process.env.YANDEX_API_KEY ? 'SET' : 'NOT SET')
     console.log('- YANDEX_FOLDER_ID:', process.env.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
+    console.log('- OPENROUTER_API_KEY:', process.env.OPENROUTER_API_KEY ? 'SET' : 'NOT SET')
     console.log(
       '- SUPABASE_SERVICE_ROLE_KEY:',
       process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET',
@@ -103,6 +111,7 @@ if (typeof window === 'undefined') {
     if (serverEnv.OPENAI_API_KEY) console.log('  - OpenAI')
     if (serverEnv.GOOGLE_API_KEY) console.log('  - Google')
     if (serverEnv.YANDEX_API_KEY) console.log('  - Yandex')
+    if (serverEnv.OPENROUTER_API_KEY) console.log('  - OpenRouter')
   } catch (error) {
     console.error('❌ Environment validation failed!')
     if (error instanceof z.ZodError) {

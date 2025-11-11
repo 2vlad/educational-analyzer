@@ -12,6 +12,7 @@ import { ClaudeProvider } from '@/src/providers/claude'
 import { OpenAIProvider } from '@/src/providers/openai'
 import { GeminiProvider } from '@/src/providers/gemini'
 import { YandexProvider } from '@/src/providers/yandex'
+import { OpenRouterProvider } from '@/src/providers/openrouter'
 import { LLMProvider, GenerateResult, ProviderError } from '@/src/providers/types'
 
 export class LLMService {
@@ -31,6 +32,15 @@ export class LLMService {
 
     // Initialize available providers based on API keys
     if (env.isServer && env.server) {
+      // OpenRouter - unified provider for Claude, GPT, Gemini
+      if (env.server.OPENROUTER_API_KEY) {
+        console.log('✅ Initializing OpenRouter provider')
+        this.providers.set('openrouter', new OpenRouterProvider())
+      } else {
+        console.log('⚠️ OpenRouter API key not found')
+      }
+
+      // Legacy direct providers (kept for fallback)
       if (env.server.ANTHROPIC_API_KEY) {
         console.log('✅ Initializing Anthropic provider')
         this.providers.set('anthropic', new ClaudeProvider())
@@ -52,6 +62,7 @@ export class LLMService {
         console.log('⚠️ Google API key not found')
       }
 
+      // Yandex - always direct
       if (env.server.YANDEX_API_KEY && env.server.YANDEX_FOLDER_ID) {
         console.log('✅ Initializing Yandex provider')
         console.log('  - API Key length:', env.server.YANDEX_API_KEY.length)

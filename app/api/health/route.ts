@@ -18,6 +18,7 @@ export async function GET() {
     // Check environment variables
     health.checks.env = {
       hasAnthropicKey: !!env.server?.ANTHROPIC_API_KEY,
+      hasOpenRouterKey: !!env.server?.OPENROUTER_API_KEY,
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       hasSupabaseServiceKey: !!env.server?.SUPABASE_SERVICE_KEY,

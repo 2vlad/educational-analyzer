@@ -31,6 +31,10 @@ export default function ModelSelector({ onModelChange }: ModelSelectorProps = {}
       const savedModel = window.localStorage.getItem('selectedModel')
       if (savedModel) {
         setSelectedModel(savedModel)
+        // Notify parent of initial model
+        if (onModelChange) {
+          onModelChange(savedModel)
+        }
       }
     }
   }, [])

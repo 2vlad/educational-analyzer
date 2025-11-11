@@ -171,8 +171,8 @@ export default function AddMetricForm({
                 disabled={submitting}
               />
               <div>
-                <span className="text-sm font-medium text-gray-700">Активна</span>
-                <p className="text-xs text-gray-500">
+                <span className="text-sm font-medium text-black">Активна</span>
+                <p className="text-xs text-gray-600">
                   Активные метрики будут использоваться при анализе. Неактивные сохраняются, но не
                   используются.
                 </p>

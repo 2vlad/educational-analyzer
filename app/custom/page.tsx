@@ -115,24 +115,32 @@ export default function CustomMetricsPage() {
 
   const handleAddMetric = async (metric: Omit<MetricConfig, 'id'>) => {
     try {
+      console.log('[CLIENT] Adding metric:', { name: metric.name, user: user?.id })
+      
       if (user) {
         // Authenticated: save to API
+        console.log('[CLIENT] User authenticated, calling API...')
         const response = await fetch('/api/configuration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(metric),
         })
 
+        console.log('[CLIENT] Response status:', response.status)
+        
         if (!response.ok) {
           const error = await response.json()
+          console.error('[CLIENT] API error response:', error)
           throw new Error(error.error || 'Failed to add metric')
         }
 
         const data = await response.json()
+        console.log('[CLIENT] ✅ Metric created successfully:', data.configuration)
         setMetrics([...metrics, data.configuration])
         toast.success('Метрика добавлена')
       } else {
         // Guest: save to LocalStorage
+        console.log('[CLIENT] Guest mode, saving to localStorage...')
         const newMetric = addGuestMetric(metric)
         setMetrics([...metrics, newMetric])
         toast.success('Метрика добавлена')
@@ -140,7 +148,8 @@ export default function CustomMetricsPage() {
 
       setShowAddForm(false)
     } catch (error) {
-      console.error('Error adding metric:', error)
+      console.error('[CLIENT] Error adding metric:', error)
+      console.error('[CLIENT] Error details:', error instanceof Error ? error.message : error)
       toast.error('Не удалось добавить метрику')
     }
   }

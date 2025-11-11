@@ -105,7 +105,7 @@ export default function ProgramDetailPage() {
         </div>
 
         {/* Overall result */}
-        <div className="bg-gradient-to-r from-gray-100 to-indigo-50 rounded-xl p-8 mb-8">
+        <div className="bg-gradient-to-r from-gray-100 to-gray-300 rounded-xl p-8 mb-8">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Общий результат</h2>
             <div className="text-5xl font-bold text-blue-600">{analysis.overallScore}/10</div>

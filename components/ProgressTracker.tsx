@@ -90,7 +90,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
 
               <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-800 to-purple-600 rounded-full"
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-800 to-gray-900 rounded-full"
                   initial={{ width: '0%' }}
                   animate={{ width: `${displayProgress}%` }}
                   transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -204,7 +204,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                         >
                           <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
                             <motion.div
-                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-600 to-blue-600 rounded-full"
+                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-gray-600 to-gray-900 rounded-full"
                               initial={{ width: '0%' }}
                               animate={{ width: `${metric.progress}%` }}
                               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -228,7 +228,7 @@ export function ProgressTracker({ progress, overallProgress, message }: Progress
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-gray-100 rounded-lg"
+                  className="mt-6 p-4 bg-gradient-to-r from-gray-100 to-gray-100 rounded-lg"
                 >
                   <p className="text-sm text-gray-700 text-center">
                     <span className="inline-block mr-2">{getRandomEmoji()}</span>

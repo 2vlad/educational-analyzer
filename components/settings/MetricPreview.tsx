@@ -62,9 +62,9 @@ export default function MetricPreview({ metrics }: MetricPreviewProps) {
   return (
     <div className="p-6">
       {/* Overall Score Preview */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-gray-100 to-indigo-50 rounded-lg border border-gray-300">
+      <div className="mb-6 p-4 bg-gray-100 rounded-lg border border-gray-200">
         <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-1">
+          <div className="text-3xl font-bold text-black mb-1">
             {Math.round(totalPossibleScore * 0.6)}/{totalPossibleScore}
           </div>
           <div className="text-sm text-gray-600">Общий балл</div>

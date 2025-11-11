@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Settings, History, LogOut, User, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
 
 export default function UnifiedHeader() {
   const { user, signOut } = useAuth()
@@ -64,7 +63,6 @@ export default function UnifiedHeader() {
 
           {/* User Menu */}
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <div className="relative">
             {!user ? (
               <Link href="/login">

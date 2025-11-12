@@ -70,6 +70,11 @@ export class OpenRouterProvider implements LLMProvider {
         temperature: options.temperature || modelConfig.temperature,
         messages: [
           {
+            role: 'system',
+            content:
+              'You are a JSON API. Always respond with valid JSON only. Never add explanations, markdown formatting, or any text outside the JSON object.',
+          },
+          {
             role: 'user',
             content: finalPrompt,
           },

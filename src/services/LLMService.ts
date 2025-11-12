@@ -412,28 +412,30 @@ ${content.substring(0, 1500)}...
 
     console.log('[Coherence Analysis] Overview length:', lessonsOverview.length, 'chars')
 
-    const coherencePrompt = `Проанализируй связность и последовательность ${validLessons.length} уроков.
+    const coherencePrompt = `You are a JSON-only API. Analyze the coherence and sequence of ${validLessons.length} lessons.
 
-Уроки:
+Lessons:
 ${lessonsOverview}
 
-ВАЖНО: Верни ТОЛЬКО JSON объект без дополнительного текста.
+CRITICAL: Return ONLY a raw JSON object. No explanation, no markdown, no text before or after.
 
-Формат:
+Response format (exactly this structure):
 {
-  "score": число от -2 до 2,
-  "summary": "краткое описание",
-  "strengths": ["сильная сторона 1"],
-  "issues": ["проблема 1"],
-  "suggestions": ["рекомендация 1"]
+  "score": -2,
+  "summary": "brief description in Russian",
+  "strengths": ["strength 1 in Russian"],
+  "issues": ["issue 1 in Russian"],
+  "suggestions": ["suggestion 1 in Russian"]
 }
 
-Шкала оценки:
--2 = уроки не связаны
--1 = слабая связь
-0 = нейтрально
-+1 = хорошая связь
-+2 = отличная связь`
+Score scale:
+-2 = not connected
+-1 = weak connection  
+0 = neutral
++1 = good connection
++2 = excellent connection
+
+Return ONLY the JSON object, nothing else:`
 
     try {
       let provider: LLMProvider

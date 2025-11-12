@@ -51,7 +51,8 @@ export class OpenAIProvider implements LLMProvider {
         messages: [
           {
             role: 'system',
-            content: 'You are a helpful assistant that analyzes educational content.',
+            content:
+              'You are a JSON API. Always respond with valid JSON only. Never add explanations, markdown formatting, or any text outside the JSON object.',
           },
           {
             role: 'user',

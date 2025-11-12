@@ -58,12 +58,23 @@ export function LessonsCardsView({
     const fileArray = Array.from(files)
 
     try {
-      // Parse files
+      // Parse files and encode content as base64 to avoid JSON encoding issues
       const parsedFiles = await Promise.all(
         fileArray.map(async (file) => {
           try {
             const content = await file.text()
-            return { fileName: file.name, content, fileSize: file.size }
+            // Encode to base64 to safely transfer in JSON
+            const base64Content = window.btoa(
+              encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (match, p1) =>
+                String.fromCharCode(parseInt(p1, 16)),
+              ),
+            )
+            return {
+              fileName: file.name,
+              content: base64Content,
+              fileSize: file.size,
+              isBase64: true,
+            }
           } catch (error) {
             console.error(`Error reading file ${file.name}:`, error)
             toast.error(`Не удалось прочитать файл ${file.name}`)

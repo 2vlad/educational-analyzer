@@ -6,6 +6,7 @@ interface FileUpload {
   fileName: string
   content: string
   fileSize: number
+  isBase64?: boolean
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -66,14 +67,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Create lessons from files
     const lessonsToInsert = files.map((file, index) => {
+      // Decode base64 content if needed
+      let content = file.content
+      if (file.isBase64) {
+        try {
+          const decodedContent = Buffer.from(file.content, 'base64').toString('binary')
+          content = decodeURIComponent(
+            decodedContent
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join(''),
+          )
+        } catch (error) {
+          console.error(`Error decoding base64 for ${file.fileName}:`, error)
+          // Use original content if decoding fails
+        }
+      }
+
       // Generate content hash
-      const contentHash = createHash('sha256').update(file.content).digest('hex')
+      const contentHash = createHash('sha256').update(content).digest('hex')
 
       return {
         program_id: programId,
         title: file.fileName.replace(/\.[^/.]+$/, ''), // Remove extension
         file_name: file.fileName,
-        content: file.content,
+        content: content,
         file_size: file.fileSize,
         content_hash: contentHash,
         sort_order: maxSortOrder + 1 + index, // Start after existing lessons

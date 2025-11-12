@@ -71,16 +71,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       let content = file.content
       if (file.isBase64) {
         try {
-          const decodedContent = Buffer.from(file.content, 'base64').toString('binary')
-          content = decodeURIComponent(
-            decodedContent
-              .split('')
-              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-              .join(''),
-          )
+          // Decode base64 to buffer, then to utf8 string
+          const buffer = Buffer.from(file.content, 'base64')
+          content = buffer.toString('utf8')
         } catch (error) {
-          console.error(`Error decoding base64 for ${file.fileName}:`, error)
+          console.error(`[UploadLessons] Error decoding base64 for ${file.fileName}:`, error)
           // Use original content if decoding fails
+          content = file.content
         }
       }
 

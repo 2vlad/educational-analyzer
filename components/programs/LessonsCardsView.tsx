@@ -81,11 +81,16 @@ export function LessonsCardsView({
 
             // Encode to base64 to safely transfer in JSON
             console.log('[UploadLessonsButton] Encoding to base64...')
-            const base64Content = window.btoa(
-              encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (match, p1) =>
-                String.fromCharCode(parseInt(p1, 16)),
-              ),
-            )
+            // Use TextEncoder to handle Unicode properly
+            // eslint-disable-next-line no-undef
+            const encoder = new TextEncoder()
+            const uint8Array = encoder.encode(content)
+            // Convert to binary string for btoa
+            let binaryString = ''
+            for (let i = 0; i < uint8Array.length; i++) {
+              binaryString += String.fromCharCode(uint8Array[i])
+            }
+            const base64Content = window.btoa(binaryString)
             console.log(
               `[UploadLessonsButton] Base64 encoded, length: ${base64Content.length} chars`,
             )

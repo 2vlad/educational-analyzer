@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/src/lib/supabase/server'
 import { z } from 'zod'
-import { createContentHash } from '@/src/services/AnalysisRunner'
+import { randomUUID } from 'crypto'
 
 const createRunSchema = z.object({
   metricsMode: z.enum(['lx', 'custom']),
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .from('program_lessons')
       .select('*')
       .eq('program_id', programId)
-      .order('display_order')
+      .order('sort_order', { ascending: true })
 
     if (lessonsError) {
       console.error('Error fetching lessons:', lessonsError)
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     }
 
     // Create the run
-    const runId = crypto.randomUUID()
+    const runId = randomUUID()
     const { error: runError } = await supabase.from('program_runs').insert({
       id: runId,
       program_id: programId,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
       if (needsAnalysis) {
         jobsToCreate.push({
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           program_run_id: runId,
           program_id: programId,
           lesson_id: lesson.id,

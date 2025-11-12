@@ -25,12 +25,14 @@ interface UploadLessonsButtonProps {
   programId: string
   programName: string
   onSuccess: () => void
+  onUploadComplete?: (programId: string, lessonsCount: number) => void
 }
 
 export default function UploadLessonsButton({
   programId,
   programName,
   onSuccess,
+  onUploadComplete,
 }: UploadLessonsButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -57,10 +59,29 @@ export default function UploadLessonsButton({
         })),
       )
 
+      console.log('[UploadLessonsButton] Upload successful:', {
+        programId,
+        lessonsCreated: result.lessonsCreated,
+        hasOnUploadComplete: !!onUploadComplete,
+      })
+
       toast.success(`Успешно загружено ${result.lessonsCreated} уроков`)
+      
+      // Notify parent about upload completion to trigger analysis
+      if (onUploadComplete) {
+        console.log('[UploadLessonsButton] Calling onUploadComplete...')
+        await onUploadComplete(programId, result.lessonsCreated)
+        console.log('[UploadLessonsButton] onUploadComplete finished')
+      } else {
+        console.warn('[UploadLessonsButton] No onUploadComplete callback provided!')
+      }
+      
       setIsOpen(false)
       setUploadedFiles([])
+      
+      console.log('[UploadLessonsButton] Calling onSuccess...')
       onSuccess()
+      console.log('[UploadLessonsButton] Upload flow complete')
     } catch (error) {
       console.error('Upload error:', error)
       toast.error(error instanceof Error ? error.message : 'Ошибка загрузки файлов')
@@ -78,8 +99,13 @@ export default function UploadLessonsButton({
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} className="gap-2">
-        <Upload className="w-4 h-4" />
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setIsOpen(true)}
+        className="w-full text-xs gap-1"
+      >
+        <Upload className="w-3 h-3" />
         Загрузить файлы
       </Button>
 
@@ -89,6 +115,7 @@ export default function UploadLessonsButton({
             <DialogTitle>Загрузить уроки в "{programName}"</DialogTitle>
             <DialogDescription>
               Выберите текстовые файлы для загрузки. Каждый файл станет отдельным уроком.
+              После загрузки автоматически запустится анализ всех уроков.
             </DialogDescription>
           </DialogHeader>
 

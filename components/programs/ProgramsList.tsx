@@ -2,6 +2,7 @@
 
 import { Plus, Download, Play, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import UploadLessonsButton from './UploadLessonsButton'
 import type { Program } from '@/types/programs'
 
 interface ProgramsListProps {
@@ -12,6 +13,8 @@ interface ProgramsListProps {
   onEnumerateLessons?: (programId: string) => void
   onStartAnalysis?: (programId: string) => void
   onDeleteProgram?: (programId: string) => void
+  onUploadSuccess?: () => void
+  onUploadComplete?: (programId: string, lessonsCount: number) => void
 }
 
 export default function ProgramsList({
@@ -22,6 +25,8 @@ export default function ProgramsList({
   onEnumerateLessons,
   onStartAnalysis,
   onDeleteProgram,
+  onUploadSuccess,
+  onUploadComplete,
 }: ProgramsListProps) {
   return (
     <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
@@ -32,14 +37,14 @@ export default function ProgramsList({
         </h2>
         <div className="space-y-2">
           {programs.map((program) => (
-            <button
+            <div
               key={program.id}
-              onClick={() => onSelectProgram(program)}
-              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full text-left px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                 selectedProgram?.id === program.id
                   ? 'bg-white shadow-sm border border-gray-200'
                   : 'hover:bg-gray-100'
               }`}
+              onClick={() => onSelectProgram(program)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -80,19 +85,37 @@ export default function ProgramsList({
               {/* Action buttons */}
               {selectedProgram?.id === program.id && (
                 <div className="mt-3 flex gap-2">
-                  {program.lessonsCount === 0 && onEnumerateLessons && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEnumerateLessons(program.id)
-                      }}
-                      className="flex-1 text-xs"
-                    >
-                      <Download className="w-3 h-3 mr-1" />
-                      Загрузить уроки
-                    </Button>
+                  {program.lessonsCount === 0 && (
+                    <>
+                      {/* For manual programs: show file upload button */}
+                      {program.sourceType === 'manual' && onUploadSuccess && (
+                        <div onClick={(e) => e.stopPropagation()} className="flex-1">
+                          <UploadLessonsButton
+                            programId={program.id}
+                            programName={program.title}
+                            onSuccess={onUploadSuccess}
+                            onUploadComplete={onUploadComplete}
+                          />
+                        </div>
+                      )}
+
+                      {/* For yonote/generic_list: show enumerate button */}
+                      {(program.sourceType === 'yonote' || program.sourceType === 'generic_list') &&
+                        onEnumerateLessons && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onEnumerateLessons(program.id)
+                            }}
+                            className="flex-1 text-xs"
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Загрузить уроки
+                          </Button>
+                        )}
+                    </>
                   )}
 
                   {program.lessonsCount > 0 && program.status !== 'active' && onStartAnalysis && (
@@ -125,7 +148,7 @@ export default function ProgramsList({
                   )}
                 </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
       </div>

@@ -12,13 +12,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id: programId } = await params
     const supabase = await createClient()
 
+    console.log('[GET /api/programs/[id]/lessons] Request for program lessons:', programId)
+
     // Get user session
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
+
+    console.log('[GET /api/programs/[id]/lessons] Auth check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      programId,
+    })
+
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('[GET /api/programs/[id]/lessons] Unauthorized:', authError?.message)
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to view lessons' },
+        { status: 401 },
+      )
     }
 
     // Verify user owns the program
@@ -30,6 +43,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .single()
 
     if (programError || !program) {
+      console.error('[GET /api/programs/[id]/lessons] Program not found:', {
+        programId,
+        userId: user.id,
+        error: programError?.message,
+      })
       return NextResponse.json({ error: 'Program not found' }, { status: 404 })
     }
 
@@ -41,9 +59,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .order('sort_order', { ascending: true })
 
     if (lessonsError) {
-      console.error('Error fetching lessons:', lessonsError)
+      console.error('[GET /api/programs/[id]/lessons] Error fetching lessons:', {
+        programId,
+        error: lessonsError.message,
+        errorDetails: lessonsError,
+      })
       return NextResponse.json({ error: 'Failed to fetch lessons' }, { status: 500 })
     }
+
+    console.log('[GET /api/programs/[id]/lessons] Success:', {
+      programId,
+      lessonsCount: lessons?.length || 0,
+    })
 
     return NextResponse.json({ lessons: lessons || [] })
   } catch (error) {

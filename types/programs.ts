@@ -8,6 +8,7 @@ export interface Program {
   lessonsCount: number
   completedCount: number
   status: 'draft' | 'active' | 'completed'
+  sourceType: 'yonote' | 'generic_list' | 'manual'
 }
 
 export interface Lesson {

@@ -18,6 +18,8 @@ interface ProgramLessonsProps {
   lessons: Lesson[]
   loading?: boolean
   onRefresh?: () => void
+  onDeleteLesson?: (lessonId: string) => void
+  onDeleteLessons?: (lessonIds: string[]) => void
 }
 
 export default function ProgramLessons({
@@ -25,9 +27,12 @@ export default function ProgramLessons({
   lessons,
   loading = false,
   onRefresh,
+  onDeleteLesson,
+  onDeleteLessons,
 }: ProgramLessonsProps) {
   const router = useRouter()
   const [selectedLessons, setSelectedLessons] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
 
   const handleAnalyze = (lesson: Lesson) => {
     // Navigate to analysis page with lesson content
@@ -42,6 +47,42 @@ export default function ProgramLessons({
   const handleReanalyze = (lesson: Lesson) => {
     // Re-run analysis
     handleAnalyze(lesson)
+  }
+
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!onDeleteLesson) return
+
+    if (!globalThis.confirm('Вы уверены, что хотите удалить этот урок?')) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      await onDeleteLesson(lessonId)
+      setSelectedLessons((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(lessonId)
+        return newSet
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    if (!onDeleteLessons || selectedLessons.size === 0) return
+
+    if (!globalThis.confirm(`Вы уверены, что хотите удалить ${selectedLessons.size} уроков?`)) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      await onDeleteLessons(Array.from(selectedLessons))
+      setSelectedLessons(new Set())
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const toggleLessonSelection = (lessonId: string) => {
@@ -160,9 +201,15 @@ export default function ProgramLessons({
                 <Play className="w-4 h-4 mr-2" />
                 Анализировать выбранные ({selectedLessons.size})
               </Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteSelected}
+                disabled={deleting}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Удалить
+                {deleting ? 'Удаление...' : 'Удалить'}
               </Button>
             </>
           )}
@@ -252,7 +299,11 @@ export default function ProgramLessons({
                       <Edit className="w-4 h-4 mr-2" />
                       Редактировать
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => handleDeleteLesson(lesson.id)}
+                      disabled={deleting}
+                    >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Удалить
                     </DropdownMenuItem>

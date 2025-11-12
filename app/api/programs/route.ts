@@ -23,8 +23,13 @@ const createProgramSchema = z
     },
   )
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    console.log('[GET /api/programs] Starting request', {
+      url: request.url,
+      headers: Object.fromEntries(request.headers.entries()),
+    })
+
     const supabase = await createClient()
 
     // Get user session
@@ -38,11 +43,18 @@ export async function GET() {
       userId: user?.id,
       email: user?.email,
       authError: authError?.message,
+      authErrorDetails: authError,
     })
 
     if (authError || !user) {
-      console.error('[GET /api/programs] Unauthorized:', authError)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('[GET /api/programs] Unauthorized - no user session found', {
+        authError: authError?.message,
+        authErrorDetails: authError,
+      })
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Please log in to view programs' },
+        { status: 401 },
+      )
     }
 
     // Check if user has profile

@@ -365,6 +365,18 @@ class ApiService {
     return response.json()
   }
 
+  async analyzeLesson(programId: string, lessonId: string): Promise<{ message: string }> {
+    const response = await fetch(`/api/programs/${programId}/lessons/${lessonId}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to analyze lesson')
+    }
+    return response.json()
+  }
+
   async getRunStatus(runId: string): Promise<{ run: ProgramRun }> {
     const response = await fetch(`/api/program-runs/${runId}/status`)
     if (!response.ok) {

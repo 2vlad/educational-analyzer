@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ProgramsList from '@/components/programs/ProgramsList'
-import ProgramLessons from '@/components/programs/ProgramLessons'
+import { LessonsCardsView } from '@/components/programs/LessonsCardsView'
 import AddProgramModal from '@/components/programs/AddProgramModal'
 import ProgressTracker from '@/components/programs/ProgressTracker'
 import {
@@ -50,12 +50,13 @@ export default function ProgramsPage() {
       if (loadedPrograms.length > 0 && !selectedProgram) {
         setSelectedProgram(loadedPrograms[0])
       }
-    } catch (err: any) {
-      console.error('Failed to load programs:', err)
-      setError(err.message || 'Не удалось загрузить программы')
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to load programs:', error)
+      setError(error.message || 'Не удалось загрузить программы')
 
       // If unauthorized, redirect to login
-      if (err.message.includes('Unauthorized')) {
+      if (error.message.includes('Unauthorized')) {
         router.push('/login')
       }
     } finally {
@@ -68,7 +69,7 @@ export default function ProgramsPage() {
       setLessonsLoading(true)
       const { lessons: loadedLessons } = await apiService.getProgramLessons(programId)
       setLessons(loadedLessons)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load lessons:', err)
       // Silently fail - program might not have lessons enumerated yet
       setLessons([])
@@ -83,9 +84,10 @@ export default function ProgramsPage() {
       setPrograms([program, ...programs])
       setSelectedProgram(program)
       setIsAddModalOpen(false)
-    } catch (err: any) {
-      console.error('Failed to create program:', err)
-      alert(err.message || 'Не удалось создать программу')
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to create program:', error)
+      window.alert(error.message || 'Не удалось создать программу')
       throw err // Re-throw to keep modal open
     }
   }
@@ -94,13 +96,14 @@ export default function ProgramsPage() {
     try {
       const { count, lessons: enumeratedLessons } = await apiService.enumerateLessons(programId)
       setLessons(enumeratedLessons)
-      alert(`Загружено ${count} уроков`)
+      window.alert(`Загружено ${count} уроков`)
 
       // Reload programs to update lesson counts
       await loadPrograms()
-    } catch (err: any) {
-      console.error('Failed to enumerate lessons:', err)
-      alert(err.message || 'Не удалось загрузить список уроков')
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to enumerate lessons:', error)
+      window.alert(error.message || 'Не удалось загрузить список уроков')
     }
   }
 
@@ -135,8 +138,25 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleAnalyzeLesson = async (lessonId: string) => {
+    if (!selectedProgram) return
+
+    try {
+      toast.info('Запускаем анализ урока...')
+      await apiService.analyzeLesson(selectedProgram.id, lessonId)
+      toast.success('Анализ урока завершен!')
+
+      // Reload lessons to update the card
+      await loadLessons(selectedProgram.id)
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to analyze lesson:', error)
+      toast.error(error.message || 'Не удалось проанализировать урок')
+    }
+  }
+
   const handleDeleteProgram = async (programId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить эту программу?')) {
+    if (!globalThis.confirm('Вы уверены, что хотите удалить эту программу?')) {
       return
     }
 
@@ -147,63 +167,10 @@ export default function ProgramsPage() {
       if (selectedProgram?.id === programId) {
         setSelectedProgram(programs[0] || null)
       }
-    } catch (err: any) {
-      console.error('Failed to delete program:', err)
-      alert(err.message || 'Не удалось удалить программу')
-    }
-  }
-
-  const handleDeleteLesson = async (lessonId: string) => {
-    if (!selectedProgram) return
-
-    try {
-      await apiService.deleteLesson(selectedProgram.id, lessonId)
-      
-      // Optimistic update: remove lesson from list
-      setLessons((prev) => prev.filter((l) => l.id !== lessonId))
-      
-      // Update program lesson count
-      setPrograms((prev) =>
-        prev.map((p) =>
-          p.id === selectedProgram.id
-            ? { ...p, lesson_count: Math.max(0, (p.lesson_count || 0) - 1) }
-            : p,
-        ),
-      )
-    } catch (err: any) {
-      console.error('Failed to delete lesson:', err)
-      alert(err.message || 'Не удалось удалить урок')
-      // Reload on error to restore correct state
-      await loadLessons(selectedProgram.id)
-      await loadPrograms()
-    }
-  }
-
-  const handleDeleteLessons = async (lessonIds: string[]) => {
-    if (!selectedProgram) return
-
-    try {
-      await apiService.deleteLessons(selectedProgram.id, lessonIds)
-      
-      // Optimistic update: remove lessons from list
-      setLessons((prev) => prev.filter((l) => !lessonIds.includes(l.id)))
-      
-      // Update program lesson count
-      setPrograms((prev) =>
-        prev.map((p) =>
-          p.id === selectedProgram.id
-            ? { ...p, lesson_count: Math.max(0, (p.lesson_count || 0) - lessonIds.length) }
-            : p,
-        ),
-      )
-      
-      alert(`Удалено ${lessonIds.length} уроков`)
-    } catch (err: any) {
-      console.error('Failed to delete lessons:', err)
-      alert(err.message || 'Не удалось удалить уроки')
-      // Reload on error to restore correct state
-      await loadLessons(selectedProgram.id)
-      await loadPrograms()
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to delete program:', error)
+      window.alert(error.message || 'Не удалось удалить программу')
     }
   }
 
@@ -330,32 +297,12 @@ export default function ProgramsPage() {
                   />
                 )}
 
-              {/* Lessons list */}
-              <ProgramLessons
-                program={{
-                  id: selectedProgram.id,
-                  title: selectedProgram.name,
-                  lessonsCount: lessons.length,
-                  completedCount: selectedProgram.lastRun?.succeeded || 0,
-                  status:
-                    selectedProgram.lastRun?.status === 'completed'
-                      ? 'completed'
-                      : selectedProgram.lastRun?.status === 'running'
-                        ? 'active'
-                        : 'draft',
-                  sourceType: selectedProgram.source_type,
-                }}
-                lessons={lessons.map((lesson, index) => ({
-                  id: lesson.id,
-                  programId: lesson.program_id,
-                  title: lesson.title,
-                  status: 'not-started' as const, // TODO: Get actual status from analyses
-                  order: lesson.sort_order,
-                }))}
+              {/* Lessons cards */}
+              <LessonsCardsView
+                programId={selectedProgram.id}
+                lessons={lessons}
                 loading={lessonsLoading}
-                onRefresh={() => loadLessons(selectedProgram.id)}
-                onDeleteLesson={handleDeleteLesson}
-                onDeleteLessons={handleDeleteLessons}
+                onAnalyzeLesson={handleAnalyzeLesson}
               />
             </div>
           )}

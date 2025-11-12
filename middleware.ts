@@ -81,7 +81,16 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getSession()
 
   // Protected routes that require authentication
-  const protectedPaths = ['/dashboard', '/settings', '/history', '/api/user', '/api/configuration']
+  const protectedPaths = [
+    '/dashboard',
+    '/settings',
+    '/history',
+    '/programs',
+    '/api/user',
+    '/api/configuration',
+    '/api/programs',
+    '/api/program-runs',
+  ]
 
   const path = request.nextUrl.pathname
   const isProtectedPath = protectedPaths.some((p) => path.startsWith(p))
@@ -94,6 +103,7 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       // Redirect to login page for web routes
       if (!path.startsWith('/api/')) {
+        // eslint-disable-next-line no-undef
         return NextResponse.redirect(new URL('/login', request.url))
       }
       // Return 401 for protected API routes

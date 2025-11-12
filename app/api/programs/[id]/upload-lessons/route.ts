@@ -54,6 +54,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Maximum 100 files allowed' }, { status: 400 })
     }
 
+    // Get current max sort_order for this program
+    const { data: existingLessons } = await supabase
+      .from('program_lessons')
+      .select('sort_order')
+      .eq('program_id', programId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+
+    const maxSortOrder = existingLessons?.[0]?.sort_order ?? -1
+
     // Create lessons from files
     const lessonsToInsert = files.map((file, index) => {
       // Generate content hash
@@ -66,7 +76,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         content: file.content,
         file_size: file.fileSize,
         content_hash: contentHash,
-        sort_order: index,
+        sort_order: maxSortOrder + 1 + index, // Start after existing lessons
         is_active: true,
       }
     })

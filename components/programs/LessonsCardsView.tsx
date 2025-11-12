@@ -87,7 +87,10 @@ export function LessonsCardsView({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to upload')
+        const errorMsg = error.details
+          ? `${error.error}: ${error.details}`
+          : error.error || 'Failed to upload'
+        throw new Error(errorMsg)
       }
 
       const result = await response.json()
@@ -99,7 +102,8 @@ export function LessonsCardsView({
       }
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error(error instanceof Error ? error.message : 'Ошибка загрузки файлов')
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки файлов'
+      toast.error(errorMessage)
     } finally {
       setUploading(false)
       // Reset input

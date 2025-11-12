@@ -11,7 +11,13 @@ export interface CoherenceOutput {
  * Similar to parseLLMOutput but for coherence structure
  */
 export function parseCoherenceOutput(text: string): CoherenceOutput {
-  console.log('[parseCoherenceOutput] Parsing text, length:', text.length)
+  console.log('[parseCoherenceOutput] ===== START PARSING =====')
+  console.log('[parseCoherenceOutput] Input text length:', text.length)
+  console.log('[parseCoherenceOutput] Input text (first 1000 chars):', text.substring(0, 1000))
+  console.log(
+    '[parseCoherenceOutput] Input text (last 500 chars):',
+    text.substring(Math.max(0, text.length - 500)),
+  )
 
   try {
     // Look for JSON block in the text
@@ -21,7 +27,9 @@ export function parseCoherenceOutput(text: string): CoherenceOutput {
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/)
     if (codeBlockMatch) {
       jsonStr = codeBlockMatch[1]
-      console.log('[parseCoherenceOutput] Extracted from code block')
+      console.log('[parseCoherenceOutput] ✅ Extracted from code block, length:', jsonStr.length)
+    } else {
+      console.log('[parseCoherenceOutput] ⚠️ No code block found, will process raw text')
     }
 
     // Try to find JSON object pattern
@@ -31,32 +39,52 @@ export function parseCoherenceOutput(text: string): CoherenceOutput {
     }
 
     // Handle truncated JSON by closing it properly
+    console.log('[parseCoherenceOutput] Checking if JSON needs closing...')
     if (jsonStr.includes('{') && !jsonStr.trim().endsWith('}')) {
       // Count open and close braces
       const openBraces = (jsonStr.match(/\{/g) || []).length
       const closeBraces = (jsonStr.match(/\}/g) || []).length
       const bracesToAdd = openBraces - closeBraces
 
+      console.log(
+        '[parseCoherenceOutput] JSON truncated! Open:',
+        openBraces,
+        'Close:',
+        closeBraces,
+        'ToAdd:',
+        bracesToAdd,
+      )
+
       // Try to close arrays if needed
       if (jsonStr.includes('"strengths": [') && !jsonStr.includes('"]')) {
         jsonStr += '"]'
+        console.log('[parseCoherenceOutput] Closed strengths array')
       }
       if (jsonStr.includes('"issues": [') && !jsonStr.includes('"]')) {
         jsonStr += '"]'
+        console.log('[parseCoherenceOutput] Closed issues array')
       }
       if (jsonStr.includes('"suggestions": [') && !jsonStr.includes('"]')) {
         jsonStr += '"]'
+        console.log('[parseCoherenceOutput] Closed suggestions array')
       }
 
       // Add missing closing braces
       jsonStr += '}'.repeat(bracesToAdd)
-      console.log('[parseCoherenceOutput] Closed truncated JSON, added', bracesToAdd, 'braces')
+      console.log('[parseCoherenceOutput] ✅ Closed truncated JSON, added', bracesToAdd, 'braces')
+    } else {
+      console.log('[parseCoherenceOutput] ✅ JSON appears complete')
     }
 
     // Clean up the JSON string to handle +2 notation
+    const hadPlus = jsonStr.includes('+')
     jsonStr = jsonStr.replace(/"score"\s*:\s*\+(\d)/g, '"score": $1')
+    if (hadPlus) {
+      console.log('[parseCoherenceOutput] ✅ Cleaned +N notation')
+    }
 
-    console.log('[parseCoherenceOutput] Cleaned JSON (first 500):', jsonStr.substring(0, 500))
+    console.log('[parseCoherenceOutput] Final JSON length:', jsonStr.length)
+    console.log('[parseCoherenceOutput] Final JSON (full):', jsonStr)
 
     const parsed = JSON.parse(jsonStr)
 

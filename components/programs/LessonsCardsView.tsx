@@ -51,24 +51,45 @@ export function LessonsCardsView({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[UploadLessonsButton] File select triggered')
     const files = event.target.files
-    if (!files || files.length === 0) return
+    if (!files || files.length === 0) {
+      console.log('[UploadLessonsButton] No files selected')
+      return
+    }
 
+    console.log(
+      `[UploadLessonsButton] Selected ${files.length} files:`,
+      Array.from(files).map((f) => f.name),
+    )
     setUploading(true)
     const fileArray = Array.from(files)
 
     try {
       // Parse files and encode content as base64 to avoid JSON encoding issues
+      console.log('[UploadLessonsButton] Starting file parsing...')
       const parsedFiles = await Promise.all(
-        fileArray.map(async (file) => {
+        fileArray.map(async (file, index) => {
           try {
+            console.log(
+              `[UploadLessonsButton] Reading file ${index + 1}/${fileArray.length}: ${file.name} (${file.size} bytes)`,
+            )
             const content = await file.text()
+            console.log(
+              `[UploadLessonsButton] Content read successfully, length: ${content.length} chars`,
+            )
+
             // Encode to base64 to safely transfer in JSON
+            console.log('[UploadLessonsButton] Encoding to base64...')
             const base64Content = window.btoa(
               encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (match, p1) =>
                 String.fromCharCode(parseInt(p1, 16)),
               ),
             )
+            console.log(
+              `[UploadLessonsButton] Base64 encoded, length: ${base64Content.length} chars`,
+            )
+
             return {
               fileName: file.name,
               content: base64Content,
@@ -76,7 +97,7 @@ export function LessonsCardsView({
               isBase64: true,
             }
           } catch (error) {
-            console.error(`Error reading file ${file.name}:`, error)
+            console.error(`[UploadLessonsButton] Error reading file ${file.name}:`, error)
             toast.error(`Не удалось прочитать файл ${file.name}`)
             return null
           }
@@ -84,20 +105,31 @@ export function LessonsCardsView({
       )
 
       const validFiles = parsedFiles.filter((f) => f !== null)
+      console.log(`[UploadLessonsButton] Valid files: ${validFiles.length}/${parsedFiles.length}`)
+
       if (validFiles.length === 0) {
+        console.log('[UploadLessonsButton] No valid files to upload')
         toast.error('Нет валидных файлов для загрузки')
         return
       }
 
       // Upload via API
+      console.log(
+        `[UploadLessonsButton] Uploading ${validFiles.length} files to /api/programs/${programId}/upload-lessons`,
+      )
       const response = await fetch(`/api/programs/${programId}/upload-lessons`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ files: validFiles }),
       })
 
+      console.log(
+        `[UploadLessonsButton] API response status: ${response.status} ${response.statusText}`,
+      )
+
       if (!response.ok) {
         const error = await response.json()
+        console.error('[UploadLessonsButton] Upload failed:', error)
         const errorMsg = error.details
           ? `${error.error}: ${error.details}`
           : error.error || 'Failed to upload'
@@ -105,22 +137,27 @@ export function LessonsCardsView({
       }
 
       const result = await response.json()
+      console.log('[UploadLessonsButton] Upload successful:', result)
       toast.success(`Загружено ${result.lessonsCreated} уроков`)
 
       // Trigger callback
+      console.log('[UploadLessonsButton] Triggering onAddLesson callback')
       if (onAddLesson) {
         onAddLesson()
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('[UploadLessonsButton] Upload error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки файлов'
       toast.error(errorMessage)
     } finally {
+      console.log('[UploadLessonsButton] Cleaning up...')
       setUploading(false)
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
+        console.log('[UploadLessonsButton] File input reset')
       }
+      console.log('[UploadLessonsButton] Upload process completed')
     }
   }
 

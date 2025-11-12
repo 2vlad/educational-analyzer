@@ -32,9 +32,31 @@ export async function GET() {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
+
+    console.log('[GET /api/programs] Auth check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      email: user?.email,
+      authError: authError?.message,
+    })
+
     if (authError || !user) {
+      console.error('[GET /api/programs] Unauthorized:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Check if user has profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('id', user.id)
+      .single()
+
+    console.log('[GET /api/programs] Profile check:', {
+      hasProfile: !!profile,
+      profileEmail: profile?.email,
+      profileError: profileError?.message,
+    })
 
     // Fetch user's programs with last run summary
     const { data: programs, error } = await supabase
@@ -56,8 +78,14 @@ export async function GET() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
+    console.log('[GET /api/programs] Programs query:', {
+      programCount: programs?.length || 0,
+      error: error?.message,
+      errorDetails: error,
+    })
+
     if (error) {
-      console.error('Error fetching programs:', error)
+      console.error('[GET /api/programs] Error fetching programs:', error)
       return NextResponse.json({ error: 'Failed to fetch programs' }, { status: 500 })
     }
 
@@ -83,9 +111,13 @@ export async function GET() {
       }
     })
 
+    console.log('[GET /api/programs] Success:', {
+      programCount: formattedPrograms?.length || 0,
+    })
+
     return NextResponse.json({ programs: formattedPrograms || [] })
   } catch (error) {
-    console.error('Error in GET /api/programs:', error)
+    console.error('[GET /api/programs] Caught error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

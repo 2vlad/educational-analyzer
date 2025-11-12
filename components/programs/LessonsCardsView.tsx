@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LessonCardWithGauge } from './LessonCardWithGauge'
 import type { ProgramLesson } from '@/src/services/api'
 
@@ -23,6 +23,16 @@ interface LessonsCardsViewProps {
   onAnalyzeLesson?: (lessonId: string) => void
 }
 
+// Mapping of metric keys to Russian names
+const METRIC_NAMES: Record<string, string> = {
+  interest: 'Интерес',
+  logic: 'Логика',
+  care: 'Забота',
+  clarity: 'Понятность',
+  practical: 'Практика',
+  complexity: 'Сложность',
+}
+
 export function LessonsCardsView({
   programId,
   lessons,
@@ -31,18 +41,8 @@ export function LessonsCardsView({
 }: LessonsCardsViewProps) {
   const [lessonsWithMetrics, setLessonsWithMetrics] = useState<LessonWithMetrics[]>([])
 
-  useEffect(() => {
-    // Initialize lessons with loading state
-    const initial: LessonWithMetrics[] = lessons.map((lesson) => ({
-      ...lesson,
-      analyzed: false,
-      loading: true,
-    }))
-
-    setLessonsWithMetrics(initial)
-
-    // Load metrics for each lesson
-    lessons.forEach(async (lesson) => {
+  const loadLessonMetrics = useCallback(
+    async (lesson: ProgramLesson) => {
       try {
         const response = await fetch(`/api/programs/${programId}/lessons/${lesson.id}/analysis`)
 
@@ -50,17 +50,22 @@ export function LessonsCardsView({
           const { analysis } = await response.json()
 
           if (analysis && analysis.results) {
-            // Extract metrics
+            // Extract metrics and convert to Russian names
             const metricsData = Object.entries(analysis.results)
               .filter(([key]) => !['lessonTitle', 'hotFixes', 'quickWin'].includes(key))
-              .map(([name, data]: [string, unknown]) => {
+              .map(([key, data]: [string, unknown]) => {
                 const metricData = data as { score?: number; comment?: string }
                 return {
-                  name,
+                  name: METRIC_NAMES[key] || key, // Use Russian name if available
                   score: metricData.score || 0,
                   comment: metricData.comment || '',
                   fix: '', // TODO: extract from comment if needed
                 }
+              })
+              .sort((a, b) => {
+                // Sort by predefined order
+                const order = ['Интерес', 'Логика', 'Забота', 'Понятность', 'Практика', 'Сложность']
+                return order.indexOf(a.name) - order.indexOf(b.name)
               })
 
             // Calculate total score
@@ -89,8 +94,25 @@ export function LessonsCardsView({
           prev.map((l) => (l.id === lesson.id ? { ...l, analyzed: false, loading: false } : l)),
         )
       }
+    },
+    [programId],
+  )
+
+  useEffect(() => {
+    // Initialize lessons with loading state
+    const initial: LessonWithMetrics[] = lessons.map((lesson) => ({
+      ...lesson,
+      analyzed: false,
+      loading: true,
+    }))
+
+    setLessonsWithMetrics(initial)
+
+    // Load metrics for each lesson
+    lessons.forEach((lesson) => {
+      loadLessonMetrics(lesson)
     })
-  }, [lessons, programId])
+  }, [lessons, programId, loadLessonMetrics])
 
   if (loading) {
     return <div className="text-center py-12 text-gray-600">Загрузка уроков...</div>

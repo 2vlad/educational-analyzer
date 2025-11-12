@@ -124,14 +124,6 @@ export function LessonsCardsView({
     return <div className="text-center py-12 text-gray-600">Загрузка уроков...</div>
   }
 
-  if (lessons.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-600">
-        <p className="text-lg mb-4">В этой программе пока нет уроков</p>
-      </div>
-    )
-  }
-
   const getColor = (
     analyzed: boolean,
     totalScore: number,
@@ -156,6 +148,13 @@ export function LessonsCardsView({
           <span className="text-2xl">+</span>
           <span>Добавить урок</span>
         </button>
+      )}
+
+      {/* Empty state message */}
+      {lessonsWithMetrics.length === 0 && (
+        <div className="text-center py-12 text-gray-600">
+          <p className="text-lg">В этой программе пока нет уроков</p>
+        </div>
       )}
 
       {/* Lesson cards */}

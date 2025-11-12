@@ -77,22 +77,6 @@ export function LessonCardWithGauge({
         }
       }}
     >
-      {/* Delete button - top right corner */}
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            if (globalThis.confirm('Вы уверены, что хотите удалить этот урок?')) {
-              onDelete()
-            }
-          }}
-          aria-label="Удалить урок"
-          className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-        >
-          <Trash2 className="w-4 h-4" strokeWidth={2} />
-        </button>
-      )}
-
       <div className="grid items-center gap-4 grid-cols-[1fr_auto]">
         {/* Left: Title and metrics (collapsed) */}
         <div>
@@ -142,6 +126,22 @@ export function LessonCardWithGauge({
               }`}
             >
               <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} strokeWidth={2} />
+            </button>
+          )}
+
+          {/* Delete button */}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (globalThis.confirm('Вы уверены, что хотите удалить этот урок?')) {
+                  onDelete()
+                }
+              }}
+              aria-label="Удалить урок"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-300 text-gray-500 hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" strokeWidth={2} />
             </button>
           )}
 

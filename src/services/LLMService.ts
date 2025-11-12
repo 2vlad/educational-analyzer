@@ -356,26 +356,26 @@ ${content.substring(0, 1500)}...
     issues: string[]
     suggestions: string[]
   }> {
-    // Try to use Claude Sonnet through OpenRouter first, fallback to direct Anthropic
+    // Try to use Claude Sonnet through OpenRouter first, fallback to Yandex
     // User's model choice is ignored here to ensure consistent, high-quality results
-    const forcedModelId = 'claude-sonnet-4'
+    let forcedModelId = 'claude-sonnet-4'
     const userRequestedModel = providerId || this.currentProviderId
 
     console.log(
-      `[Coherence Analysis] Forcing model ${forcedModelId} (user requested: ${userRequestedModel})`,
+      `[Coherence Analysis] Preferred model ${forcedModelId} (user requested: ${userRequestedModel})`,
     )
 
-    // Check if OpenRouter is available, otherwise use direct Anthropic provider
-    let useDirectAnthropic = false
+    // Check if OpenRouter is available, otherwise use Yandex as fallback
+    let useYandexFallback = false
+    if (!env.server?.OPENROUTER_API_KEY) {
+      console.log('[Coherence Analysis] OpenRouter not available, will use Yandex as fallback')
+      forcedModelId = 'yandex-gpt-pro'
+      useYandexFallback = true
+    }
+
     const modelConfig = modelsManager.getModelConfig(forcedModelId)
     if (!modelConfig) {
       throw new Error(`Model configuration not found: ${forcedModelId}`)
-    }
-
-    // Check if we have OpenRouter key
-    if (!env.server?.OPENROUTER_API_KEY) {
-      console.log('[Coherence Analysis] OpenRouter not available, will use direct Anthropic API')
-      useDirectAnthropic = true
     }
 
     console.log('[Coherence Analysis] Starting analysis...')
@@ -448,15 +448,13 @@ ${lessonsOverview}
       let provider: LLMProvider
       let actualModel = modelConfig.model
 
-      if (useDirectAnthropic) {
-        // Use direct Anthropic provider
-        provider = this.providers.get('anthropic')
+      if (useYandexFallback) {
+        // Use Yandex provider as fallback
+        provider = this.providers.get('yandex')
         if (!provider) {
-          throw new Error('Neither OpenRouter nor Anthropic provider available')
+          throw new Error('Neither OpenRouter nor Yandex provider available')
         }
-        // Use direct Claude model name for Anthropic API
-        actualModel = 'claude-3-5-sonnet-20241022'
-        console.log('[Coherence Analysis] Using direct Anthropic API with model:', actualModel)
+        console.log('[Coherence Analysis] Using Yandex fallback with model:', actualModel)
       } else {
         // Use OpenRouter
         provider = this.getProvider(forcedModelId)

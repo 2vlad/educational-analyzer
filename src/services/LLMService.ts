@@ -356,7 +356,7 @@ ${content.substring(0, 1500)}...
     issues: string[]
     suggestions: string[]
   }> {
-    // Always use Claude Sonnet for coherence analysis (most reliable for JSON output)
+    // Try to use Claude Sonnet through OpenRouter first, fallback to direct Anthropic
     // User's model choice is ignored here to ensure consistent, high-quality results
     const forcedModelId = 'claude-sonnet-4'
     const userRequestedModel = providerId || this.currentProviderId
@@ -365,9 +365,17 @@ ${content.substring(0, 1500)}...
       `[Coherence Analysis] Forcing model ${forcedModelId} (user requested: ${userRequestedModel})`,
     )
 
+    // Check if OpenRouter is available, otherwise use direct Anthropic provider
+    let useDirectAnthropic = false
     const modelConfig = modelsManager.getModelConfig(forcedModelId)
     if (!modelConfig) {
       throw new Error(`Model configuration not found: ${forcedModelId}`)
+    }
+
+    // Check if we have OpenRouter key
+    if (!env.server?.OPENROUTER_API_KEY) {
+      console.log('[Coherence Analysis] OpenRouter not available, will use direct Anthropic API')
+      useDirectAnthropic = true
     }
 
     console.log('[Coherence Analysis] Starting analysis...')
@@ -437,11 +445,26 @@ ${lessonsOverview}
 Теперь проанализируй уроки и верни ТОЛЬКО JSON объект:`
 
     try {
-      const provider = this.getProvider(forcedModelId)
-      console.log('[Coherence Analysis] Calling LLM provider with', forcedModelId)
+      let provider: LLMProvider
+      let actualModel = modelConfig.model
+
+      if (useDirectAnthropic) {
+        // Use direct Anthropic provider
+        provider = this.providers.get('anthropic')
+        if (!provider) {
+          throw new Error('Neither OpenRouter nor Anthropic provider available')
+        }
+        // Use direct Claude model name for Anthropic API
+        actualModel = 'claude-3-5-sonnet-20241022'
+        console.log('[Coherence Analysis] Using direct Anthropic API with model:', actualModel)
+      } else {
+        // Use OpenRouter
+        provider = this.getProvider(forcedModelId)
+        console.log('[Coherence Analysis] Using OpenRouter with model:', actualModel)
+      }
 
       const result = await provider.generate(coherencePrompt, '', {
-        model: modelConfig.model,
+        model: actualModel,
         temperature: 0.1, // Lower temperature for more consistent JSON output
         maxTokens: 2000, // Increased for longer analysis
         timeoutMs: 45000, // Longer timeout

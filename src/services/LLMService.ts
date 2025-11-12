@@ -365,12 +365,14 @@ ${content.substring(0, 1500)}...
       `[Coherence Analysis] Preferred model ${forcedModelId} (user requested: ${userRequestedModel})`,
     )
 
-    // Check if OpenRouter is available, otherwise use Yandex as fallback
-    let useYandexFallback = false
+    // Check if OpenRouter is available, otherwise use OpenAI GPT-4 as fallback
+    let useOpenAIFallback = false
     if (!env.server?.OPENROUTER_API_KEY) {
-      console.log('[Coherence Analysis] OpenRouter not available, will use Yandex as fallback')
-      forcedModelId = 'yandex-gpt-pro'
-      useYandexFallback = true
+      console.log(
+        '[Coherence Analysis] OpenRouter not available, will use OpenAI GPT-4 as fallback',
+      )
+      forcedModelId = 'gpt-4o'
+      useOpenAIFallback = true
     }
 
     const modelConfig = modelsManager.getModelConfig(forcedModelId)
@@ -437,13 +439,13 @@ ${lessonsOverview}
       let provider: LLMProvider
       let actualModel = modelConfig.model
 
-      if (useYandexFallback) {
-        // Use Yandex provider as fallback
-        provider = this.providers.get('yandex')
+      if (useOpenAIFallback) {
+        // Use OpenAI provider as fallback
+        provider = this.providers.get('openai')
         if (!provider) {
-          throw new Error('Neither OpenRouter nor Yandex provider available')
+          throw new Error('Neither OpenRouter nor OpenAI provider available')
         }
-        console.log('[Coherence Analysis] Using Yandex fallback with model:', actualModel)
+        console.log('[Coherence Analysis] Using OpenAI fallback with model:', actualModel)
       } else {
         // Use OpenRouter
         provider = this.getProvider(forcedModelId)
@@ -457,7 +459,7 @@ ${lessonsOverview}
 
       const result = await provider.generate(coherencePrompt, '', {
         model: actualModel,
-        temperature: 0.3, // Slightly higher for Yandex
+        temperature: 0.2, // Low temperature for consistent JSON output
         maxTokens: 1500,
         timeoutMs: 45000, // Longer timeout
       })

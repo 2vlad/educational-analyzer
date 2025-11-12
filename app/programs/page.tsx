@@ -24,6 +24,7 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true)
   const [lessonsLoading, setLessonsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [analyzingLessonIds, setAnalyzingLessonIds] = useState<Set<string>>(new Set())
 
   // Load programs on mount
   useEffect(() => {
@@ -141,18 +142,62 @@ export default function ProgramsPage() {
   const handleAnalyzeLesson = async (lessonId: string) => {
     if (!selectedProgram) return
 
+    // Add to analyzing set
+    setAnalyzingLessonIds((prev) => new Set(prev).add(lessonId))
+
     try {
       toast.info('Запускаем анализ урока...')
       await apiService.analyzeLesson(selectedProgram.id, lessonId)
-      toast.success('Анализ урока завершен!')
+      toast.success('Анализ поставлен в очередь!')
 
-      // Reload lessons to update the card
-      await loadLessons(selectedProgram.id)
+      // Reload lessons to update the card after a delay
+      window.setTimeout(async () => {
+        await loadLessons(selectedProgram.id)
+      }, 2000)
     } catch (err) {
       const error = err as Error
       console.error('Failed to analyze lesson:', error)
-      toast.error(error.message || 'Не удалось проанализировать урок')
+
+      // Only show error if not already analyzing
+      if (!error.message.includes('already queued')) {
+        toast.error(error.message || 'Не удалось проанализировать урок')
+      }
+    } finally {
+      // Remove from analyzing set after a delay
+      window.setTimeout(() => {
+        setAnalyzingLessonIds((prev) => {
+          const next = new Set(prev)
+          next.delete(lessonId)
+          return next
+        })
+      }, 3000)
     }
+  }
+
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!selectedProgram) return
+
+    try {
+      await apiService.deleteLesson(selectedProgram.id, lessonId)
+      toast.success('Урок удален')
+
+      // Optimistic update
+      setLessons((prev) => prev.filter((l) => l.id !== lessonId))
+
+      // Reload programs to update count
+      await loadPrograms()
+    } catch (err) {
+      const error = err as Error
+      console.error('Failed to delete lesson:', error)
+      toast.error(error.message || 'Не удалось удалить урок')
+      // Reload on error
+      await loadLessons(selectedProgram.id)
+    }
+  }
+
+  const handleAddLesson = () => {
+    // TODO: Implement add lesson modal/form
+    toast.info('Функция добавления урока в разработке')
   }
 
   const handleDeleteProgram = async (programId: string) => {
@@ -302,7 +347,10 @@ export default function ProgramsPage() {
                 programId={selectedProgram.id}
                 lessons={lessons}
                 loading={lessonsLoading}
+                analyzingLessonIds={analyzingLessonIds}
                 onAnalyzeLesson={handleAnalyzeLesson}
+                onDeleteLesson={handleDeleteLesson}
+                onAddLesson={handleAddLesson}
               />
             </div>
           )}

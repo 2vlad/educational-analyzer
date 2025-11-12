@@ -20,7 +20,10 @@ interface LessonsCardsViewProps {
   programId: string
   lessons: ProgramLesson[]
   loading?: boolean
+  analyzingLessonIds?: Set<string>
   onAnalyzeLesson?: (lessonId: string) => void
+  onDeleteLesson?: (lessonId: string) => void
+  onAddLesson?: () => void
 }
 
 // Mapping of metric keys to Russian names
@@ -37,7 +40,10 @@ export function LessonsCardsView({
   programId,
   lessons,
   loading = false,
+  analyzingLessonIds = new Set(),
   onAnalyzeLesson,
+  onDeleteLesson,
+  onAddLesson,
 }: LessonsCardsViewProps) {
   const [lessonsWithMetrics, setLessonsWithMetrics] = useState<LessonWithMetrics[]>([])
 
@@ -141,6 +147,18 @@ export function LessonsCardsView({
 
   return (
     <div className="space-y-5">
+      {/* Add lesson button */}
+      {onAddLesson && (
+        <button
+          onClick={onAddLesson}
+          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <span className="text-2xl">+</span>
+          <span>Добавить урок</span>
+        </button>
+      )}
+
+      {/* Lesson cards */}
       {lessonsWithMetrics.map((lesson) => (
         <LessonCardWithGauge
           key={lesson.id}
@@ -151,7 +169,9 @@ export function LessonsCardsView({
           color={getColor(lesson.analyzed, lesson.totalScore || 0, 30)}
           analyzed={lesson.analyzed}
           loading={lesson.loading}
+          analyzing={analyzingLessonIds.has(lesson.id)}
           onAnalyze={onAnalyzeLesson ? () => onAnalyzeLesson(lesson.id) : undefined}
+          onDelete={onDeleteLesson ? () => onDeleteLesson(lesson.id) : undefined}
         />
       ))}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronRight, RefreshCw, Trash2 } from 'lucide-react'
 import { Gauge } from '@/components/ui/gauge'
 
 interface MetricScore {
@@ -19,7 +19,9 @@ interface LessonCardProps {
   color: 'green' | 'amber' | 'red' | 'gray'
   analyzed: boolean
   loading?: boolean
+  analyzing?: boolean
   onAnalyze?: () => void
+  onDelete?: () => void
 }
 
 export function LessonCardWithGauge({
@@ -30,7 +32,9 @@ export function LessonCardWithGauge({
   color,
   analyzed,
   loading = false,
+  analyzing = false,
   onAnalyze,
+  onDelete,
 }: LessonCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -49,23 +53,46 @@ export function LessonCardWithGauge({
     return '0'
   }
 
+  const handleToggle = () => {
+    // Only allow toggle if analyzed
+    if (analyzed) {
+      setIsExpanded(!isExpanded)
+    }
+  }
+
   return (
     <section
-      className={`relative ${bgColor} rounded-2xl px-[28px] py-6 transition-all cursor-pointer ${
-        isExpanded ? '' : 'min-h-[65px]'
-      }`}
-      role="button"
-      aria-expanded={isExpanded}
+      className={`relative ${bgColor} rounded-2xl px-[28px] py-6 transition-all ${
+        analyzed ? 'cursor-pointer' : ''
+      } ${isExpanded ? '' : 'min-h-[65px]'}`}
+      role={analyzed ? 'button' : 'region'}
+      aria-expanded={analyzed ? isExpanded : undefined}
       aria-labelledby={`lesson-${title}`}
-      onClick={() => setIsExpanded(!isExpanded)}
-      tabIndex={0}
+      onClick={handleToggle}
+      tabIndex={analyzed ? 0 : -1}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (analyzed && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault()
-          setIsExpanded(!isExpanded)
+          handleToggle()
         }
       }}
     >
+      {/* Delete button - top right corner */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (globalThis.confirm('Вы уверены, что хотите удалить этот урок?')) {
+              onDelete()
+            }
+          }}
+          aria-label="Удалить урок"
+          className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" strokeWidth={2} />
+        </button>
+      )}
+
       <div className="grid items-center gap-4 grid-cols-[1fr_auto]">
         {/* Left: Title and metrics (collapsed) */}
         <div>
@@ -104,12 +131,17 @@ export function LessonCardWithGauge({
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                onAnalyze()
+                if (!analyzing) onAnalyze()
               }}
-              aria-label="Проанализировать урок"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+              disabled={analyzing}
+              aria-label={analyzing ? 'Анализ запущен...' : 'Проанализировать урок'}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                analyzing
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-black text-white hover:bg-gray-800'
+              }`}
             >
-              <RefreshCw className="w-4 h-4" strokeWidth={2} />
+              <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} strokeWidth={2} />
             </button>
           )}
 

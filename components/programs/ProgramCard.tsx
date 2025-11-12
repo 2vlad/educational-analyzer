@@ -16,6 +16,7 @@ interface ProgramCardProps {
   completedLessons: number
   totalLessons: number
   color?: 'green' | 'beige'
+  loading?: boolean
 }
 
 export default function ProgramCard({
@@ -24,6 +25,7 @@ export default function ProgramCard({
   completedLessons,
   totalLessons,
   color = 'green',
+  loading = false,
 }: ProgramCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -49,12 +51,18 @@ export default function ProgramCard({
           {/* Metrics */}
           {!isExpanded && (
             <div className="flex items-center gap-6">
-              {metrics.map((metric, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{metric.name}</span>
-                  <span className="text-sm font-medium">{formatScore(metric.score)}</span>
-                </div>
-              ))}
+              {loading ? (
+                <div className="text-sm text-gray-400">Загрузка метрик...</div>
+              ) : metrics.length === 0 ? (
+                <div className="text-sm text-gray-400">Нет данных анализа</div>
+              ) : (
+                metrics.map((metric, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">{metric.name}</span>
+                    <span className="text-sm font-medium">{formatScore(metric.score)}</span>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

@@ -148,12 +148,12 @@ class ApiService {
     })
 
     // Include session ID in headers for guest users
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
     if (typeof window !== 'undefined') {
-      const sessionId = localStorage.getItem('session_id')
+      const sessionId = globalThis.localStorage.getItem('session_id')
       if (sessionId) {
         headers['x-session-id'] = sessionId
       }
@@ -178,7 +178,7 @@ class ApiService {
 
     // Store session ID for guest users
     if (data.sessionId && typeof window !== 'undefined') {
-      localStorage.setItem('session_id', data.sessionId)
+      globalThis.localStorage.setItem('session_id', data.sessionId)
     }
 
     return data
@@ -302,6 +302,35 @@ class ApiService {
     return response.json()
   }
 
+  async deleteLesson(programId: string, lessonId: string): Promise<{ message: string }> {
+    const response = await fetch(`/api/programs/${programId}/lessons/${lessonId}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to delete lesson')
+    }
+    return response.json()
+  }
+
+  async deleteLessons(programId: string, lessonIds: string[]): Promise<{ message: string }> {
+    // Delete multiple lessons one by one
+    const results = await Promise.allSettled(
+      lessonIds.map((lessonId) => this.deleteLesson(programId, lessonId)),
+    )
+
+    const failed = results.filter((r) => r.status === 'rejected').length
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length
+
+    if (failed > 0) {
+      throw new Error(
+        `Удалено ${succeeded} из ${lessonIds.length} уроков. ${failed} не удалось удалить.`,
+      )
+    }
+
+    return { message: `Успешно удалено ${succeeded} уроков` }
+  }
+
   async uploadLessons(
     programId: string,
     files: Array<{ fileName: string; content: string; fileSize: number }>,
@@ -402,6 +431,27 @@ class ApiService {
     }
 
     throw new Error('Run timeout')
+  }
+
+  // Get aggregated metrics summary for a program
+  async getProgramMetricsSummary(programId: string): Promise<{
+    programId: string
+    metrics: Array<{
+      name: string
+      avgScore: number
+      roundedScore: number
+      topComment: string | null
+      lessonsAnalyzed: number
+    }>
+    lessonsTotal: number
+    lessonsAnalyzed: number
+  }> {
+    const response = await fetch(`/api/programs/${programId}/metrics-summary`)
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to fetch metrics summary')
+    }
+    return response.json()
   }
 }
 

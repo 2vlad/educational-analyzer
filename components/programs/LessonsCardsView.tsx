@@ -274,7 +274,7 @@ export function LessonsCardsView({
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           className={`w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-2 ${
-            uploading ? 'opacity-50 cursor-not-allowed' : ''
+            uploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
           }`}
         >
           <span className="text-2xl">+</span>

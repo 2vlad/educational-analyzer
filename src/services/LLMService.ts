@@ -356,14 +356,22 @@ ${content.substring(0, 1500)}...
     issues: string[]
     suggestions: string[]
   }> {
-    const modelId = providerId || this.currentProviderId
-    const modelConfig = modelsManager.getModelConfig(modelId)
+    // Always use Claude Sonnet for coherence analysis (most reliable for JSON output)
+    // User's model choice is ignored here to ensure consistent, high-quality results
+    const forcedModelId = 'claude-sonnet-4'
+    const userRequestedModel = providerId || this.currentProviderId
+
+    console.log(
+      `[Coherence Analysis] Forcing model ${forcedModelId} (user requested: ${userRequestedModel})`,
+    )
+
+    const modelConfig = modelsManager.getModelConfig(forcedModelId)
     if (!modelConfig) {
-      throw new Error(`Model configuration not found: ${modelId}`)
+      throw new Error(`Model configuration not found: ${forcedModelId}`)
     }
 
     console.log('[Coherence Analysis] Starting analysis...')
-    console.log('[Coherence Analysis] Model:', modelId)
+    console.log('[Coherence Analysis] Model:', forcedModelId)
     console.log('[Coherence Analysis] Number of lessons:', lessons.length)
 
     // Validate lesson content
@@ -429,8 +437,8 @@ ${lessonsOverview}
 Теперь проанализируй уроки и верни ТОЛЬКО JSON объект:`
 
     try {
-      const provider = this.getProvider(modelId)
-      console.log('[Coherence Analysis] Calling LLM provider...')
+      const provider = this.getProvider(forcedModelId)
+      console.log('[Coherence Analysis] Calling LLM provider with', forcedModelId)
 
       const result = await provider.generate(coherencePrompt, '', {
         model: modelConfig.model,

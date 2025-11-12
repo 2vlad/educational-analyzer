@@ -562,13 +562,29 @@ ${lessonsOverview}
       }
     } catch (error) {
       console.error('[Coherence Analysis] Error:', error)
+      console.error(
+        '[Coherence Analysis] Error type:',
+        error instanceof Error ? error.constructor.name : typeof error,
+      )
+      console.error(
+        '[Coherence Analysis] Error message:',
+        error instanceof Error ? error.message : String(error),
+      )
+      console.error(
+        '[Coherence Analysis] Error stack:',
+        error instanceof Error ? error.stack : 'No stack trace',
+      )
+
+      // Return detailed error information for debugging
+      const errorMsg = error instanceof Error ? error.message : String(error)
       return {
         score: 0,
-        summary: 'Не удалось выполнить анализ связности уроков',
+        summary: `Не удалось выполнить анализ связности уроков: ${errorMsg}`,
         strengths: [],
         issues: [],
         suggestions: [
           'Произошла ошибка при обращении к AI модели',
+          `Детали ошибки: ${errorMsg}`,
           'Попробуйте повторить попытку или выбрать другую модель',
         ],
       }

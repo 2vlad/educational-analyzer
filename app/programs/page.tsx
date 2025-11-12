@@ -195,9 +195,12 @@ export default function ProgramsPage() {
     }
   }
 
-  const handleAddLesson = () => {
-    // TODO: Implement add lesson modal/form
-    toast.info('Функция добавления урока в разработке')
+  const handleAddLesson = async () => {
+    if (!selectedProgram) return
+
+    // Reload lessons and programs after file upload
+    await loadLessons(selectedProgram.id)
+    await loadPrograms()
   }
 
   const handleDeleteProgram = async (programId: string) => {

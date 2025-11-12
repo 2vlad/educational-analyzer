@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { LessonCardWithGauge } from './LessonCardWithGauge'
 import type { ProgramLesson } from '@/src/services/api'
+import { toast } from 'sonner'
 
 interface LessonWithMetrics extends ProgramLesson {
   analyzed: boolean
@@ -46,6 +47,67 @@ export function LessonsCardsView({
   onAddLesson,
 }: LessonsCardsViewProps) {
   const [lessonsWithMetrics, setLessonsWithMetrics] = useState<LessonWithMetrics[]>([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setUploading(true)
+    const fileArray = Array.from(files)
+
+    try {
+      // Parse files
+      const parsedFiles = await Promise.all(
+        fileArray.map(async (file) => {
+          try {
+            const content = await file.text()
+            return { fileName: file.name, content, fileSize: file.size }
+          } catch (error) {
+            console.error(`Error reading file ${file.name}:`, error)
+            toast.error(`Не удалось прочитать файл ${file.name}`)
+            return null
+          }
+        }),
+      )
+
+      const validFiles = parsedFiles.filter((f) => f !== null)
+      if (validFiles.length === 0) {
+        toast.error('Нет валидных файлов для загрузки')
+        return
+      }
+
+      // Upload via API
+      const response = await fetch(`/api/programs/${programId}/upload-lessons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: validFiles }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to upload')
+      }
+
+      const result = await response.json()
+      toast.success(`Загружено ${result.lessonsCreated} уроков`)
+
+      // Trigger callback
+      if (onAddLesson) {
+        onAddLesson()
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error(error instanceof Error ? error.message : 'Ошибка загрузки файлов')
+    } finally {
+      setUploading(false)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
 
   const loadLessonMetrics = useCallback(
     async (lesson: ProgramLesson) => {
@@ -139,21 +201,46 @@ export function LessonsCardsView({
 
   return (
     <div className="space-y-5">
-      {/* Add lesson button */}
-      {onAddLesson && (
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".md,.txt,.pdf"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
+      {/* If lessons exist - show Add button at top */}
+      {lessonsWithMetrics.length > 0 && onAddLesson && (
         <button
-          onClick={onAddLesson}
-          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-2"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className={`w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center gap-2 ${
+            uploading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         >
           <span className="text-2xl">+</span>
-          <span>Добавить урок</span>
+          <span>{uploading ? 'Загрузка...' : 'Добавить урок'}</span>
         </button>
       )}
 
-      {/* Empty state message */}
+      {/* Empty state - message and button below */}
       {lessonsWithMetrics.length === 0 && (
-        <div className="text-center py-12 text-gray-600">
-          <p className="text-lg">В этой программе пока нет уроков</p>
+        <div className="text-center py-12 space-y-6">
+          <p className="text-lg text-gray-600">В этой программе пока нет уроков</p>
+          {onAddLesson && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className={`inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors ${
+                uploading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <span className="text-2xl">+</span>
+              <span>{uploading ? 'Загрузка...' : 'Добавить урок'}</span>
+            </button>
+          )}
         </div>
       )}
 

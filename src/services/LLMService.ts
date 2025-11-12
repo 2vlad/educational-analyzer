@@ -14,6 +14,7 @@ import { GeminiProvider } from '@/src/providers/gemini'
 import { YandexProvider } from '@/src/providers/yandex'
 import { OpenRouterProvider } from '@/src/providers/openrouter'
 import { LLMProvider, GenerateResult, ProviderError } from '@/src/providers/types'
+import { parseCoherenceOutput } from '@/src/utils/parseCoherenceOutput'
 
 export class LLMService {
   private providers: Map<string, LLMProvider> = new Map()
@@ -472,74 +473,19 @@ Return ONLY the JSON object, nothing else:`
       console.log('[Coherence Analysis] Provider:', result.provider)
       console.log('[Coherence Analysis] Model:', result.model)
 
-      // Parse the response
-      let parsed: {
-        score?: number
-        summary?: string
-        strengths?: string[]
-        issues?: string[]
-        suggestions?: string[]
-      }
-
+      // Parse the response using the same robust parser as regular analysis
       try {
-        // Try to extract JSON from the response - support multiple formats
-        let jsonText = result.comment || ''
-
-        console.log('[Coherence Analysis] Original response length:', jsonText.length)
-        console.log('[Coherence Analysis] First 500 chars:', jsonText.substring(0, 500))
-
-        // Multiple cleaning steps for better compatibility
-        // 1. Remove markdown code blocks
-        jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '')
-
-        // 2. Remove any text before first {
-        const firstBrace = jsonText.indexOf('{')
-        if (firstBrace > 0) {
-          jsonText = jsonText.substring(firstBrace)
-        }
-
-        // 3. Remove any text after last }
-        const lastBrace = jsonText.lastIndexOf('}')
-        if (lastBrace > 0 && lastBrace < jsonText.length - 1) {
-          jsonText = jsonText.substring(0, lastBrace + 1)
-        }
-
-        // 4. Trim whitespace
-        jsonText = jsonText.trim()
-
-        console.log('[Coherence Analysis] Cleaned JSON length:', jsonText.length)
-        console.log('[Coherence Analysis] Cleaned JSON (first 500):', jsonText.substring(0, 500))
-
-        // Try to parse directly
-        try {
-          parsed = JSON.parse(jsonText)
-          console.log('[Coherence Analysis] Direct parse successful:', JSON.stringify(parsed))
-        } catch {
-          // If direct parse fails, try to find JSON object with regex
-          console.log('[Coherence Analysis] Direct parse failed, trying regex extraction...')
-          const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-          if (jsonMatch) {
-            console.log('[Coherence Analysis] Found JSON with regex, length:', jsonMatch[0].length)
-            parsed = JSON.parse(jsonMatch[0])
-            console.log('[Coherence Analysis] Regex parse successful:', JSON.stringify(parsed))
-          } else {
-            console.error('[Coherence Analysis] No JSON found in response')
-            console.error('[Coherence Analysis] Full cleaned response:', jsonText)
-            throw new Error('No JSON found in response')
-          }
-        }
+        const parsed = parseCoherenceOutput(result.comment || '')
+        console.log('[Coherence Analysis] Parse successful:', JSON.stringify(parsed))
+        return parsed
       } catch (parseError) {
-        console.error('[Coherence Analysis] Failed to parse JSON:', parseError)
+        console.error('[Coherence Analysis] Parse failed:', parseError)
         console.error(
-          '[Coherence Analysis] Parse error details:',
+          '[Coherence Analysis] Error:',
           parseError instanceof Error ? parseError.message : 'Unknown',
         )
-        console.error(
-          '[Coherence Analysis] Raw response (first 1000 chars):',
-          result.comment?.substring(0, 1000),
-        )
 
-        // Return a fallback analysis with the raw comment
+        // Return a fallback analysis
         return {
           score: 0,
           summary:
@@ -550,15 +496,6 @@ Return ONLY the JSON object, nothing else:`
             'Ответ AI не был в правильном формате. Попробуйте повторить анализ или выбрать другую модель',
           ],
         }
-      }
-
-      // Validate and return parsed data
-      return {
-        score: typeof parsed.score === 'number' ? parsed.score : 0,
-        summary: parsed.summary || 'Анализ связности выполнен',
-        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-        issues: Array.isArray(parsed.issues) ? parsed.issues : [],
-        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : [],
       }
     } catch (error) {
       console.error('[Coherence Analysis] Error:', error)

@@ -410,39 +410,28 @@ ${content.substring(0, 1500)}...
 
     console.log('[Coherence Analysis] Overview length:', lessonsOverview.length, 'chars')
 
-    const coherencePrompt = `Ты — эксперт по учебным программам. Проанализируй связность и последовательность ${validLessons.length} уроков.
+    const coherencePrompt = `Проанализируй связность и последовательность ${validLessons.length} уроков.
 
-Уроки для анализа:
+Уроки:
 ${lessonsOverview}
 
-Оцени связность по шкале от -2 до +2:
-- -2: Уроки совершенно не связаны, хаотичная последовательность
-- -1: Слабая связь, есть логические пробелы
-- 0: Нейтральная связь, материал разрозненный но понятный
-- +1: Хорошая связанность, логичная последовательность
-- +2: Отличная связность, каждый урок плавно продолжает предыдущий
+ВАЖНО: Верни ТОЛЬКО JSON объект без дополнительного текста.
 
-КРИТИЧЕСКИ ВАЖНО: 
-1. Твой ответ должен быть ТОЛЬКО валидным JSON объектом
-2. Никакого текста до или после JSON
-3. Никаких markdown форматирований (тройных бэктиков с json или без)
-4. Только чистый JSON объект
-
-Формат ответа:
+Формат:
 {
-  "score": -2,
-  "summary": "Краткое описание общей связности (2-3 предложения)",
-  "strengths": ["Сильная сторона 1", "Сильная сторона 2"],
-  "issues": ["Проблема 1", "Проблема 2"],
-  "suggestions": ["Рекомендация 1", "Рекомендация 2"]
+  "score": число от -2 до 2,
+  "summary": "краткое описание",
+  "strengths": ["сильная сторона 1"],
+  "issues": ["проблема 1"],
+  "suggestions": ["рекомендация 1"]
 }
 
-Примеры правильных ответов:
-{"score": 1, "summary": "Уроки хорошо связаны между собой.", "strengths": ["Логичная последовательность"], "issues": ["Иногда резкие переходы"], "suggestions": ["Добавить связующие элементы"]}
-
-{"score": -1, "summary": "Связь между уроками слабая, есть пробелы.", "strengths": ["Каждый урок самодостаточен"], "issues": ["Нет последовательности", "Материал разрозненный"], "suggestions": ["Пересмотреть структуру курса", "Добавить вводные части"]}
-
-Теперь проанализируй уроки и верни ТОЛЬКО JSON объект:`
+Шкала оценки:
+-2 = уроки не связаны
+-1 = слабая связь
+0 = нейтрально
++1 = хорошая связь
++2 = отличная связь`
 
     try {
       let provider: LLMProvider
@@ -461,14 +450,23 @@ ${lessonsOverview}
         console.log('[Coherence Analysis] Using OpenRouter with model:', actualModel)
       }
 
+      console.log(
+        '[Coherence Analysis] Calling provider with prompt length:',
+        coherencePrompt.length,
+      )
+
       const result = await provider.generate(coherencePrompt, '', {
         model: actualModel,
-        temperature: 0.1, // Lower temperature for more consistent JSON output
-        maxTokens: 2000, // Increased for longer analysis
+        temperature: 0.3, // Slightly higher for Yandex
+        maxTokens: 1500,
         timeoutMs: 45000, // Longer timeout
       })
 
-      console.log('[Coherence Analysis] Raw LLM response:', result.comment?.substring(0, 200))
+      console.log('[Coherence Analysis] LLM call completed')
+      console.log('[Coherence Analysis] Raw response length:', result.comment?.length || 0)
+      console.log('[Coherence Analysis] Raw response (full):', result.comment)
+      console.log('[Coherence Analysis] Provider:', result.provider)
+      console.log('[Coherence Analysis] Model:', result.model)
 
       // Parse the response
       let parsed: {

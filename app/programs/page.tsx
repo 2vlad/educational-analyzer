@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import UnifiedHeader from '@/components/layout/UnifiedHeader'
 import ProgramsList from '@/components/programs/ProgramsList'
 import ProgramLessons from '@/components/programs/ProgramLessons'
@@ -104,20 +105,25 @@ export default function ProgramsPage() {
   }
 
   const handleStartAnalysis = async (programId: string) => {
+    console.log('[handleStartAnalysis] Starting analysis for program:', programId)
+
     try {
       const { run, message } = await apiService.createRun(programId, {
         metricsMode: 'lx',
         maxConcurrency: 3,
       })
 
-      // Don't show alert, ProgressTracker will appear automatically
-      console.log(message)
+      console.log('[handleStartAnalysis] Run created:', run.id, message)
 
       // Reload programs to update run status and trigger ProgressTracker
       await loadPrograms()
-    } catch (err: any) {
-      console.error('Failed to start analysis:', err)
-      alert(err.message || 'Не удалось запустить анализ')
+
+      console.log('[handleStartAnalysis] Programs reloaded, ProgressTracker should appear')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Не удалось запустить анализ'
+      console.error('[handleStartAnalysis] Failed:', message, err)
+      window.alert(message)
+      throw err // Re-throw to let caller handle it
     }
   }
 
@@ -290,14 +296,22 @@ export default function ProgramsPage() {
           }}
           onUploadComplete={async (programId: string, lessonsCount: number) => {
             // Auto-start analysis after file upload
-            console.log(`Auto-starting analysis for program ${programId} with ${lessonsCount} lessons`)
+            console.log(
+              `[Auto-Analysis] Starting analysis for program ${programId} with ${lessonsCount} lessons`,
+            )
+            toast.info('Запускаем автоматический анализ...', { duration: 2000 })
+
             try {
-              // Small delay to ensure lessons are loaded
-              await new Promise((resolve) => setTimeout(resolve, 500))
               await handleStartAnalysis(programId)
-            } catch (err: any) {
-              console.error('Failed to auto-start analysis:', err)
-              alert(`Уроки загружены, но не удалось запустить анализ: ${err.message}`)
+              toast.success('Анализ запущен успешно!')
+              console.log('[Auto-Analysis] Analysis started successfully')
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : 'Неизвестная ошибка'
+              console.error('[Auto-Analysis] Failed to start:', message, err)
+              toast.error(`Не удалось запустить анализ: ${message}`)
+              window.alert(
+                `Уроки загружены (${lessonsCount} шт), но не удалось запустить анализ автоматически.\n\nОшибка: ${message}\n\nПопробуйте запустить анализ вручную кнопкой "Начать анализ".`,
+              )
             }
           }}
         />

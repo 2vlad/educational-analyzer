@@ -147,6 +147,60 @@ export default function ProgramsPage() {
     }
   }
 
+  const handleDeleteLesson = async (lessonId: string) => {
+    if (!selectedProgram) return
+
+    try {
+      await apiService.deleteLesson(selectedProgram.id, lessonId)
+      
+      // Optimistic update: remove lesson from list
+      setLessons((prev) => prev.filter((l) => l.id !== lessonId))
+      
+      // Update program lesson count
+      setPrograms((prev) =>
+        prev.map((p) =>
+          p.id === selectedProgram.id
+            ? { ...p, lesson_count: Math.max(0, (p.lesson_count || 0) - 1) }
+            : p,
+        ),
+      )
+    } catch (err: any) {
+      console.error('Failed to delete lesson:', err)
+      alert(err.message || 'Не удалось удалить урок')
+      // Reload on error to restore correct state
+      await loadLessons(selectedProgram.id)
+      await loadPrograms()
+    }
+  }
+
+  const handleDeleteLessons = async (lessonIds: string[]) => {
+    if (!selectedProgram) return
+
+    try {
+      await apiService.deleteLessons(selectedProgram.id, lessonIds)
+      
+      // Optimistic update: remove lessons from list
+      setLessons((prev) => prev.filter((l) => !lessonIds.includes(l.id)))
+      
+      // Update program lesson count
+      setPrograms((prev) =>
+        prev.map((p) =>
+          p.id === selectedProgram.id
+            ? { ...p, lesson_count: Math.max(0, (p.lesson_count || 0) - lessonIds.length) }
+            : p,
+        ),
+      )
+      
+      alert(`Удалено ${lessonIds.length} уроков`)
+    } catch (err: any) {
+      console.error('Failed to delete lessons:', err)
+      alert(err.message || 'Не удалось удалить уроки')
+      // Reload on error to restore correct state
+      await loadLessons(selectedProgram.id)
+      await loadPrograms()
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -198,6 +252,7 @@ export default function ProgramsPage() {
                 : p.lastRun?.status === 'running'
                   ? 'active'
                   : 'draft',
+            sourceType: p.source_type,
           }))}
           selectedProgram={
             selectedProgram
@@ -212,6 +267,7 @@ export default function ProgramsPage() {
                       : selectedProgram.lastRun?.status === 'running'
                         ? 'active'
                         : 'draft',
+                  sourceType: selectedProgram.source_type,
                 }
               : null
           }
@@ -225,6 +281,25 @@ export default function ProgramsPage() {
           onEnumerateLessons={handleEnumerateLessons}
           onStartAnalysis={handleStartAnalysis}
           onDeleteProgram={handleDeleteProgram}
+          onUploadSuccess={async () => {
+            // Reload programs and lessons after successful upload
+            await loadPrograms()
+            if (selectedProgram) {
+              await loadLessons(selectedProgram.id)
+            }
+          }}
+          onUploadComplete={async (programId: string, lessonsCount: number) => {
+            // Auto-start analysis after file upload
+            console.log(`Auto-starting analysis for program ${programId} with ${lessonsCount} lessons`)
+            try {
+              // Small delay to ensure lessons are loaded
+              await new Promise((resolve) => setTimeout(resolve, 500))
+              await handleStartAnalysis(programId)
+            } catch (err: any) {
+              console.error('Failed to auto-start analysis:', err)
+              alert(`Уроки загружены, но не удалось запустить анализ: ${err.message}`)
+            }
+          }}
         />
 
         {/* Main content area with progress tracker and lessons */}
@@ -254,6 +329,7 @@ export default function ProgramsPage() {
                       : selectedProgram.lastRun?.status === 'running'
                         ? 'active'
                         : 'draft',
+                  sourceType: selectedProgram.source_type,
                 }}
                 lessons={lessons.map((lesson, index) => ({
                   id: lesson.id,
@@ -263,6 +339,9 @@ export default function ProgramsPage() {
                   order: lesson.sort_order,
                 }))}
                 loading={lessonsLoading}
+                onRefresh={() => loadLessons(selectedProgram.id)}
+                onDeleteLesson={handleDeleteLesson}
+                onDeleteLessons={handleDeleteLessons}
               />
             </div>
           )}

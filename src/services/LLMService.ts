@@ -468,14 +468,34 @@ Return ONLY the JSON object, nothing else:`
       })
 
       console.log('[Coherence Analysis] LLM call completed')
-      console.log('[Coherence Analysis] Raw response length:', result.comment?.length || 0)
-      console.log('[Coherence Analysis] Raw response (full):', result.comment)
       console.log('[Coherence Analysis] Provider:', result.provider)
       console.log('[Coherence Analysis] Model:', result.model)
 
+      // Extract raw text from the provider response
+      let rawText = ''
+      if (result.provider === 'openrouter' || result.provider === 'openai') {
+        // OpenRouter/OpenAI: extract from raw.choices[0].message.content
+        const raw = result.raw as any
+        rawText = raw?.choices?.[0]?.message?.content || ''
+      } else if (result.provider === 'anthropic') {
+        // Anthropic: extract from raw.content[0].text
+        const raw = result.raw as any
+        rawText = raw?.content?.[0]?.text || ''
+      } else if (result.provider === 'yandex') {
+        // Yandex: extract from raw.result.alternatives[0].message.text
+        const raw = result.raw as any
+        rawText = raw?.result?.alternatives?.[0]?.message?.text || ''
+      } else {
+        // Fallback to parsed comment
+        rawText = result.comment || ''
+      }
+
+      console.log('[Coherence Analysis] Raw text length:', rawText.length)
+      console.log('[Coherence Analysis] Raw text (first 500):', rawText.substring(0, 500))
+
       // Parse the response using the same robust parser as regular analysis
       try {
-        const parsed = parseCoherenceOutput(result.comment || '')
+        const parsed = parseCoherenceOutput(rawText)
         console.log('[Coherence Analysis] Parse successful:', JSON.stringify(parsed))
         return parsed
       } catch (parseError) {
@@ -487,15 +507,15 @@ Return ONLY the JSON object, nothing else:`
 
         // Return a fallback analysis with debug info
         const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown error'
-        const rawResponse = result.comment || 'Empty response'
 
         return {
           score: 0,
           summary: `Не удалось распарсить ответ: ${errorMsg}`,
           strengths: [],
           issues: [
-            `Raw response length: ${rawResponse.length}`,
-            `First 200 chars: ${rawResponse.substring(0, 200)}`,
+            `Raw text length: ${rawText.length}`,
+            `First 300 chars: ${rawText.substring(0, 300)}`,
+            `Last 200 chars: ${rawText.substring(Math.max(0, rawText.length - 200))}`,
           ],
           suggestions: [
             'Ответ AI не был в правильном формате',

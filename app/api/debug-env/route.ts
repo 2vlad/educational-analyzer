@@ -10,7 +10,7 @@ export async function GET() {
     envVars: {
       // Check if variables exist (don't expose actual values)
       OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY
-        ? `SET (length: ${process.env.OPENROUTER_API_KEY.length})`
+        ? `SET (length: ${process.env.OPENROUTER_API_KEY.length}, starts: ${process.env.OPENROUTER_API_KEY.substring(0, 15)})`
         : 'NOT SET',
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
         ? `SET (length: ${process.env.ANTHROPIC_API_KEY.length})`
@@ -21,11 +21,12 @@ export async function GET() {
       YANDEX_API_KEY: process.env.YANDEX_API_KEY
         ? `SET (length: ${process.env.YANDEX_API_KEY.length})`
         : 'NOT SET',
-      // Also check what env.ts sees
     },
     processEnvKeys: Object.keys(process.env)
-      .filter((key) => key.includes('API') || key.includes('KEY') || key.includes('OPENROUTER'))
+      .filter((key) => key.includes('API') || key.includes('KEY') || key.includes('OPEN'))
       .sort(),
+    // Show all environment variable names (not values)
+    allEnvKeys: Object.keys(process.env).sort().slice(0, 50), // First 50 keys
   }
 
   // Try to load env config

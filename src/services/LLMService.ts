@@ -485,15 +485,22 @@ Return ONLY the JSON object, nothing else:`
           parseError instanceof Error ? parseError.message : 'Unknown',
         )
 
-        // Return a fallback analysis
+        // Return a fallback analysis with debug info
+        const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown error'
+        const rawResponse = result.comment || 'Empty response'
+
         return {
           score: 0,
-          summary:
-            result.comment || 'Не удалось получить структурированный анализ связности уроков',
+          summary: `Не удалось распарсить ответ: ${errorMsg}`,
           strengths: [],
-          issues: [],
+          issues: [
+            `Raw response length: ${rawResponse.length}`,
+            `First 200 chars: ${rawResponse.substring(0, 200)}`,
+          ],
           suggestions: [
-            'Ответ AI не был в правильном формате. Попробуйте повторить анализ или выбрать другую модель',
+            'Ответ AI не был в правильном формате',
+            `Error: ${errorMsg}`,
+            'Попробуйте повторить анализ',
           ],
         }
       }

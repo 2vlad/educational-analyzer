@@ -1,6 +1,44 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
+const DEFAULT_CORS_HEADERS = 'Content-Type, Authorization, X-Session-Id'
+const DEFAULT_CORS_METHODS = 'GET, POST, OPTIONS'
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/$/, '')
+}
+
+function getAllowedOrigins(): Set<string> {
+  const origins = new Set<string>()
+  const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS
+
+  if (configuredOrigins) {
+    configuredOrigins
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+      .forEach((origin) => origins.add(normalizeOrigin(origin)))
+  }
+
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    origins.add(normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL))
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    origins.add('http://localhost:3000')
+    origins.add('http://127.0.0.1:3000')
+  }
+
+  return origins
+}
+
+function applyCorsHeaders(response: NextResponse, origin: string, requestHeaders?: string | null) {
+  response.headers.set('Access-Control-Allow-Origin', origin)
+  response.headers.set('Access-Control-Allow-Methods', DEFAULT_CORS_METHODS)
+  response.headers.set('Access-Control-Allow-Headers', requestHeaders || DEFAULT_CORS_HEADERS)
+  response.headers.set('Vary', 'Origin')
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -8,12 +46,36 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Allow API routes with CORS headers
+  const path = request.nextUrl.pathname
+
+  // Handle API route CORS with explicit allow-list
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    // Set CORS headers for API routes
-    response.headers.set('Access-Control-Allow-Origin', '*')
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type')
+    const origin = request.headers.get('origin')
+    const allowedOrigins = getAllowedOrigins()
+    const normalizedOrigin = origin ? normalizeOrigin(origin) : null
+    const isAllowedOrigin = normalizedOrigin ? allowedOrigins.has(normalizedOrigin) : false
+
+    if (request.method === 'OPTIONS') {
+      if (!normalizedOrigin || !isAllowedOrigin) {
+        return NextResponse.json({ error: 'CORS origin denied' }, { status: 403 })
+      }
+
+      const preflight = new NextResponse(null, { status: 204 })
+      applyCorsHeaders(
+        preflight,
+        normalizedOrigin,
+        request.headers.get('access-control-request-headers'),
+      )
+      return preflight
+    }
+
+    if (normalizedOrigin && !isAllowedOrigin) {
+      return NextResponse.json({ error: 'CORS origin denied' }, { status: 403 })
+    }
+
+    if (normalizedOrigin && isAllowedOrigin) {
+      applyCorsHeaders(response, normalizedOrigin)
+    }
 
     // Get client IP for rate limiting
     const ip =
@@ -23,11 +85,6 @@ export async function middleware(request: NextRequest) {
 
     // Add IP header for API routes to use
     response.headers.set('x-client-ip', ip)
-
-    // Handle preflight requests
-    if (request.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 200, headers: response.headers })
-    }
   }
 
   // Create Supabase client for middleware
@@ -92,7 +149,6 @@ export async function middleware(request: NextRequest) {
     '/api/program-runs',
   ]
 
-  const path = request.nextUrl.pathname
   const isProtectedPath = protectedPaths.some((p) => path.startsWith(p))
 
   if (isProtectedPath) {

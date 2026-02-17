@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { JobRunner } from '@/src/services/JobRunner'
 
@@ -24,15 +25,49 @@ function createServiceClient() {
   })
 }
 
+function safeCompareToken(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a)
+  const bBuffer = Buffer.from(b)
+
+  if (aBuffer.length !== bBuffer.length) {
+    return false
+  }
+
+  return timingSafeEqual(aBuffer, bBuffer)
+}
+
+function isAuthorizedCronRequest(
+  request: NextRequest,
+): { ok: boolean; status?: number; error?: string } {
+  if (process.env.NODE_ENV !== 'production') {
+    return { ok: true }
+  }
+
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    console.error('CRON_SECRET not configured')
+    return { ok: false, status: 500, error: 'Server configuration error' }
+  }
+
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { ok: false, status: 401, error: 'Unauthorized' }
+  }
+
+  const token = authHeader.slice('Bearer '.length)
+  if (!safeCompareToken(token, cronSecret)) {
+    return { ok: false, status: 401, error: 'Unauthorized' }
+  }
+
+  return { ok: true }
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Verify this is called by Vercel Cron (check for authorization header)
-    const authHeader = request.headers.get('authorization')
-
-    // In production, Vercel adds a special header for cron jobs
-    // For development, we'll allow requests without auth
-    if (process.env.NODE_ENV === 'production' && !authHeader?.includes('Bearer')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Verify this is called by trusted cron
+    const authResult = isAuthorizedCronRequest(request)
+    if (!authResult.ok) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
 
     // Get app secret key for decryption
@@ -75,12 +110,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate total concurrency across all runs
-    const totalConcurrency = activeRuns.reduce((sum, run) => sum + (run.max_concurrency || 1), 0)
+    const totalConcurrency = activeRuns.reduce(
+      (sum, run) => sum + (run.max_concurrency || 1),
+      0,
+    )
 
     // Limit total concurrency to prevent overload (max 10 for cron)
     const maxConcurrency = Math.min(totalConcurrency, 10)
 
-    console.log(`Processing with concurrency: ${maxConcurrency} across ${activeRuns.length} runs`)
+    console.log(
+      `Processing with concurrency: ${maxConcurrency} across ${activeRuns.length} runs`,
+    )
 
     // Process jobs with calculated concurrency
     const startTime = Date.now()

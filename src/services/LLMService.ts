@@ -27,9 +27,6 @@ export class LLMService {
 
   private initializeProviders() {
     console.log('🔧 Initializing LLM providers...')
-    console.log('Environment check:')
-    console.log('- env.isServer:', env.isServer)
-    console.log('- env.server exists:', !!env.server)
 
     // Initialize available providers based on API keys
     if (env.isServer && env.server) {
@@ -66,13 +63,9 @@ export class LLMService {
       // Yandex - always direct
       if (env.server.YANDEX_API_KEY && env.server.YANDEX_FOLDER_ID) {
         console.log('✅ Initializing Yandex provider')
-        console.log('  - API Key length:', env.server.YANDEX_API_KEY.length)
-        console.log('  - Folder ID:', env.server.YANDEX_FOLDER_ID)
         this.providers.set('yandex', new YandexProvider())
       } else {
-        console.log('⚠️ Yandex provider not initialized:')
-        console.log('  - API Key:', env.server?.YANDEX_API_KEY ? 'SET' : 'NOT SET')
-        console.log('  - Folder ID:', env.server?.YANDEX_FOLDER_ID ? 'SET' : 'NOT SET')
+        console.log('⚠️ Yandex provider not initialized')
       }
     } else {
       console.error('❌ Not on server or env.server is not available!')

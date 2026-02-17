@@ -24,7 +24,7 @@ export class RateLimiter {
    * Check and update rate limit for a given identifier
    */
   async checkLimit(identifier: string): Promise<RateLimitResult> {
-    const supabase = createServiceClient()
+    const supabase = await createServiceClient()
     const now = new Date()
     const windowStart = new Date(now.getTime() - this.windowMs)
 
@@ -107,7 +107,7 @@ export class RateLimiter {
    * Clean up old rate limit records
    */
   async cleanup(): Promise<void> {
-    const supabase = createServiceClient()
+    const supabase = await createServiceClient()
     const cutoff = new Date(Date.now() - this.windowMs * 2) // Keep 2 windows for safety
 
     const { error } = await supabase

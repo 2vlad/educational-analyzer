@@ -53,74 +53,7 @@ function isEducationalContent(content: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Log environment diagnostics
-    console.log('=== ENVIRONMENT DIAGNOSTICS ===')
-    console.log('NODE_ENV:', process.env.NODE_ENV)
-    console.log('Runtime:', runtime)
-
-    // Log available API keys (masked)
-    console.log('API Keys Status:')
-    console.log(
-      '- ANTHROPIC_API_KEY:',
-      process.env.ANTHROPIC_API_KEY
-        ? `${process.env.ANTHROPIC_API_KEY.substring(0, 10)}...`
-        : 'NOT SET',
-    )
-    console.log(
-      '- OPENAI_API_KEY:',
-      process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 10)}...` : 'NOT SET',
-    )
-    console.log(
-      '- GOOGLE_API_KEY:',
-      process.env.GOOGLE_API_KEY ? `${process.env.GOOGLE_API_KEY.substring(0, 10)}...` : 'NOT SET',
-    )
-    console.log(
-      '- YANDEX_API_KEY:',
-      process.env.YANDEX_API_KEY ? `${process.env.YANDEX_API_KEY.substring(0, 10)}...` : 'NOT SET',
-    )
-    console.log(
-      '- YANDEX_FOLDER_ID:',
-      process.env.YANDEX_FOLDER_ID
-        ? `${process.env.YANDEX_FOLDER_ID.substring(0, 10)}...`
-        : 'NOT SET',
-    )
-
-    // Log Supabase keys
-    console.log('Supabase Keys:')
-    console.log(
-      '- NEXT_PUBLIC_SUPABASE_URL:',
-      process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET',
-    )
-    console.log(
-      '- NEXT_PUBLIC_SUPABASE_ANON_KEY:',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 10)}...`
-        : 'NOT SET',
-    )
-    console.log(
-      '- SUPABASE_SERVICE_ROLE_KEY:',
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-        ? `${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 10)}...`
-        : 'NOT SET',
-    )
-    console.log(
-      '- SUPABASE_SERVICE_KEY:',
-      process.env.SUPABASE_SERVICE_KEY
-        ? `${process.env.SUPABASE_SERVICE_KEY.substring(0, 10)}...`
-        : 'NOT SET',
-    )
-
-    // Log environment configuration
-    console.log('Environment config:')
-    console.log('- env.server available:', !!env.server)
-    console.log('- env.client available:', !!env.client)
-    if (env.server) {
-      console.log('- Server env has YANDEX_API_KEY:', !!env.server.YANDEX_API_KEY)
-      console.log('- Server env has ANTHROPIC_API_KEY:', !!env.server.ANTHROPIC_API_KEY)
-      console.log('- Server env has OPENAI_API_KEY:', !!env.server.OPENAI_API_KEY)
-      console.log('- Server env has GOOGLE_API_KEY:', !!env.server.GOOGLE_API_KEY)
-    }
-    console.log('================================')
+    console.log('Analyze request received')
 
     // Parse and validate request body
     const body = await request.json()
@@ -262,12 +195,10 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Analyze endpoint error:', error)
-    console.error('Full error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      error,
-    })
+    console.error(
+      'Analyze endpoint error:',
+      error instanceof Error ? error.message : 'Unknown error',
+    )
 
     // Return more specific error message
     const errorMessage = error instanceof Error ? error.message : 'Internal server error'

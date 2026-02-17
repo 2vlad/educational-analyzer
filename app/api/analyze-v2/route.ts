@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Supabase clients
-    const supabase = createClient()
-    const supabaseAdmin = createServiceClient()
+    const supabase = await createClient()
+    const supabaseAdmin = await createServiceClient()
 
     // Get user session (if authenticated)
     const {
@@ -376,7 +376,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Analysis ID required' }, { status: 400 })
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

@@ -23,13 +23,8 @@ const createProgramSchema = z
     },
   )
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    console.log('[GET /api/programs] Starting request', {
-      url: request.url,
-      headers: Object.fromEntries(request.headers.entries()),
-    })
-
     const supabase = await createClient()
 
     // Get user session
@@ -38,19 +33,8 @@ export async function GET(request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser()
 
-    console.log('[GET /api/programs] Auth check:', {
-      hasUser: !!user,
-      userId: user?.id,
-      email: user?.email,
-      authError: authError?.message,
-      authErrorDetails: authError,
-    })
-
     if (authError || !user) {
-      console.error('[GET /api/programs] Unauthorized - no user session found', {
-        authError: authError?.message,
-        authErrorDetails: authError,
-      })
+      console.error('[GET /api/programs] Unauthorized')
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Please log in to view programs' },
         { status: 401 },
@@ -58,17 +42,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has profile
-    const { data: profile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .select('id, email')
       .eq('id', user.id)
       .single()
 
-    console.log('[GET /api/programs] Profile check:', {
-      hasProfile: !!profile,
-      profileEmail: profile?.email,
-      profileError: profileError?.message,
-    })
+    if (profileError) {
+      console.warn('[GET /api/programs] Profile lookup failed:', profileError.message)
+    }
 
     // Fetch user's programs with last run summary
     const { data: programs, error } = await supabase
@@ -89,12 +71,6 @@ export async function GET(request: NextRequest) {
       )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-
-    console.log('[GET /api/programs] Programs query:', {
-      programCount: programs?.length || 0,
-      error: error?.message,
-      errorDetails: error,
-    })
 
     if (error) {
       console.error('[GET /api/programs] Error fetching programs:', error)
@@ -121,10 +97,6 @@ export async function GET(request: NextRequest) {
           : null,
         program_runs: undefined, // Remove raw runs data
       }
-    })
-
-    console.log('[GET /api/programs] Success:', {
-      programCount: formattedPrograms?.length || 0,
     })
 
     return NextResponse.json({ programs: formattedPrograms || [] })

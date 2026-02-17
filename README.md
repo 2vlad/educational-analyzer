@@ -1,217 +1,144 @@
-# Лёха AI - Educational Content Analyzer
+# Educational Analyzer
 
-An AI-powered educational content analyzer that evaluates IT learning materials based on LX-metrics.
+AI-сервис для анализа образовательного контента: одиночные проверки текстов и пакетная обработка учебных программ с трекингом прогресса.
 
-## Features
+## Возможности
 
-- 📚 Analyzes educational content for IT/programming materials
-- 🎯 Evaluates 6 key metrics: Logic, Practical Value, Complexity, Interest, Care, and Cognitive Load
-- 📄 Supports text input and PDF file uploads
-- 🤖 Multiple LLM providers (Claude, GPT-4, Gemini, Yandex)
-- 📊 Beautiful visual results with detailed analysis
-- 🚀 Fast and responsive interface
+- Анализ текста по метрикам качества (LX + пользовательские конфигурации метрик)
+- Поддержка нескольких LLM-провайдеров (Anthropic, OpenAI, Gemini, Yandex, OpenRouter)
+- Работа как для авторизованных пользователей, так и для гостей (session-based)
+- История анализов, статусы выполнения и прогресс
+- Программы/курсы: сбор уроков, запуск batch-анализа, pause/resume/stop
+- Хранение внешних credentials (например, Yonote cookie) в зашифрованном виде
 
-## Tech Stack
+## Стек
 
-- **Framework**: Next.js 15.2.4
-- **Language**: TypeScript
-- **Database**: Supabase
-- **Styling**: Tailwind CSS
-- **LLM Providers**: Anthropic Claude, OpenAI, Google Gemini, Yandex GPT
-- **Deployment**: Vercel
+- Next.js 15 (App Router), React 19, TypeScript (strict)
+- Supabase (Auth + Postgres + RLS)
+- Tailwind CSS
+- Jest + Testing Library, Playwright
 
-## Prerequisites
+## Быстрый старт
 
-- Node.js 18+
-- npm or pnpm
-- Supabase account
-- At least one LLM API key (Anthropic, OpenAI, Google, or Yandex)
+1. Клонировать репозиторий и установить зависимости:
 
-## Local Development
+```bash
+git clone https://github.com/2vlad/educational-analyzer.git
+cd educational-analyzer
+npm install
+```
 
-1. **Clone the repository**
+2. Создать локальный env:
 
-   ```bash
-   git clone https://github.com/2vlad/educational-analyzer.git
-   cd educational-analyzer
-   ```
+```bash
+cp .env.example .env.local
+```
 
-2. **Install dependencies**
+3. Заполнить `.env.local` (минимум):
 
-   ```bash
-   npm install
-   # or
-   pnpm install
-   ```
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+APP_SECRET_KEY=...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=...
 
-3. **Set up environment variables**
+# хотя бы один LLM ключ
+ANTHROPIC_API_KEY=...
+# или OPENAI_API_KEY / GOOGLE_API_KEY / YANDEX_API_KEY (+YANDEX_FOLDER_ID)
 
-   Copy `.env.example` to `.env.local`:
+# CORS allowlist для cross-origin API вызовов (опционально)
+# CORS_ALLOWED_ORIGINS=https://your-app.vercel.app,https://admin.your-app.com
+```
 
-   ```bash
-   cp .env.example .env.local
-   ```
+Примечания:
+- В коде поддерживается и `SUPABASE_SERVICE_KEY`, но рекомендуется использовать `SUPABASE_SERVICE_ROLE_KEY`.
+- Для локальной разработки предпочтительнее `npm run dev:clean`, чтобы системные ключи не перекрывали `.env.local`.
 
-   Then edit `.env.local` with your actual values:
+4. Применить миграции в Supabase (в порядке):
 
-   ```env
-   # Supabase (Required)
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_KEY=your_supabase_service_key
+- `migrations/0001_init.sql`
+- `migrations/0002_multi_user_support.sql`
+- `migrations/20250122_programs_batch_analyzer.sql`
+- `migrations/20250128_add_session_tracking.sql`
 
-   # LLM API Keys (at least one required)
-   ANTHROPIC_API_KEY=your_anthropic_api_key
-   OPENAI_API_KEY=your_openai_api_key
-   GOOGLE_API_KEY=your_google_api_key
-   YANDEX_API_KEY=your_yandex_api_key
-   YANDEX_FOLDER_ID=your_yandex_folder_id
+5. Запустить приложение:
 
-   # Default model (optional)
-   DEFAULT_MODEL=yandex-gpt-pro
-   ```
+```bash
+npm run dev:clean
+```
 
-4. **Set up Supabase database**
+Открыть `http://localhost:3000`.
 
-   Run the migration script in your Supabase SQL editor:
-
-   ```sql
-   -- See migrations/0001_init.sql
-   ```
-
-5. **Run the development server**
-
-   ```bash
-   npm run dev
-   # or
-   pnpm dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Deployment to Vercel
-
-### Method 1: Deploy with Vercel CLI
-
-1. **Install Vercel CLI**
-
-   ```bash
-   npm i -g vercel
-   ```
-
-2. **Deploy**
-
-   ```bash
-   vercel
-   ```
-
-   Follow the prompts to:
-   - Link to your Vercel account
-   - Create a new project or link to existing
-   - Configure environment variables
-
-### Method 2: Deploy via GitHub
-
-1. **Push to GitHub**
-
-   ```bash
-   git add .
-   git commit -m "Prepare for deployment"
-   git push origin main
-   ```
-
-2. **Import to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Configure environment variables in the Vercel dashboard
-
-### Required Environment Variables in Vercel
-
-Add these in your Vercel project settings under "Environment Variables":
-
-| Variable                        | Description               | Required        |
-| ------------------------------- | ------------------------- | --------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL | ✅              |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key    | ✅              |
-| `SUPABASE_SERVICE_KEY`          | Supabase service role key | ✅              |
-| `ANTHROPIC_API_KEY`             | Anthropic Claude API key  | ⚠️ At least one |
-| `OPENAI_API_KEY`                | OpenAI API key            | ⚠️ At least one |
-| `GOOGLE_API_KEY`                | Google Gemini API key     | ⚠️ At least one |
-| `YANDEX_API_KEY`                | Yandex GPT API key        | ⚠️ At least one |
-| `YANDEX_FOLDER_ID`              | Yandex folder ID          | If using Yandex |
-| `DEFAULT_MODEL`                 | Default LLM model         | Optional        |
-
-### Vercel Configuration
-
-The project includes a `vercel.json` file with:
-
-- Increased function timeout (60s) for analysis endpoints
-- CORS headers for API routes
-- Optimized build settings
-
-## Available Scripts
+## Основные скрипты
 
 ```bash
 # Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
+npm run dev
+npm run dev:clean
+npm run build
+npm run build:clean
+npm run start
 
-# Testing
-npm run test         # Run unit tests
-npm run test:e2e     # Run E2E tests
-npm run test:watch   # Run tests in watch mode
+# Quality
+npm run lint
+npm run typecheck
+npm run format
+npm run ci
 
-# Code Quality
-npm run lint         # Run ESLint
-npm run format       # Format with Prettier
-npm run typecheck    # Run TypeScript checks
+# Tests
+npm run test
+npm run test:watch
+npm run test:coverage
+npm run e2e
+npm run e2e:ui
 ```
 
-## API Endpoints
+## Архитектура (кратко)
 
-- `POST /api/analyze` - Analyze educational content
-- `GET /api/analysis/[id]` - Get analysis results
-- `GET /api/models` - Get available LLM models
-- `POST /api/parse-pdf` - Parse PDF files
-- `GET /api/health` - Health check endpoint
+- `app/`: маршруты Next.js, API (`app/api/**/route.ts`) и страницы
+- `src/services/`: бизнес-логика, интеграции провайдеров и job processing
+- `src/lib/supabase/`: браузерный/серверный Supabase-клиенты
+- `components/`: переиспользуемые UI-компоненты
+- `migrations/`: SQL-миграции (с RLS/policies)
+- `worker/`: отдельный воркер для фоновой обработки (опционально)
 
-## Project Structure
+## Деплой
 
-```
-educational-analyzer/
-├── app/                  # Next.js app directory
-│   ├── api/             # API routes
-│   ├── page.tsx         # Main page component
-│   └── layout.tsx       # Root layout
-├── components/          # React components
-├── src/                 # Source code
-│   ├── services/        # Business logic
-│   ├── providers/       # LLM providers
-│   ├── utils/          # Utilities
-│   └── types/          # TypeScript types
-├── prompts/            # LLM prompts for each metric
-├── public/             # Static assets
-└── migrations/         # Database migrations
-```
+- Основной таргет: Vercel (`vercel.json`)
+- Для batch-обработки предусмотрен cron endpoint: `/api/worker/tick`
+- Документация: `docs/DEPLOYMENT.md`, `docs/SUPABASE_AUTH_SETUP.md`
 
-## Contributing
+## Security (MVP) — ревью от 2026-02-16
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Текущая оценка: **7/10**.
 
-## License
+Вывод: для внутреннего MVP (ограниченные пользователи) можно использовать. Для публичного запуска нужен дополнительный hardening.
 
-This project is proprietary and confidential.
+Что уже исправлено:
 
-## Support
+1. Удалены публичные debug/test endpoints (`/api/debug-env`, `/api/test`).
+2. Закрыт IDOR для `GET /api/analysis/[id]` и `GET /api/progress/[id]`: добавлена проверка owner/session.
+3. Убран wildcard CORS из `vercel.json`, CORS в middleware переведен на allowlist.
+4. Исправлены server-side вызовы Supabase клиентов без `await` в критичных местах (`analyze-v2`, `history`, `rate-limit`).
+5. Для `/api/worker/tick` добавлена строгая проверка `CRON_SECRET` в production.
+6. Убрано чувствительное логирование key-prefixes и сырых request headers в API.
 
-For issues and questions, please open an issue on GitHub.
+Оставшиеся риски:
 
----
+1. Риски в модели гостевого доступа на уровне RLS (`user_id IS NULL`) требуют усиления политик:
+   - `migrations/20250128_add_session_tracking.sql`
+2. Нет обязательного rate limit на `POST /api/analyze`, `POST /api/analyze-coherence`, `POST /api/parse-pdf`.
+3. Нужно включить и поддерживать `CRON_SECRET` во всех production окружениях и cron-интеграциях.
 
-Built with ❤️ for better educational content
+Минимальный следующий hardening:
+
+1. Усилить RLS для guest-данных (связка через server-validated session key, а не только `user_id IS NULL`).
+2. Добавить rate limiting на все expensive публичные endpoint’ы.
+3. Проверить конфигурацию cron-провайдера на передачу `Authorization: Bearer <CRON_SECRET>`.
+4. Добавить security regression tests на IDOR/CORS/debug exposure.
+
+## Лицензия
+
+Проект распространяется как private/proprietary.

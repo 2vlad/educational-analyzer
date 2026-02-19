@@ -1,0 +1,28 @@
+# Cloudflare Tunnel configuration for Supabase self-hosted
+#
+# Installation:
+#   1. Replace TUNNEL_ID with your actual tunnel ID
+#   2. Replace domain names with your actual domains
+#   3. Copy to ~/.cloudflared/config.yml
+#   4. Install as service: sudo cloudflared service install
+#
+# Find your tunnel ID: cloudflared tunnel list
+
+tunnel: TUNNEL_ID
+credentials-file: /Users/YOUR_USERNAME/.cloudflared/TUNNEL_ID.json
+
+ingress:
+  # Supabase API Gateway (Kong) — main API endpoint
+  - hostname: supabase-api.yourdomain.com
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+
+  # Supabase Studio (Dashboard) — admin panel
+  - hostname: supabase-studio.yourdomain.com
+    service: http://localhost:8443
+    originRequest:
+      noTLSVerify: true
+
+  # Catch-all (required by cloudflared)
+  - service: http_status:404

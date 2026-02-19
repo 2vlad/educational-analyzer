@@ -1,0 +1,21 @@
+# Docker Compose override to disable unused Supabase services
+#
+# This saves ~1GB RAM on the Mac Mini. Place this file alongside
+# the main docker-compose.yml in supabase/docker/.
+#
+# Disabled services:
+# - storage + imgproxy: Project doesn't use Supabase Storage
+# - functions: Project uses Next.js API routes instead of Edge Functions
+
+services:
+  storage:
+    profiles:
+      - disabled
+
+  imgproxy:
+    profiles:
+      - disabled
+
+  functions:
+    profiles:
+      - disabled

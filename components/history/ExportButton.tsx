@@ -65,11 +65,11 @@ export default function ExportButton({ onExport, selectedCount, totalCount }: Ex
       }
 
       pdf.setFontSize(12)
-      pdf.setFont(undefined, 'bold')
+      pdf.setFont('helvetica', 'bold')
       pdf.text(`Analysis #${index + 1}`, 20, currentY)
       currentY += 7
 
-      pdf.setFont(undefined, 'normal')
+      pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(10)
       pdf.text(`Date: ${format(new Date(analysis.created_at), 'PPP')}`, 20, currentY)
       currentY += 5

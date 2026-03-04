@@ -24,5 +24,11 @@
       "maxDuration": 60
     }
   },
-  "public": true
+  "public": true,
+  "crons": [
+    {
+      "path": "/api/worker/tick",
+      "schedule": "* * * * *"
+    }
+  ]
 }

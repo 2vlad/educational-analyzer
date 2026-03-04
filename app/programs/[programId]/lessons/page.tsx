@@ -129,9 +129,78 @@ export default function ProgramLessonsPage({ params }: PageProps) {
   }
 
   const handleAnalyzeLesson = async (lessonId: string) => {
+    // Mark lesson as loading
+    setLessons((prev) => prev.map((l) => (l.id === lessonId ? { ...l, loading: true } : l)))
     toast.info('Запуск анализа урока...')
-    // TODO: implement single lesson analysis
-    console.log('Analyze lesson:', lessonId)
+
+    try {
+      const { runId } = await apiService.analyzeLesson(programId, lessonId)
+
+      // Drive the worker via page-driven tick until run completes
+      let completed = false
+      let attempts = 0
+      const maxAttempts = 60 // 2 min max
+
+      while (!completed && attempts < maxAttempts) {
+        await new Promise((resolve) => globalThis.setTimeout(resolve, 2000))
+
+        try {
+          const { run } = await apiService.tickRun(runId)
+
+          if (run.status === 'completed' || run.status === 'failed' || run.status === 'stopped') {
+            completed = true
+
+            if (run.status === 'completed') {
+              // Reload analysis results for this lesson
+              const response = await fetch(
+                `/api/programs/${programId}/lessons/${lessonId}/analysis`,
+              )
+              if (response.ok) {
+                const { analysis } = await response.json()
+                if (analysis?.results) {
+                  const metrics = Object.entries(analysis.results)
+                    .filter(
+                      ([key]) => key !== 'lessonTitle' && key !== 'hotFixes' && key !== 'quickWin',
+                    )
+                    .map(([name, data]: [string, unknown]) => {
+                      const metricData = data as { score?: number; comment?: string }
+                      return {
+                        name,
+                        score: metricData.score || 0,
+                        comment: metricData.comment || null,
+                      }
+                    })
+                  setLessons((prev) =>
+                    prev.map((l) =>
+                      l.id === lessonId ? { ...l, metrics, analyzed: true, loading: false } : l,
+                    ),
+                  )
+                  toast.success('Анализ завершён')
+                  return
+                }
+              }
+            } else {
+              toast.error('Анализ завершился с ошибкой')
+            }
+          }
+        } catch {
+          // Tick failed, keep trying
+        }
+
+        attempts++
+      }
+
+      if (!completed) {
+        toast.error('Превышено время ожидания анализа')
+      }
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || 'Не удалось запустить анализ')
+    } finally {
+      setLessons((prev) =>
+        prev.map((l) => (l.id === lessonId && l.loading ? { ...l, loading: false } : l)),
+      )
+    }
   }
 
   const handleDeleteLesson = async (lessonId: string) => {

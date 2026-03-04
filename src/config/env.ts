@@ -77,7 +77,9 @@ const validateSupabaseKeys = (env: z.infer<typeof serverEnvSchema>) => {
 // Parse and validate server environment
 let serverEnv: z.infer<typeof serverEnvSchema> | undefined
 
-// Only validate server env on server-side
+// Only validate server env on server-side and not during build phase
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+
 if (typeof window === 'undefined') {
   try {
     console.log('🔍 Starting environment validation...')
@@ -99,8 +101,10 @@ if (typeof window === 'undefined') {
 
     console.log('✅ Schema validation passed')
 
-    validateLLMProviders(serverEnv)
-    console.log('✅ LLM providers validated')
+    if (!isBuildPhase) {
+      validateLLMProviders(serverEnv)
+      console.log('✅ LLM providers validated')
+    }
 
     validateSupabaseKeys(serverEnv)
     console.log('✅ Supabase keys checked')

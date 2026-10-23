@@ -23,11 +23,5 @@
     "app/api/program-runs/[id]/tick/route.ts": {
       "maxDuration": 60
     }
-  },
-  "crons": [
-    {
-      "path": "/api/worker/tick",
-      "schedule": "* * * * *"
-    }
-  ]
+  }
 }

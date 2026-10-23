@@ -24,7 +24,6 @@
       "maxDuration": 60
     }
   },
-  "public": true,
   "crons": [
     {
       "path": "/api/worker/tick",
